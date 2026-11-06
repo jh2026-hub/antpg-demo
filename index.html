@@ -196,6 +196,11 @@ table.t .r{text-align:right}
 @keyframes pow{0%{transform:translate(-50%,-50%) scale(.4) rotate(-10deg);opacity:1}40%{transform:translate(-50%,-90%) scale(1.25) rotate(6deg)}100%{transform:translate(-50%,-150%) scale(1);opacity:0}}
 .bagcount{font-size:24px;color:var(--gold)}.bagcombo{font-size:24px;color:#ff8a96;transition:transform .1s}.bagcombo.big{transform:scale(1.25);color:#ffcf5a}
 .exc{background:linear-gradient(170deg,#1c1830,var(--card) 55%)}
+.prayc{background:linear-gradient(170deg,#2a2210,var(--card) 55%)}
+.praystage{position:relative;height:130px;display:flex;justify-content:center;align-items:center;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation;margin-top:6px}
+.praystage canvas{width:120px;height:120px}
+.pow.pray{color:#ffe08a;font-size:18px;animation:prayup .9s ease-out forwards}
+@keyframes prayup{0%{transform:translate(-50%,-50%) scale(.6);opacity:1}100%{transform:translate(-50%,-260%) scale(1.15);opacity:0}}
 .exbox{margin-top:10px;padding:14px;border-radius:12px;background:#11141c;border:1px dashed #3a3f55;min-height:96px}
 .exbox.roll{animation:roll .45s cubic-bezier(.2,1.5,.4,1)}
 @keyframes roll{0%{transform:rotateX(70deg);opacity:0}100%{transform:none;opacity:1}}
@@ -800,11 +805,63 @@ async function flushPunch(){
   clearTimeout(BAG.flushT);
   const n = Math.min(40, BAG.pending); if (!n || !BAG.sym) return;
   BAG.pending -= n;
-  try { const v = await rpc('punch', {p_symbol: BAG.sym, p_n: n}); if (v) BAG.server = Math.max(BAG.server, +v); }
+  try { const v = await rpc('tap', {p_symbol: BAG.sym, p_kind: 'punch', p_n: n}); if (v) BAG.server = Math.max(BAG.server, +v); }
   catch(e){ BAG.pending += n; }
   try { LOBBY && LOBBY.send({type: 'broadcast', event: 'punch', payload: {id: BAG.me}}); } catch(e){}
   bagRender();
 }
+
+const PRAY = {sym:null, server:0, pending:0, combo:0, comboAt:0, flushT:null};
+function prayTarget(){
+  const xs = ASSETS.slice().sort((a, b) => mv(a) - mv(b)), worst = xs[0], best = xs[xs.length - 1];
+  if (!worst) return null;
+  return mv(worst) < 0 ? {a: worst, title: '반등 기도', ask: '제발 반등해라'} : {a: best, title: '더 가즈아 기도', ask: '제발 더 가라'};
+}
+function prayHTML(){
+  const t = prayTarget(); if (!t) return '';
+  PRAY.sym = t.a.symbol;
+  return `<section class="card prayc"><div class="row sb"><b>🙏 ${t.title}</b><span class="muted s">효과: 과학적으로 없음 (검증 완료)</span></div>
+    <div class="muted s" style="margin-top:2px">${esc(t.a.name)} <b class="${dir(mv(t.a))}">${fmtC(t.a)}</b> · ${t.ask}</div>
+    <div class="praystage" data-act="pray"><canvas id="prayc" width="120" height="120" class="px"></canvas><div id="prayfx"></div></div>
+    <div class="row sb"><div><div class="muted s">오늘 모인 기도력</div><div class="bagcount num pix" id="praycount">${(PRAY.server + PRAY.pending).toLocaleString('ko-KR')}</div></div>
+      <div style="text-align:right"><div class="muted s">내 연타</div><div class="bagcombo num pix" id="praycombo" style="color:#ffd27a">x${PRAY.combo}</div></div></div>
+    <div class="muted s" style="text-align:center;margin-top:4px">촛불을 연타하세요 · 모일수록 불꽃이 커져요</div></section>`;
+}
+async function prayInit(){
+  if (!PRAY.sym || !$('#prayc')) return;
+  const { data } = await sb.from('punches').select('count').eq('symbol', PRAY.sym).eq('day', kstDay()).eq('kind', 'pray').maybeSingle();
+  PRAY.server = Math.max(PRAY.server, data ? +data.count : 0); prayRender();
+}
+function prayRender(t){
+  const c = $('#praycount'); if (c) c.textContent = (PRAY.server + PRAY.pending).toLocaleString('ko-KR');
+  const cv = $('#prayc'); if (!cv) return;
+  const g = cv.getContext('2d'), P = 4, n = PRAY.server + PRAY.pending, size = Math.min(1, Math.log10(n + 1) / 5), hot = now() - PRAY.comboAt < 800;
+  g.clearRect(0, 0, cv.width, cv.height);
+  const px = (x, y, col) => { g.fillStyle = col; g.fillRect(x * P, y * P, P, P); };
+  for (let y = 20; y < 29; y++) for (let x = 12; x < 18; x++) px(x, y, x === 12 ? '#d9cfb8' : x === 17 ? '#bdb29a' : '#f2ead6');   // candle
+  for (let y = 18; y < 20; y++) px(14, y, '#333'), px(15, y, '#333');                                                            // wick
+  const h = Math.round(4 + size * 12 + (hot ? 2 : 0)), w = Math.round(2 + size * 4), flick = Math.sin(now() / 90) > 0 ? 1 : 0;
+  for (let k = 0; k < h; k++){ const y = 17 - k, half = Math.max(0, Math.round(w * Math.sin(Math.PI * (k + 1) / (h + 1))));
+    for (let x = 15 - half; x <= 14 + half + flick; x++){ const r = Math.abs(x - 14.5) / Math.max(1, half), col = r < .35 ? '#fff6c8' : r < .7 ? '#ffc94a' : '#ff7a2a'; px(x, y, col); } }
+  if (size > .4){ g.fillStyle = `rgba(255,200,80,${(.08 + size * .12).toFixed(2)})`; g.beginPath(); g.arc(60, 56, 30 + size * 26, 0, Math.PI * 2); g.fill(); }
+}
+function prayAt(ev){
+  const t = now(); PRAY.combo = t - PRAY.comboAt < 1500 ? PRAY.combo + 1 : 1; PRAY.comboAt = t; PRAY.pending++;
+  const st = $('.praystage'), fx = $('#prayfx');
+  if (st && fx){ const r = st.getBoundingClientRect(), x = (ev.clientX || r.left + r.width / 2) - r.left, y = (ev.clientY || r.top + r.height / 2) - r.top;
+    const s = document.createElement('span'); s.className = 'pow pray'; s.textContent = pick(['🙏', '제발!', '반등!', '가즈아!', '✨', '🕯', '부탁해…', '한 번만!']);
+    s.style.left = x + 'px'; s.style.top = y + 'px'; fx.appendChild(s); setTimeout(() => s.remove(), 900); }
+  if (navigator.vibrate) try { navigator.vibrate(6); } catch(e){}
+  const cm = $('#praycombo'); if (cm) cm.textContent = 'x' + PRAY.combo;
+  prayRender();
+  clearTimeout(PRAY.flushT); PRAY.flushT = setTimeout(flushPray, 900); if (PRAY.pending >= 30) flushPray();
+}
+async function flushPray(){
+  clearTimeout(PRAY.flushT); const n = Math.min(40, PRAY.pending); if (!n || !PRAY.sym) return; PRAY.pending -= n;
+  try { const v = await rpc('tap', {p_symbol: PRAY.sym, p_kind: 'pray', p_n: n}); if (v) PRAY.server = Math.max(PRAY.server, +v); } catch(e){ PRAY.pending += n; }
+  prayRender();
+}
+setInterval(() => { if ($('#prayc')) prayRender(); }, 120);   // flame flicker
 
 const EXCUSE_CAUSE = ['연준 의장 넥타이 색이 불길했다', '고양이가 매도 버튼을 밟았다', '내가 사서 그렇다', '옆자리 부장님이 같은 종목을 샀다', '어젯밤 꿈에 파란 물고기가 나왔다', '유튜브 알고리즘이 나를 배신했다', '와이파이가 하필 그때 끊겼다', '점심에 먹은 짜장면이 너무 검었다', '달이 차오르고 있었다', '엄마가 "요즘 주식 괜찮니?"라고 물었다', '택시 기사님이 그 종목 얘기를 했다', '단톡방에 "가즈아"가 세 번 올라왔다', '미국에서 누가 재채기를 했다', '내 손가락이 너무 빨랐다', '차트에 선을 하나 덜 그었다', '오늘 운세에 "물을 조심하라"고 나왔다', '알람을 끄고 다시 잤다', '하필 그 순간 화장실에 있었다', '어제 너무 많이 웃었다', '편의점에서 1+1을 놓쳤다', '세력이 내 계좌만 노렸다', '증권 앱 업데이트를 미뤘다', '샤워하다 좋은 생각이 났는데 까먹었다', '동생이 "형 그거 끝났어"라고 했다', '양말을 짝짝이로 신었다', '비둘기가 나를 쳐다봤다', '오늘이 월요일이었다', '금요일이라 다들 마음이 떠 있었다', '전문가가 "확실하다"고 했다', '내가 "이번엔 진짜"라고 말해 버렸다', '책상 위 화분이 시들었다', '지하철이 3분 늦었다', '커피를 너무 진하게 마셨다', '비가 와서 다들 우울했다', '날씨가 좋아서 다들 놀러 갔다', '수학적으로는 맞는 판단이었다', '외계인의 개입이 의심된다', '기관이 내 평화를 시기했다', '외국인이 한국말을 몰라서 내 응원을 못 들었다', '거래량이 내 마음처럼 흔들렸다'];
 const EXCUSE_END = ['따라서 나는 잘못이 없다.', '결론: 시장이 틀렸다.', '다음엔 반대로 하면 된다. 아마도.', '이건 장기 투자의 시작일 뿐이다.', '역사가 나를 재평가할 것이다.', '오늘의 손실은 내일의 경험치다.', '그러니 오늘은 치킨을 먹어도 된다.', '이 정도면 과학적 불운이다.', '증거는 충분하다. 반박 시 니 말이 맞음.', '나는 시장을 이겼다. 다른 평행우주에서.', '그래도 나는 아직 버틴다.', '이건 전략적 후퇴다.', '조만간 전설이 될 계좌다.', '오늘은 운이 없었을 뿐, 실력은… 다음에 얘기하자.', '판단은 완벽했다. 타이밍만 빼고.', '내일은 반드시 오른다. 근거는 없다.', '이 핑계는 공식 인증되었다. (운영진)', '다들 그렇게 시작한다.', '진짜 고수는 원래 처음에 잃는다.', '그러니까 아무 말도 하지 마.'];
@@ -1003,32 +1060,22 @@ function flowCard(a){
 const UI = {sort:'new', btab:'open', side:null, win:60, pollOn:false, tool:'pen', color:8, mtpl:'chart', msym:'BTCUSDT'};
 async function vHome(){
   await loadForces();
-  const [{ data:posts }, { data:bts }, { data:fd }, army, calls] = await Promise.all([
-    sb.from('posts').select(POSTSEL).gte('created_at', new Date(now() - 3 * 864e5).toISOString()).order('created_at', {ascending:false}).limit(80),
-    sb.from('battles').select('*,entries:battle_entries(option,user_id),creator:profiles!battles_creator_id_fkey(nickname)').in('status', ['OPEN','CLOSED']).order('closes_at').limit(3),
-    sb.from('front_daily').select('defeated').gte('day', new Date(now() - 30 * 864e5).toISOString().slice(0,10)),
+  const [{ data:posts }, { data:bts }, army, calls] = await Promise.all([
+    sb.from('posts').select(POSTSEL).gte('created_at', new Date(now() - 3 * 864e5).toISOString()).order('created_at', {ascending:false}).limit(60),
+    sb.from('battles').select('*,entries:battle_entries(option,user_id),creator:profiles!battles_creator_id_fkey(nickname)').in('status', ['OPEN']).gt('closes_at', new Date(now() + 60000).toISOString()).order('closes_at').limit(1),
     rpc('army_score').catch(() => null),
     ME ? rpc('my_open_calls').catch(() => []) : [],
   ]);
-  const up = ASSETS.filter(a => score(a) >= .15).length, down = ASSETS.filter(a => score(a) <= -.15).length;
-  const tu = Object.values(FORCES).reduce((s,x) => s + x.up, 0), td = Object.values(FORCES).reduce((s,x) => s + x.down, 0);
-  const hotFronts = ASSETS.slice().sort((a,b) => heat(b) - heat(a)).slice(0, 3);
-  const defeat = fd && fd.length >= 5 ? Math.round(fd.filter(x => x.defeated).length / fd.length * 100) : null;
-  return topbar() + liveHTML() + issuesHTML() + bagHTML() + excuseHTML() + mapHTML() + `
-  ${onboardCard()}${myCallsCard(calls)}
-  <section class="card"><div class="row sb"><h2 class="h pix">오늘의 시황</h2><span class="muted s">종목 ${ASSETS.length}곳</span></div>
-    <div class="summary"><div><b class="up" data-count="${up}">${up}</b><span class="s">상승파 우세</span></div><div><b class="muted" data-count="${ASSETS.length - up - down}">${ASSETS.length - up - down}</b><span class="s">교착</span></div><div><b class="down" data-count="${down}">${down}</b><span class="s">하락파 우세</span></div></div></section>
-  ${army ? armyCard(army) : ''}
-  <div class="summary" style="grid-template-columns:1fr 1fr"><a href="#/square" data-act="gocat" data-v="wish"><b style="font-size:20px">🙏</b><span class="s">기원 제단</span></a><a href="#/square" data-act="gocat" data-v="vent"><b style="font-size:20px">😩</b><span class="s">위로의 방</span></a></div>
-  <h3 class="sec">🔥 지금 가장 뜨거운 곳 <a class="more" href="#/fronts">전체 종목 ›</a></h3>
-  <div class="flist">${hotFronts.map(frontRow).join('')}</div>
-  <section class="card"><h2 class="h pix">사람들의 참여 현황</h2>${forceBar(tu, td)}
-    <div class="muted s" style="margin-top:8px">다수 편 패배율 ${defeat == null ? '<b>집계 중</b> (참여 기록이 5일 이상 쌓이면 계산돼요)' : `<b class="pix" style="color:var(--gold);font-size:16px">${defeat}%</b> · 최근 30일, 사람 다수가 고른 편이 다음 날 진 비율`}</div></section>
-  <h3 class="sec">📯 진행 중인 대결 <a class="more" href="#/battles">전체 ›</a></h3>
-  ${(bts || []).map(battleCard).join('') || empty('진행 중인 대결이 없어요')}
-  <h3 class="sec">📜 광장 화제글 <a class="more" href="#/square">광장 ›</a></h3>
-  ${hot(posts || []).slice(0, 6).map(p => postCard(p, true)).join('') || empty('아직 글이 없어요. 광장에서 첫 글을 올려 보세요')}
-  ${disc()}`;
+  const top3 = hot(posts || []).slice(0, 3);
+  return topbar() + liveHTML() + myCallsCard(calls) + issuesHTML()
+    + `<h3 class="sec">🕹 누르기만 하면 되는 곳 <span class="muted s">가입 없음</span></h3>` + bagHTML() + prayHTML() + excuseHTML()
+    + `<h3 class="sec">🗺 오늘의 판세</h3>` + mapHTML()
+    + (army ? armyCard(army) : '')
+    + `${(bts || []).length ? `<h3 class="sec">🎯 지금 열린 대결 <a class="more" href="#/battles">더 보기 ›</a></h3>${bts.map(battleCard).join('')}` : ''}
+  <h3 class="sec">💬 광장 <a class="more" href="#/square">더 보기 ›</a></h3>
+  ${top3.map(p => postCard(p, true)).join('') || empty('아직 글이 없어요')}
+  <a class="btn full" style="margin-top:10px" href="#/square">광장 더 보기 · 푸념 · 기원 · 내기 ›</a>
+  ${onboardCard()}${disc()}`;
 }
 function frontRow(a){
   const h = heat(a);
@@ -1388,14 +1435,14 @@ async function render(keep){
       const step = t => { const p = Math.min(1, (t - t0) / 700); el.textContent = Math.round(n * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); }); }
   refreshLive();
   $$('canvas[data-spark]').forEach(drawSpark);
-  if (!a){ mapInit(); bagInit(); }
+  if (!a){ mapInit(); bagInit(); prayInit(); }
   if (a === 'f' && b && !c){ prepFlagImgs(); bfStart(b); } else cancelAnimationFrame(BFraf);
   if (a === 'barracks' && b === 'flag') pxInit();
   if (a === 'barracks' && b === 'poster'){ prepFlagImgs(); memeDraw(); }
   subscribeComments();
   window.scrollTo(0, keep ? y : 0);
 }
-function softRender(){ if (now() - BAG.comboAt < 8000) return; if (isTyping() || /\/write|barracks\/(flag|poster)/.test(location.hash) || $('.modal')) return; render(true); }
+function softRender(){ if (now() - BAG.comboAt < 8000 || now() - PRAY.comboAt < 8000) return; if (isTyping() || /\/write|barracks\/(flag|poster)/.test(location.hash) || $('.modal')) return; render(true); }
 window.addEventListener('hashchange', () => { if (!/^#\/write/.test(location.hash)){ UI.side = null; UI.pollOn = false; UI._wsrc = null; UI.wcat = null; } render(); });
 function drawSpark(cv){
   const a = HIST[cv.dataset.spark]; if (!a || a.length < 20){ cv.style.display = 'none'; return; }
@@ -1433,6 +1480,7 @@ const ACT = {
   sort(el){ UI.sort = el.dataset.v; render(true); },
   quick(el){ quickSheet(el.dataset.sym); },
   punch(el, ev){ punchAt(ev || {}); },
+  pray(el, ev){ prayAt(ev || {}); },
   excuse(){ UI.excuse = excuseText(); const box = $('#exbox'); const sec = box && box.closest('.exc'); if (sec){ sec.outerHTML = excuseHTML(); const nb = $('#exbox'); if (nb){ nb.classList.remove('roll'); void nb.offsetWidth; nb.classList.add('roll'); } } },
   async exshare(){ const e = UI.excuse; if (!e) return; const text = `${e.lead}\n"${e.cause}"\n${e.end}\n\n#오늘의변명 ${location.origin}${location.pathname}`;
     try { if (navigator.share) await navigator.share({text}); else { await navigator.clipboard.writeText(text); toast('복사했어요. 단톡방에 붙여 넣으세요'); } } catch(err){} },
@@ -1740,7 +1788,7 @@ async function seedEvents(){
   try { await Promise.all([loadAssets(), loadArts(), loadMe()]); }
   catch(e){ $('#app').innerHTML = topbar() + empty('서버에 연결하지 못했어요: ' + esc(errMsg(e)) + '<br><button class="btn sm" style="margin-top:12px" onclick="location.reload()">다시 시도</button>'); return; }
   sb.channel('assets').on('postgres_changes', {event:'UPDATE', schema:'public', table:'assets'}, p => onAssetRow(p.new)).subscribe();
-  sb.channel('punches').on('postgres_changes', {event:'*', schema:'public', table:'punches'}, p => { const r = p.new; if (r && r.symbol === BAG.sym && r.day === kstDay()){ BAG.server = Math.max(BAG.server, +r.count); bagRender(); } }).subscribe();
+  sb.channel('punches').on('postgres_changes', {event:'*', schema:'public', table:'punches'}, p => { const r = p.new; if (!r || r.day !== kstDay()) return; if (r.kind === 'pray'){ if (r.symbol === PRAY.sym){ PRAY.server = Math.max(PRAY.server, +r.count); prayRender(); } } else if (r.symbol === BAG.sym){ BAG.server = Math.max(BAG.server, +r.count); bagRender(); } }).subscribe();
   subscribeEvents(); seedEvents().catch(() => renderTicker(true));
   const lobby = sb.channel('lobby', { config: { presence: { key: Math.random().toString(36).slice(2) } } }); LOBBY = lobby;
   lobby.on('broadcast', { event: 'punch' }, ({ payload }) => { if (payload?.id){ BAG.hitters[payload.id] = now(); bagRender(); } });
