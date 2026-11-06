@@ -1,4 +1,4 @@
-# 시장대전 (Market Wars)
+# 시세 전쟁 놀이 (demo)
 
 A fun-only war game on top of real market data. Price moves are armies: when a market rises the
 **상승군 (red)** pushes the front, when it falls the **하락군 (blue)** does. No points, no money.

@@ -1,4 +1,4 @@
--- 시장대전 (Market Wars) schema.
+-- Market war game schema.
 -- Pure fun: no points. Users predict which army (UP = 상승군, DOWN = 하락군) wins a front,
 -- the server scores it with real prices. All writes go through SECURITY DEFINER functions;
 -- tables are read-only for clients via RLS.

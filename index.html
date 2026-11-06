@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>시장대전</title>
+<title>오늘의 전황</title>
 <meta name="description" content="시세가 곧 전황이다. 주식·코인·채권·환율 영토에서 상승군과 하락군이 싸우는 전쟁 놀이">
 <meta name="theme-color" content="#0b0f17">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%230b0f17'/><path d='M3 2h1v13H3zM4 3h9l-2 3 2 3H4z' fill='%23f04452'/></svg>">
@@ -314,7 +314,7 @@ function rankOf(st){
 }
 function need(){ if (!ME){ nickModal(); return false; } return true; }
 function nickModal(){
-  modal(`<div class="pix" style="font-size:20px;color:var(--gold)">⚔️ 시장대전 ${ME ? '개명' : '입대'}</div>
+  modal(`<div class="pix" style="font-size:20px;color:var(--gold)">⚔️ ${ME ? '개명' : '입대'}</div>
     <div class="muted s" style="margin-top:6px">${ME ? '새 이름을 정해 주세요.' : '병사 이름만 정하면 바로 참전할 수 있어요. 계정은 이 브라우저에 묶여요.'}</div>
     <input class="f" id="nk" maxlength="12" placeholder="병사 이름 (2~12자, 한글·영문·숫자)" style="margin-top:14px" autocomplete="off">
     <button class="btn pri full" style="margin-top:10px" data-act="nick">${ME ? '바꾸기' : '입대하기'}</button>`);
@@ -468,7 +468,7 @@ function bfStart(sym){
 /* ========================================================== shared bits */
 function topbar(title, back){
   const me = ME ? `<a class="chip" href="#/me">${flagImg(ME.flag_art)}<b>${esc(ME.nickname)}</b></a>` : `<button class="chip" data-act="enlist" style="padding:6px 12px">입대하기</button>`;
-  if (!title) return `<header class="top"><a class="logo pix" href="#/">⚔️ 시장대전</a>${me}</header>`;
+  if (!title) return `<header class="top"><a class="logo pix" href="#/">⚔️ 오늘의 전황</a>${me}</header>`;
   return `<header class="top"><a class="back" href="${back || '#/'}" aria-label="뒤로">‹</a><div class="ttl">${esc(title)}</div>${me}</header>`;
 }
 function forceBar(up, down){
@@ -986,7 +986,7 @@ const ACT = {
     } catch(e){ toast(errMsg(e)); el.disabled = false; }
   },
   mtpl(el){ keepMeme(); UI.mtpl = el.dataset.v; render(true); },
-  mdown(){ const a = document.createElement('a'); a.download = 'market-wars-poster.png'; a.href = $('#mmc').toDataURL('image/png'); a.click(); },
+  mdown(){ const a = document.createElement('a'); a.download = 'poster.png'; a.href = $('#mmc').toDataURL('image/png'); a.click(); },
   mattach(){
     if (!need()) return;
     $('#mmc').toBlob(blob => { UI.draft = {blob, url:URL.createObjectURL(blob)}; UI.wsym = UI.backFront || UI.wsym || UI.msym; location.hash = '#/write'; toast('포스터를 붙였어요'); }, 'image/jpeg', .82);
