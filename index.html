@@ -247,6 +247,22 @@ textarea.f{min-height:90px;resize:none}
 .bolt{position:absolute;top:0;width:30px;margin-left:-15px;z-index:850;pointer-events:none;background:linear-gradient(#fffde8,#ffe14d);clip-path:polygon(45% 0,72% 0,50% 42%,78% 42%,28% 100%,42% 54%,18% 54%);filter:drop-shadow(0 0 8px #ffe14d);animation:boltf .5s ease-out forwards}
 @keyframes boltf{0%,60%{opacity:1}100%{opacity:0}}
 .av.burnt canvas{filter:brightness(.3)!important}
+.fsum{font-weight:800;font-size:15px;margin:4px 0 8px}
+.frow{display:flex;align-items:center;gap:8px;padding:6px 0;flex-wrap:wrap}
+.fwho{flex:none;width:66px;font-weight:700;font-size:13.5px;white-space:nowrap}
+.fbar{position:relative;flex:1;min-width:90px;height:12px;border-radius:999px;background:var(--soft);overflow:hidden}
+.fbar i{position:absolute;top:0;bottom:0}.fbar .mid{left:50%;width:2px;margin-left:-1px;background:var(--line);z-index:1}
+.fbar .b{background:var(--up);border-radius:0 999px 999px 0}.fbar .s{background:var(--down);border-radius:999px 0 0 999px}
+.famt{flex:none;min-width:58px;text-align:right;font-weight:800;font-size:13px;font-variant-numeric:tabular-nums}
+.fst{flex-basis:100%;margin-left:74px;margin-top:-3px;font-size:11.5px;color:var(--muted)}
+.tug{display:flex;align-items:center;gap:8px;font-weight:800;font-size:13px;white-space:nowrap}
+.tbar{position:relative;flex:1;height:14px;border-radius:999px;background:var(--down)}
+.tbar i{position:absolute;left:0;top:0;bottom:0;background:var(--up);border-radius:999px 0 0 999px}
+.tbar b{position:absolute;top:50%;transform:translate(-50%,-50%);font-size:18px}
+.hcols{position:relative;display:flex;gap:3px;height:56px;margin:10px 0 4px;border-top:1px dashed var(--line);border-bottom:1px dashed var(--line);background:linear-gradient(transparent calc(50% - .5px),var(--line) calc(50% - .5px),var(--line) calc(50% + .5px),transparent calc(50% + .5px))}
+.hcols .hc{position:relative;flex:1}.hcols .hc i{position:absolute;left:1px;right:1px;border-radius:2px}
+.hcols .hc i.b{background:var(--up)}.hcols .hc i.s{background:var(--down)}
+.cfl{margin-top:4px;font-size:12px;font-weight:700;white-space:nowrap}.cfl b{font-size:11px;margin-left:1px}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -468,7 +484,7 @@ function roomCard(a, st){
   return `<a class="room" href="#/r/${encodeURIComponent(a.symbol)}"><div class="mini ${sceneCls(sc)}">
       ${miniFx(sc)}<span class="mw">${sc.night ? '🌙' : sc.e}</span>${sc.frozen ? '<span class="mbadge">🧊 52주 저점</span>' : sc.peak ? '<span class="mbadge">🏆 52주 고점</span>' : ''}<span class="mon" data-on="${esc(a.symbol)}">${on ? `<span class="dot"></span>${on}명` : ''}</span><span class="mem">${st.em.join('')}</span></div>
     <div class="rinfo"><div class="row sb"><b>${esc(a.short)}</b><span class="num ${dir(pct(a))}" data-c="${esc(a.symbol)}">${fmtC(a)}</span></div>
-      <div class="muted s">${sc.label}${sc.night ? ' · 마감' : ''} · 오늘 ${st.n}명</div>${(ev => ev.length ? `<div class="cev">${ev.slice(0, 2).map(e => `<span class="${e.good ? 'g' : 'bd'}">${e.e} ${e.n}</span>`).join('')}</div>` : '')(events(a))}</div></a>`;
+      <div class="muted s">${sc.label}${sc.night ? ' · 마감' : ''} · 오늘 ${st.n}명</div>${forceMini(a)}${(ev => ev.length ? `<div class="cev">${ev.slice(0, 2).map(e => `<span class="${e.good ? 'g' : 'bd'}">${e.e} ${e.n}</span>`).join('')}</div>` : '')(events(a))}</div></a>`;
 }
 async function vHome(){
   const since = new Date(now() - 24 * 3600e3).toISOString();
@@ -498,12 +514,58 @@ async function opinionHTML(){
     ${t ? `<div class="obar"><i style="width:${w('up')}%;background:var(--up)"></i><i style="width:${w('dunno')}%;background:var(--line)"></i><i style="width:${w('down')}%;background:var(--down)"></i></div>
     <div class="row sb s"><span class="up">오른다 ${Math.round(w('up'))}%</span><span class="muted">${t}명</span><span class="down">내린다 ${Math.round(w('down'))}%</span></div>` : '<div class="muted s" style="margin-top:10px">아직 아무도 안 골랐어요</div>'}</div>`;
 }
+/* ---------------------------------------------------------------- who is buying, who is selling (same characters as the plaza) */
+const WHO = {foreign:['👽','외국인'], inst:['👮','기관'], retail:['🐜','개인']};
+const usd = v => { const x = Math.abs(v); return '$' + (x >= 1e8 ? (x / 1e8).toFixed(1) + '억' : Math.round(x / 1e4).toLocaleString('ko-KR') + '만'); };
+function streak(days, who){
+  if (!days || days.length < 2) return '';
+  const sg = Math.sign(days[days.length - 1][who] || 0); if (!sg) return '';
+  let n = 0; for (let i = days.length - 1; i >= 0 && Math.sign(days[i][who] || 0) === sg; i--) n++;
+  return n >= 2 ? `${n}일 연속 ${sg > 0 ? '매수' : '매도'}` : '';
+}
+function forceHTML(a){
+  const fl = a.flows, f = fl && fl.now;
+  let body = '', sum = '';
+  if (f && fl.kind === 'investor'){
+    const ks = ['foreign', 'inst', 'retail'], mx = Math.max(1, ...ks.map(k => Math.abs(+f[k] || 0)));
+    const buy = ks.filter(k => +f[k] > mx * .1), sell = ks.filter(k => +f[k] < -mx * .1), nm = xs => xs.map(k => WHO[k][0] + ' ' + WHO[k][1]).join('·');
+    sum = sell.length && buy.length ? `${nm(sell)}${sell.length > 1 ? '이' : (/[인관]$/.test(WHO[sell[0]][1]) ? '이' : '가')} 팔고, ${nm(buy)}${buy.length > 1 ? '이' : (/[인관]$/.test(WHO[buy[0]][1]) ? '이' : '가')} 받는 중`
+      : buy.length ? `다 같이 사는 중 (${nm(buy)})` : sell.length ? `다 같이 파는 중 (${nm(sell)})` : '다들 눈치만 보는 중';
+    sum = sum.replace(/외국인가/g, '외국인이').replace(/개인가/g, '개인이');
+    body = ks.map(k => { const v = +f[k] || 0, w = Math.abs(v) / mx * 50, st = streak(fl.days, k);
+      return `<div class="frow"><span class="fwho">${WHO[k][0]} ${WHO[k][1]}</span><div class="fbar"><i class="mid"></i><i class="${v >= 0 ? 'b' : 's'}" style="${v >= 0 ? 'left:50%' : `left:${50 - w}%`};width:${w}%"></i></div>
+        <span class="famt ${v >= 0 ? 'up' : 'down'}">${amtEok(v)}</span>${st ? `<span class="fst">${st}</span>` : ''}</div>`; }).join('')
+      + `<div class="row sb s muted" style="margin-top:4px"><span>◀ 파는 쪽</span><span>${fl.live && a.market_open ? '오늘 장중 · 실시간' : fl.live ? '오늘 장 마감 기준' : `${+fl.asof.slice(4, 6)}/${+fl.asof.slice(6)} 장 마감 기준`}</span><span>사는 쪽 ▶</span></div>`;
+  } else if (fl && fl.kind === 'taker'){
+    const hs = (fl.hours || []).slice(-12), b3 = hs.slice(-3).reduce((x, h) => x + h.buy, 0), s3 = hs.slice(-3).reduce((x, h) => x + h.sell, 0), sh = b3 + s3 ? b3 / (b3 + s3) : .5;
+    const mx = Math.max(1, ...hs.map(h => Math.abs(h.buy - h.sell)));
+    sum = sh >= .55 ? '🐋 고래(매수)가 밀어붙이는 중' : sh <= .45 ? '🦈 상어(매도)가 밀어붙이는 중' : '팽팽한 줄다리기 중';
+    body = `<div class="tug"><span class="up">🐋 매수 ${Math.round(sh * 100)}%</span><div class="tbar"><i style="width:${sh * 100}%"></i><b style="left:${sh * 100}%">🪢</b></div><span class="down">${Math.round((1 - sh) * 100)}% 매도 🦈</span></div>
+      <div class="muted s" style="margin-top:2px">최근 3시간 시장가 주문 · 매수 ${usd(b3)} / 매도 ${usd(s3)}</div>
+      <div class="hcols">${hs.map(h => { const n = h.buy - h.sell, ht = Math.abs(n) / mx * 26; return `<span class="hc" title="${new Date(h.t).getHours()}시"><i class="${n >= 0 ? 'b' : 's'}" style="height:${Math.max(2, ht)}px;${n >= 0 ? 'bottom:50%' : 'top:50%'}"></i></span>`; }).join('')}</div>
+      <div class="row sb s muted"><span>12시간 전</span><span>위=매수 우세 · 아래=매도 우세</span><span>지금</span></div>`;
+  } else {
+    const ref = refOf(a), d = ref ? pct(a) - pct(ref) : null, vr = +a.vol_ratio;
+    sum = '미국 종목은 누가 샀는지 데이터가 없어요';
+    body = `<div class="muted s" style="margin-top:2px">대신 이런 건 보여요</div>
+      ${vr ? `<div class="frow"><span class="fwho">🚌 거래량</span><span class="famt">평소의 ${vr.toFixed(1)}배</span><span class="fst">${vr >= 2 ? '사람 몰림' : vr < .7 ? '한산' : '보통'}</span></div>` : ''}
+      ${d != null ? `<div class="frow"><span class="fwho">${d >= 0 ? '🦸' : '⚡'} ${esc(ref.short)} 대비</span><span class="famt ${dir(d)}">${d >= 0 ? '+' : ''}${d.toFixed(1)}%p</span><span class="fst">${d >= 2 ? '혼자 강함' : d <= -2 ? '혼자 약함' : '시장과 비슷'}</span></div>` : ''}`;
+  }
+  return `<div class="card" id="force"><div class="row sb"><h2 class="h2">💪 누가 사고 누가 팔아?</h2></div><div class="fsum">${esc(sum)}</div>${body}</div>`;
+}
+function forceMini(a){
+  const fl = a.flows, f = fl && fl.now;
+  if (f && fl.kind === 'investor') return `<div class="cfl">${['foreign', 'inst', 'retail'].map(k => `${WHO[k][0]}<b class="${+f[k] >= 0 ? 'up' : 'down'}">${+f[k] >= 0 ? '▲' : '▼'}</b>`).join(' ')}</div>`;
+  if (fl && fl.kind === 'taker'){ const hs = (fl.hours || []).slice(-3), b = hs.reduce((x, h) => x + h.buy, 0), sl = hs.reduce((x, h) => x + h.sell, 0), sh = b + sl ? b / (b + sl) : .5;
+    return `<div class="cfl">🐋 <b class="up">${Math.round(sh * 100)}</b> : <b class="down">${Math.round((1 - sh) * 100)}</b> 🦈</div>`; }
+  return '';
+}
 async function vRoom(sym){
   const a = A[sym]; if (!a) return '<div class="empty">없는 방이에요 · <a href="#/" class="b">방 목록</a></div>';
   const [{ data:moods }, op] = await Promise.all([
     sb.from('moods').select(MOODSEL).eq('symbol', sym).order('created_at', {ascending:false}).limit(UI.limit), opinionHTML()]);
   const list = moods || [], my = await myReactions(list.map(m => m.id));
-  return `<div class="card"><h2 class="h2">이 방에서 내 기분은?</h2><div class="muted s" style="margin-top:2px">누르면 내 캐릭터 머리 위에 떠요 · 가입 없음</div>
+  return forceHTML(a) + `<div class="card"><h2 class="h2">이 방에서 내 기분은?</h2><div class="muted s" style="margin-top:2px">누르면 내 캐릭터 머리 위에 떠요 · 가입 없음</div>
       <div class="moodgrid">${MOODS.map(m => `<button class="mb" data-act="compose" data-v="${m.k}"><span>${m.e}</span>${m.n}</button>`).join('')}</div></div>`
     + op
     + `<div class="sec"><h3>이 방 이야기</h3></div><div id="feed">${list.map(m => moodCard(m, my, true)).join('') || '<div class="empty">아직 아무도 없어요. 첫 기분을 남겨 보세요</div>'}</div>
@@ -948,7 +1010,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id
   try { await Promise.all([loadAssets(), loadMe()]); } catch(e){ $('#app').innerHTML = `<div class="empty">연결하지 못했어요. 새로고침해 주세요</div>`; return; }
   PZ.boot(); render();
   sb.channel('assets').on('postgres_changes', {event:'UPDATE', schema:'public', table:'assets'}, ({ new: r }) => {
-    const a = A[r.symbol]; if (!a) return; Object.assign(a, {change_pct: r.change_pct, price: r.price, market_open: r.market_open});
+    const a = A[r.symbol]; if (!a) return; Object.assign(a, {change_pct: r.change_pct, price: r.price, market_open: r.market_open, flows: r.flows ?? a.flows, vol_ratio: r.vol_ratio ?? a.vol_ratio}); if (UI.route === 'room' && UI.room === r.symbol){ const fc = $('#force'); if (fc) fc.outerHTML = forceHTML(a); }
     $$(`[data-c="${CSS.escape(r.symbol)}"]`).forEach(el => { el.textContent = fmtC(a); el.className = 'num ' + dir(pct(a)); });
     if (UI.route === 'room' && UI.room === r.symbol) PZ.enter(r.symbol);
   }).subscribe();
