@@ -521,16 +521,13 @@ function roomCard(a, st){
 }
 async function vHome(){
   const since = new Date(now() - 24 * 3600e3).toISOString();
-  const [{ data:recent }, today] = await Promise.all([
-    sb.from('moods').select('symbol,mood,author_id').gte('created_at', since).order('created_at', {ascending:false}).limit(1000),
-    rpc('mood_today').catch(() => ({}))]);
-  TODAY = today || {};
+  const [{ data:recent }] = await Promise.all([
+    sb.from('moods').select('symbol,mood,author_id').gte('created_at', since).order('created_at', {ascending:false}).limit(1000)]);
   const ST = {}; for (const a of ASSETS) ST[a.symbol] = {n: 0, em: [], who: new Set()};
   for (const m of recent || []){ const s = ST[m.symbol]; if (!s || s.who.has(m.author_id)) continue; s.who.add(m.author_id); s.n++; if (s.em.length < 7) s.em.push(MOOD[m.mood].e); }
   const rooms = ASSETS.slice().sort((x, y) => (ROOMN[y.symbol] || 0) - (ROOMN[x.symbol] || 0) || ST[y.symbol].n - ST[x.symbol].n || Math.abs(pct(y)) - Math.abs(pct(x)));
   return `<div class="card" style="margin-top:4px"><h2 class="h2">어느 방으로 갈까요?</h2><div class="muted s" style="margin-top:2px">종목마다 방이 있고, 방 날씨는 그 종목 주가가 정해요</div>
       <div class="rooms">${rooms.map(a => roomCard(a, ST[a.symbol])).join('')}</div></div>`
-    + distHTML()
     + foot();
 }
 
