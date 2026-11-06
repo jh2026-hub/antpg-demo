@@ -3,11 +3,12 @@
 // lost/won calls) and writes short satirical war reports and comments as clearly-labeled bot accounts.
 // No AI and no cost: every text is assembled from sentence fragments plus the live numbers.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { L, REACTORS_UP, REACTORS_DOWN, COMMENTERS, IDLERS } from './lines.ts';
 
 type Asset = { symbol: string; name: string; short: string; kind: string; region: string; threshold: number; price: number | null; change: number | null; change_pct: number | null; market_open: boolean | null; vol_ratio: number | null; frontier: boolean; added_at: string | null; flows: any };
 type Task = { id: string; kind: 'post' | 'comment'; bot: string; symbol?: string; category?: string; post_id?: string; title: string; body: string; log: string[] };
 
-const MAX_POSTS = 3, MAX_COMMENTS = 5, DAILY_POST_CAP = 60;
+const MAX_POSTS = 3, MAX_COMMENTS = 6, DAILY_POST_CAP = 70;
 const pick = <T>(a: T[]) => a[Math.floor(Math.random() * a.length)];
 const maybe = (p: number, s: string) => Math.random() < p ? s : '';
 const kst = () => new Date(Date.now() + 9 * 3600e3);
@@ -106,6 +107,10 @@ const C = {
   lose: ['💀 패전 확인. 괜찮소, 시장도 가끔 틀린 사람을 맞다고 하니까.', '💀 이번엔 졌소. 다음엔… 또 모르지.', '💀 전사 처리됐소. 부활은 다음 참전에서.', '💀 {name}이 배신했군. 늘 그렇듯.'],
   win: ['🎖 승전 축하하오! 이 기세 그대로… 겸손을 유지하시오.', '🎖 적중! 오늘은 당신이 장군이오.', '🎖 훈장 수여. 액자에 걸어 두시오.'],
 };
+
+// a line from a persona's bank, or null if that persona has nothing for the slot
+const line = (bot: string, slot: string, v: Record<string, string>) => { const bank = L[bot]?.[slot]; return bank && bank.length ? fill(pick(bank), v) : null; };
+const shuffle = <T>(a: T[]) => a.slice().sort(() => Math.random() - .5);
 
 // ---------------------------------------------------------------- main
 Deno.serve(async (req) => {
@@ -223,21 +228,51 @@ Deno.serve(async (req) => {
     }
   }
 
-  // 10) comments: fresh user posts, and calls that just won or lost
-  const { data: fresh } = await sb.from('posts').select('id,category,symbol,author:profiles!posts_author_id_fkey(is_bot)').gte('created_at', ago(60)).eq('is_hidden', false).order('created_at', { ascending: false }).limit(20);
-  for (const p of fresh || []) {
-    if ((p.author as any)?.is_bot || Math.random() > .75) continue;
+  // 10) bot banter: other personas react under recent bot reports (a little thread per post)
+  const { data: botPosts } = await sb.from('posts').select('id,symbol,category,author:profiles!posts_author_id_fkey(is_bot,bot_role),comments(author:profiles!comments_author_id_fkey(bot_role))').gte('created_at', ago(45)).eq('is_hidden', false).order('created_at', { ascending: false }).limit(8);
+  for (const p of botPosts || []) {
+    const au = p.author as any; if (!au?.is_bot) continue;
+    const done = new Set([au.bot_role, ...((p.comments as any[]) || []).map(c => c.author?.bot_role).filter(Boolean)]);
+    if (done.size >= 5 || Math.random() > .6) continue;
     const a = A[p.symbol]; const v = a ? vars(a) : { name: p.symbol, chg: '' };
-    const bank = p.category === 'vent' ? C.vent : p.category === 'wish' ? C.wish : p.category === 'info' ? C.info : p.category === 'chat' ? C.chat : C.call;
-    const bot = p.category === 'wish' ? 'seer' : p.category === 'info' ? 'reporter' : (p.category === 'forecast' || p.category === 'bet') ? pick(['contra', 'cynic']) : 'cynic';
-    comment({ id: `c-${p.id}`, bot, post_id: p.id, body: compose(v, bank), log: [`cmt:${p.id}`] });
+    const up = a ? mv(a) >= 0 : true;
+    let pool = up ? REACTORS_UP : REACTORS_DOWN;
+    if (a?.kind === 'CRYPTO') pool = [...pool, 'degen', 'degen']; if (a?.kind === 'BOND') pool = [...pool, 'admiral', 'admiral'];
+    if (p.category === 'chat') pool = COMMENTERS.chat;
+    const who = shuffle(pool).find(b => !done.has(b)); if (!who) continue;
+    const txt = line(who, p.category === 'chat' ? 'chat' : up ? 'react_up' : 'react_down', v); if (!txt) continue;
+    comment({ id: `b-${p.id}-${who}`, bot: who, post_id: p.id, body: txt, log: [`banter:${p.id}:${who}`] });
   }
-  const { data: scored } = await sb.from('posts').select('id,result,symbol,author:profiles!posts_author_id_fkey(is_bot)').in('category', ['forecast', 'bet']).not('result', 'is', null).gte('settle_at', ago(15)).limit(10);
+
+  // 11) persona comments on fresh user posts
+  const { data: fresh } = await sb.from('posts').select('id,category,side,symbol,author:profiles!posts_author_id_fkey(is_bot)').gte('created_at', ago(60)).eq('is_hidden', false).order('created_at', { ascending: false }).limit(20);
+  for (const p of fresh || []) {
+    if ((p.author as any)?.is_bot || Math.random() > .8) continue;
+    const a = A[p.symbol]; const v = a ? vars(a) : { name: p.symbol, chg: '' };
+    const isCall = p.category === 'forecast' || p.category === 'bet';
+    const pool = COMMENTERS[isCall ? 'call' : p.category] || COMMENTERS.chat;
+    const slot = isCall ? (p.side === 'DOWN' ? 'call_down' : 'call_up') : p.category;
+    for (const who of shuffle(pool)) { const txt = line(who, slot, v); if (txt){ comment({ id: `c-${p.id}`, bot: who, post_id: p.id, body: txt, log: [`cmt:${p.id}`] }); break; } }
+  }
+
+  // 12) calls that just won or lost
+  const { data: scored } = await sb.from('posts').select('id,result,symbol,category,author:profiles!posts_author_id_fkey(is_bot)').in('category', ['forecast', 'bet', 'wish']).not('result', 'is', null).gte('settle_at', ago(15)).limit(10);
   for (const p of scored || []) {
     if ((p.author as any)?.is_bot) continue;
-    const lost = p.result === 'LOSE'; if (!lost && Math.random() > .5) continue;
+    const lost = p.result === 'LOSE'; if (!lost && Math.random() > .6) continue;
     const a = A[p.symbol]; const v = a ? vars(a) : { name: p.symbol, chg: '' };
-    comment({ id: `r-${p.id}`, bot: lost ? 'cynic' : 'pr', post_id: p.id, body: compose(v, lost ? C.lose : C.win), log: [`res:${p.id}`] });
+    const pool = p.category === 'wish' ? ['seer', 'grandma', 'optimist'] : lost ? ['cynic', 'doomer', 'grandma', 'ramen', 'optimist', 'salaryman', 'contra'] : ['pr', 'optimist', 'grandma', 'salaryman', 'ramen', 'degen'];
+    for (const who of shuffle(pool)) { const txt = line(who, lost ? 'lose' : 'win', v); if (txt){ comment({ id: `r-${p.id}`, bot: who, post_id: p.id, body: txt, log: [`res:${p.id}`] }); break; } }
+  }
+
+  // 13) idle musings when the square is quiet (35 min), one persona at a time
+  {
+    const last = [...seen.values()].filter(l => l.key.startsWith('posted:')).sort((a, b) => Date.parse(b.at) - Date.parse(a.at))[0];
+    if ((!last || Date.parse(last.at) < now - 35 * 60e3) && nPosts() === 0 && Math.random() < .7) {
+      const who = pick(IDLERS), a = who === 'degen' ? A.BTCUSDT : who === 'admiral' ? (A.US10Y || A.KR10Y) : pick(all);
+      const v = a ? vars(a) : {}; const title = line(who, 'idle_t', v), body = line(who, 'idle', v);
+      if (title && body && a) post({ id: `idle-${who}`, bot: who, symbol: a.symbol, category: 'chat', title, body, log: [`idle:${date}:${hour}:${who}`] });
+    }
   }
 
   // ---------------------------------------------------------------- write
