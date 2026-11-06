@@ -399,6 +399,16 @@ const EVCAT = {
   bus:       {e:'🚌', n:'관광버스',     t:'구경꾼이 버스로 몰려와요'},
   chorus:    {e:'😭', n:'곡소리 합창',  t:'방금 다들 털렸대요. 다 같이 흑흑'},
   party:     {e:'🎉', n:'파티 타임',    t:'방금 다들 벌었대요. 배 아파요'},
+  pray_up:   {e:'🙌', n:'할렐루야',     t:'이건 신의 영역. 다들 감사 기도 드리는 중', good:true},
+  pray_down: {e:'🙏', n:'기도 시간',    t:'이제 믿을 건 신밖에 없어요. 다들 기도 중'},
+  coaster:   {e:'🎢', n:'롤러코스터',   t:'올랐다 내렸다… 결국 제자리. 멀미 주의'},
+  phoenix:   {e:'🔥', n:'대역전',       t:'다 죽었다 했는데 불사조처럼 살아났어요', good:true},
+  chute:     {e:'🪂', n:'역전패',       t:'잘 오르다 낙하산 타고 내려왔어요'},
+  digit_up:  {e:'🔢', n:'앞자리 바뀜',  t:'앞자리가 올라갔어요! 기념사진 찍어요', good:true},
+  digit_dn:  {e:'🔢', n:'앞자리 바뀜',  t:'앞자리가 내려갔어요… 묵념'},
+  thaw:      {e:'🐣', n:'바닥 탈출?',   t:'꽁꽁 언 바닥에서 알이 깨졌어요', good:true},
+  avalanche: {e:'🏔️', n:'눈사태',       t:'꼭대기에서 눈이 무너져 내려요'},
+  zen:       {e:'😴', n:'시간 정지',    t:'주가가 꼼짝도 안 해요. 다들 졸아요'},
 };
 const EVQ = new URLSearchParams(location.search).get('ev');   // preview: ?ev=ufo_sell,cop_buy
 const amtEok = v => { const x = Math.abs(v); return (v < 0 ? '−' : '+') + (x >= 1e4 ? (x / 1e4).toFixed(1) + '조' : Math.round(x).toLocaleString('ko-KR') + '억'); };
@@ -428,6 +438,22 @@ function events(a){
     if (d >= lim) add('hero', `${ref.short}보다 ${d.toFixed(1)}%p 강해요`, d / lim);
     if (d <= -lim) add('bolt', `${ref.short}보다 ${Math.abs(d).toFixed(1)}%p 더 빠졌어요`, -d / lim); }
   if (+a.vol_ratio >= 3) add('bus', `거래량 평소의 ${(+a.vol_ratio).toFixed(1)}배`, +a.vol_ratio / 3);
+  const sc0 = scene(a), w = sc0.w, d = a.kind === 'INDEX' ? 1 : a.kind === 'CRYPTO' ? 2.5 : 2, c = pct(a), prev = p / (1 + c / 100);
+  const sp = (Array.isArray(a.spark) ? a.spark : []).map(Number).filter(x => x > 0);
+  if (sp.length > 8 && prev > 0){
+    const hiD = (Math.max(...sp, p) / prev - 1) * 100, loD = (Math.min(...sp, p) / prev - 1) * 100, swing = hiD - loD;
+    if (swing >= 3 * d && Math.abs(c) <= swing / 4) add('coaster', `오늘 위아래 ${swing.toFixed(1)}% 흔들리고 ${fmtC(a)}`, 8);
+    else if (loD <= -1.5 * d && c >= .5 * d) add('phoenix', `장중 ${loD.toFixed(1)}%까지 갔다가 ${fmtC(a)}`, 8);
+    else if (hiD >= 1.5 * d && c <= -.5 * d) add('chute', `장중 +${hiD.toFixed(1)}%까지 갔다가 ${fmtC(a)}`, 8);
+  }
+  const lead = x => { const m = 10 ** Math.floor(Math.log10(x)); return [Math.floor(x / m), m]; };
+  if (p > 0 && prev > 0){ const [l1, m1] = lead(p), [l0, m0] = lead(prev);
+    if (l1 !== l0 || m1 !== m0) add(p > prev ? 'digit_up' : 'digit_dn', `${Math.round(prev).toLocaleString('ko-KR')} → ${Math.round(p).toLocaleString('ko-KR')}`, 7); }
+  if (sc0.frozen && c >= d) add('thaw', `52주 저점 근처에서 ${fmtC(a)}`, 7);
+  if (sc0.peak && c <= -d) add('avalanche', `52주 고점 근처에서 ${fmtC(a)}`, 7);
+  if ((a.market_open || a.kind === 'CRYPTO') && Math.abs(c) < .05 && p > 0) add('zen', `하루 종일 ${fmtC(a)}`, 6);
+  if (w === 'fest') add('pray_up', `오늘 ${fmtC(a)} · 사람 힘으론 설명이 안 돼요`, 99);
+  if (w === 'quake' || w === 'nuke') add('pray_down', `오늘 ${fmtC(a)} · 사람 힘으론 설명이 안 돼요`, 99);
   return E.sort((x, y) => y.w - x.w).slice(0, 3);
 }
 const sceneCls = sc => `scene w-${sc.w} p-${sc.place}${sc.night ? ' night' : ''}${sc.frozen ? ' frozen' : ''}${sc.peak ? ' peak' : ''}`;
@@ -820,7 +846,8 @@ const PX = (() => {
     if (f && fl.kind === 'investor'){
       const ks = ['foreign', 'inst', 'retail'], S = {foreign:'alien', inst:'cop', retail:'ant'}, mx = Math.max(1, ...ks.map(k => Math.abs(+f[k] || 0)));
       const buy = ks.filter(k => +f[k] > mx * .1), sell = ks.filter(k => +f[k] < -mx * .1), sum = xs => xs.reduce((s, k) => s + Math.abs(+f[k]), 0);
-      return {tag: ['매수', '매도'], L: {who: buy.map(k => S[k]), lab: buy.length ? amtEok(sum(buy)).replace('+', '') : '-'}, R: {who: sell.map(k => S[k]), lab: sell.length ? amtEok(sum(sell)).replace('+', '') : '-'}, share: sum(buy) / (sum(buy) + sum(sell) || 1)};
+      const short = x => x >= 1e4 ? (x / 1e4).toFixed(1) + '조' : x >= 1000 ? (x / 1e4).toFixed(2) + '조' : Math.round(x) + '억';
+      return {tag: ['매수', '매도'], L: {who: buy.map(k => S[k]), lab: buy.length ? short(sum(buy)) : '-'}, R: {who: sell.map(k => S[k]), lab: sell.length ? short(sum(sell)) : '-'}, share: sum(buy) / (sum(buy) + sum(sell) || 1)};
     }
     if (fl && fl.kind === 'taker'){ const hs = (fl.hours || []).slice(-3), b = hs.reduce((x, h) => x + h.buy, 0), s = hs.reduce((x, h) => x + h.sell, 0), sh = b + s ? b / (b + s) : .5;
       return {tag: ['매수', '매도'], L: {who: ['whale'], lab: Math.round(sh * 100) + '%'}, R: {who: ['shark'], lab: Math.round((1 - sh) * 100) + '%'}, share: sh}; }
@@ -852,6 +879,41 @@ const PX = (() => {
         put(g, w, x, top - 4 - c.height + hop, !!FACE[w] && FACE[w] !== want, w === 'man' ? {s: SHIRTS[(i + side * 2) % 5]} : null); x += c.width + 1; });
     });
   }
+  function altar(g, W, H, HZ, t, up){
+    const x = Math.round(W / 2), y = Math.min(HZ + 36, H - 3);
+    if (up){ g.globalAlpha = .14; for (let i = 0; i < 5; i++){ const bx = x - 44 + i * 22 + Math.sin(t / 900 + i) * 4; for (let yy = 0; yy < y - 4; yy++) R(g, bx + (y - yy) * .18, yy, 7, 1, '#fff3a0'); } g.globalAlpha = 1; }
+    else { g.globalAlpha = .2 + Math.sin(t / 300) * .05; disc(g, x, y - 8, 20, '#ffb347'); g.globalAlpha = 1; }
+    R(g, x - 17, y - 2, 34, 3, '#7f7466'); R(g, x - 14, y - 5, 28, 3, '#9d927f');
+    R(g, x - 11, y - 11, 22, 6, up ? '#d9b44a' : '#6b4a2e'); R(g, x - 12, y - 12, 24, 2, up ? '#f2d27a' : '#8a5a3c');
+    for (const cx of [x - 9, x + 8]){ R(g, cx, y - 17, 2, 5, '#f4efe2'); const f = (t / 130 + cx) % 3 | 0; R(g, cx, y - 19 - (f === 1 ? 1 : 0), 2, 2, f ? '#ffd84a' : '#ff8a3d'); }
+    if (up) for (let i = 0; i < 5; i++) put(g, 'coin', x - 5 + (i % 3) * 3, y - 15 - (i > 2 ? 2 : 0));
+    else { R(g, x, y - 19, 1, 7, '#5b3c27'); for (let i = 0; i < 6; i++){ const p = fr(t / 1500 + i / 6, 1); R(g, x + Math.sin(p * 8 + i) * 2, y - 21 - p * 24, 1, 1, '#d8d2c8'); } }
+    const hy = y - 32 + Math.sin(t / 500) * 2; for (let a = 0; a < Math.PI * 2; a += .22) R(g, x + Math.cos(a) * 7, hy + Math.sin(a) * 2, 1, 1, up ? '#ffe066' : '#d9ccff');
+  }
+  function rare(g, W, H, HZ, t, k, sc){
+    if (k === 'coaster'){ const T = (x) => HZ - 34 + Math.sin(x / W * Math.PI * 3) * 12, cx = fr(t / 14, W + 30) - 15;
+      for (let x = 0; x < W; x++){ R(g, x, T(x), 1, 2, '#c0392b'); if (x % 9 === 0) R(g, x, T(x) + 2, 1, HZ - T(x) - 2, '#7a5236'); }
+      for (let i = 0; i < 3; i++){ const x = cx - i * 7; R(g, x - 3, T(x) - 5, 6, 4, ['#ffd84a', '#3182f6', '#2fbf71'][i]); R(g, x - 1, T(x) - 8, 2, 3, '#ffd2a8'); if ((t / 150 | 0) % 2) R(g, x - 2, T(x) - 9, 1, 2, '#ffd2a8'); } }
+    if (k === 'phoenix'){ const p = fr(t, 5000) / 5000, x = W * .3 + p * W * .4, y = HZ + 20 - p * (HZ + 10), fl = (t / 120 | 0) % 2;
+      for (let i = 1; i < 10; i++) R(g, x - i * 2, y + i * 2.4, 2, 2, i % 2 ? '#ff8a3d' : '#ffd84a');
+      disc(g, x, y, 3, '#ff5a2a'); R(g, x + 2, y - 3, 3, 2, '#ffd84a'); R(g, x + 3, y - 3, 1, 1, '#111');
+      for (let i = 0; i < 7; i++){ R(g, x - 2 - i, y - (fl ? i : -i * .3) - 1, 1, 2, '#ff8a3d'); R(g, x + 1 - i * .5, y - (fl ? i * 1.2 : -i * .2) - 1, 1, 2, '#ffb347'); } }
+    if (k === 'chute') for (let i = 0; i < 3; i++){ const x = W * (.25 + i * .25) + Math.sin(t / 600 + i) * 5, y = fr(t / 40 + i * 30, HZ + 30) - 20;
+      for (let j = -6; j <= 6; j++) R(g, x + j, y - Math.round(Math.sqrt(36 - j * j) / 2), 1, 2, (j + 6) % 4 < 2 ? '#f04452' : '#ffffff');
+      R(g, x - 6, y + 1, 1, 1, '#555'); R(g, x + 6, y + 1, 1, 1, '#555'); for (let j = 1; j < 6; j++){ R(g, x - 6 + j, y + 1 + j, 1, 1, '#999'); R(g, x + 6 - j, y + 1 + j, 1, 1, '#999'); }
+      put(g, 'man', x - 2, y + 6); }
+    if (k === 'digit_up' || k === 'digit_dn'){ const up = k === 'digit_up', w = 64, x = (W - w) >> 1, y = 54;
+      if ((t / 400 | 0) % 2 || !up){ R(g, x, y, w, 11, up ? '#e8414f' : '#4a5263'); R(g, x, y + 11, w, 1, '#1d2028'); ktxt(g, up ? '앞자리 UP!' : '앞자리 DOWN…', W / 2, y + 1, '#ffffff', 'center'); }
+      if (up) for (let i = 0; i < 10; i++){ const a = i / 10 * Math.PI * 2 + t / 700; R(g, W / 2 + Math.cos(a) * 46, 28 + Math.sin(a) * 26, 2, 2, ['#ffd84a', '#ff6fa8', '#7ee06a'][i % 3]); } }
+    if (k === 'thaw'){ const x = Math.round(W * .62), y = HZ + 44, p = fr(t, 6000) / 6000;
+      for (let i = 0; i < 12; i++) R(g, x - 16 + i * 3, y + 3 + (i % 3), 3, 1, '#9fd3ff');
+      if (p < .5){ for (let j = -4; j <= 4; j++) R(g, x + j, y - 11 + Math.abs(j) * .4, 1, 11 - Math.abs(j) * .4, '#fffaf0'); if (p > .25) for (let j = -3; j <= 3; j++) R(g, x + j, y - 6 + (j % 2), 1, 1, '#7a6a55'); }
+      else { for (let j = -4; j <= 4; j++) R(g, x + j, y - 4 + Math.abs(j) * .3, 1, 4, '#fffaf0'); const hop = Math.round(Math.abs(Math.sin(t / 200)) * -3); disc(g, x, y - 8 + hop, 3, '#ffd84a'); R(g, x + 3, y - 8 + hop, 2, 1, '#ff8a3d'); R(g, x + 1, y - 9 + hop, 1, 1, '#111'); } }
+    if (k === 'avalanche') for (let i = 0; i < 4; i++){ const p = fr(t / 3200 + i / 4, 1), r = Math.round(2 + p * 6), x = -10 + p * (W + 20), y = HZ + 8 + i * 14 + Math.abs(Math.sin(p * 12)) * -3;
+      disc(g, x, y, r, '#ffffff'); R(g, x - r, y + r - 1, r, 1, '#cfe2ee'); for (let j = 0; j < 3; j++) R(g, x - r - 3 - j * 3, y + r - j, 1, 1, '#ffffff'); }
+    if (k === 'zen'){ const x = fr(t / 400, W + 20) - 10, y = HZ + 52; disc(g, x + 2, y - 3, 3, '#a0672e'); R(g, x + 2, y - 3, 1, 1, '#6b3d18'); R(g, x - 3, y, 10, 2, '#c9b38f'); R(g, x + 6, y - 3, 1, 3, '#c9b38f');
+      for (let i = 0; i < 3; i++){ const q = fr(t / 2000 + i / 3, 1); ktxt(g, 'z', W / 2 + 30 + q * 14 + i * 3, 40 - q * 24, '#ffffff', 'left', '#2a2620'); } }
+  }
   const ufoPos = (W, HZ, t) => ({x: W / 2 + Math.sin(t / 3200) * (W / 2 - 16), y: HZ - 37 + Math.sin(t / 700) * 2});
   function evDraw(g, W, H, HZ, t, E, sc, mini){
     for (const e of E){ const k = e.k;
@@ -874,6 +936,8 @@ const PX = (() => {
       if (k === 'mammoth') put(g, 'mammoth', fr(t / 70, W + 30) - 15, HZ + 4 + Math.round(Math.abs(Math.sin(t / 250))), false);
       if (k === 'hero') put(g, 'hero', fr(t / 14, W + 30) - 15, 14 + Math.sin(t / 500) * 4);
       if (k === 'bus') put(g, 'bus', W + 20 - fr(t / 22, W + 50), HZ + 2, true);
+      if (k === 'pray_up' || k === 'pray_down') altar(g, W, H, HZ, t, k === 'pray_up');
+      rare(g, W, H, HZ, t, k, sc);
     }
   }
   function particles(g, W, H, t, sc, E){
@@ -1079,6 +1143,17 @@ const PZ = (() => {
     if (cp && n0 > cp.next){ cp.next = n0 + 5000 + Math.random() * 3000; const v = pick([...actors.values()].filter(a => !a.me)); if (v){
       if (cp.sell){ emote(v, '😱'); say(v, pick(['경찰도 도망갔어!', '이제 누가 막아줘…', '각자도생이다']), 2000); }
       else { emote(v, '🙏'); say(v, pick(['경찰 아저씨 고마워요', '든든하다', '바닥은 막아 주겠지?']), 2000); } } }
+    const pr = ENT.pray;
+    if (pr && n0 > pr.next){ pr.next = n0 + 1800 + Math.random() * 1500; const v = pick([...actors.values()].filter(a => !a.me && !(a.hold > n0)));
+      if (v){ Object.assign(v, {tx: clamp(W() / 2 + (Math.random() - .5) * 110, 16, W() - 16), ty: clamp(212 + Math.random() * 40, gy0(), gy1()), idle: false, hold: n0 + 9000});
+        setTimeout(() => { if (!v.el.isConnected) return; emote(v, pr.up ? '🙌' : '🙏', 2);
+          say(v, pick(pr.up ? ['할렐루야!!', '조상님 감사합니다', '신이시여 감사합니다', '오늘부터 십일조 냅니다', '부처님 감사합니다', '아멘! 익절 아멘!'] : ['제발 반등만…', '나무아미타불…', '다시는 안 그럴게요', '하느님 부처님 조상님…', '본전만 오게 해주세요', '제발 살려주세요', '주여… 이건 시험인가요']), 3000); }, 2200); } }
+    const rz = ENT.rare;
+    if (rz && n0 > rz.next){ rz.next = n0 + 3500 + Math.random() * 2500; const v = pick([...actors.values()].filter(a => !a.me)); const L = {
+      coaster: ['으아아아악', '멀미 나…', '내려줘!!', '또 올라가?'], phoenix: ['살았다!!', '이게 되네', '역시 존버'], chute: ['아까 팔걸…', '낙하산 펴!', '천국에서 지옥으로'],
+      digit_up: ['기념사진 찍자!', '앞자리 실화?', '📸 찰칵'], digit_dn: ['앞자리…', '묵념…', '못 본 걸로 할래'], thaw: ['알이 깨졌다!', '봄이 오나?', '바닥 찍었나?'],
+      avalanche: ['눈사태다!!', '피해!!', '꼭대기였구나'], zen: ['zzz…', '심심해', '움직여라 좀'] }[rz.k];
+      if (v && L) say(v, pick(L), 2200); }
     const bo = ENT.bolt;
     if (bo && n0 > bo.next){ bo.next = n0 + 3500 + Math.random() * 2000; const v = pick([...actors.values()].filter(a => !a.me)); if (v){
       PX.zap(v.x, v.y - 30);
@@ -1095,6 +1170,8 @@ const PZ = (() => {
     if (EVS.some(e => e.k === 'ufo_buy' || e.k === 'ufo_sell')) ENT.ufo = {next: now() + 2500};
     if (EVS.some(e => e.k === 'cop_buy' || e.k === 'cop_sell')) ENT.cop = {sell: EVS.some(e => e.k === 'cop_sell'), next: now() + 2000};
     if (EVS.some(e => e.k === 'bolt')) ENT.bolt = {next: now() + 1500};
+    { const rk = EVS.find(e => ['coaster', 'phoenix', 'chute', 'digit_up', 'digit_dn', 'thaw', 'avalanche', 'zen'].includes(e.k)); if (rk) ENT.rare = {k: rk.k, next: now() + 1500}; }
+    if (EVS.some(e => e.k === 'pray_up' || e.k === 'pray_down')) ENT.pray = {up: EVS.some(e => e.k === 'pray_up'), next: now() + 800};
     renderEv();
   }
   async function load(){
