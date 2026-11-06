@@ -181,6 +181,7 @@ table.t .r{text-align:right}
 .regs{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:11.5px;color:var(--muted)}
 .regs i{font-style:normal;font-weight:700}
 .pin{cursor:pointer}
+.pin.fog{background:rgba(40,44,52,.85);border-style:dashed;border-top:1px dashed rgba(255,255,255,.3);color:#c9ced8}
 .pin.fire{border-color:#ff8a3d;box-shadow:0 0 0 2px rgba(255,120,40,.45),0 0 14px rgba(255,120,40,.6);animation:firepin .7s ease-in-out infinite alternate}
 .pin .fl{position:absolute;top:-13px;right:-7px;font-size:14px;font-style:normal;animation:flick .5s ease-in-out infinite alternate}
 @keyframes firepin{to{box-shadow:0 0 0 3px rgba(255,160,60,.6),0 0 22px rgba(255,90,30,.8)}}
@@ -280,7 +281,7 @@ const CAT = Object.fromEntries(CATS.map(([k,e,n]) => [k, {e, n}]));
 const RXSET = {forecast:['charge','shield','flag','medal'], bet:['charge','shield','flag','medal'], wish:['pray','medal','hug','lol'], vent:['hug','metoo','lol','medal'], info:['medal','charge','metoo','lol'], chat:['lol','metoo','hug','charge']};
 const rxSum = p => Object.keys(RX).reduce((s, k) => s + (p['rx_' + k] || 0), 0);
 const catChips = (sel, act) => `<div class="cats"><button class="${!sel ? 'on' : ''}" data-act="${act}" data-v="">전체</button>${CATS.map(([k,e,n]) => `<button class="${sel === k ? 'on' : ''}" data-act="${act}" data-v="${k}">${e} ${n}</button>`).join('')}</div>`;
-const REGION = {KR:'코리아 반도', JP:'환율 해협', CRYPTO:'크립토 공중섬', US:'아메리카 대륙', FRONTIER:'개척지 군도'};
+const REGION = {KR:'🇰🇷 코리아', JP:'💱 환율 협곡', CRYPTO:'⛰ 크립토 고원', US:'🗽 아메리카', FRONTIER:'🌫 개척지'};
 const ALLOWED_LINKS = ['naver.com','dart.fss.or.kr','kind.krx.co.kr','yna.co.kr','hankyung.com','mk.co.kr','sec.gov','reuters.com','bloomberg.com','coindesk.com','federalreserve.gov','bok.or.kr'];
 
 /* ========================================================== utils */
@@ -448,33 +449,41 @@ async function doNick(){
 // Each territory is split by a front line: 상승군 holds the west part, 하락군 the east part,
 // in proportion to who is winning today. A hatched band marks the contested zone.
 const MW = 100, MH = 124, CELL = 4;
-const BASE_LANDS = [
-  {id:'US', cx:29, cy:37, rx:26, ry:28, s:1.3, syms:['SPX','NVDA','TSLA','US2Y','US10Y']},
-  {id:'KR', cx:68, cy:94, rx:29, ry:23, s:4.1, syms:['KOSPI','005930','000660','KR3Y','KR10Y']},
-  {id:'USD', cx:62, cy:63, rx:8, ry:5, s:2.7, syms:['USDKRW']},
-  {id:'JPY', cx:30, cy:75, rx:7, ry:5, s:5.5, syms:['JPYKRW']},
-];
-const FR_SLOTS = [[10,88],[24,92],[9,103],[23,107],[11,117],[27,119]];
-const SKY = [{sym:'BTCUSDT', rx:9, ry:5, s:3.3, cls:''}, {sym:'ETHUSDT', rx:7, ry:4, s:6.1, cls:'b'}];
-const LABELS = [['아메리카 대륙',29,4],['코리아 반도',68,122.3],['환율 해협',46,66],['크립토 공중섬',82,4],['개척지',9,82.5]];
-let LANDS = BASE_LANDS, GRID = null, PROV = null, BORDERS = null, BBOX = null, MAPDIRTY = true, MAPSIG = null;
+// One continent. Every territory is a province seeded at a fixed spot; regions sit side by side:
+// 크립토 고원 (north), 아메리카 (west), 환율 협곡 (center), 코리아 (east), 개척지 (south).
+const CONT = {cx:50, cy:62, rx:47, ry:57, s:2.2};
+const SEEDS = {BTCUSDT:[35,18], ETHUSDT:[62,16], NVDA:[14,40], SPX:[30,46], US2Y:[46,34], TSLA:[16,62], US10Y:[34,64],
+  USDKRW:[56,52], JPYKRW:[52,70], '005930':[72,40], KOSPI:[84,56], '000660':[70,70], KR3Y:[88,36], KR10Y:[86,78]};
+const FR_SLOTS = [[20,90],[38,96],[56,92],[74,96],[28,108],[50,110]];
+const SKY = [];
+const LABELS = [['크립토 고원',48,7],['아메리카',12,29],['코리아',89,27],['환율 협곡',60,63.5],['개척지',10,101]];
+let POS = {}, GRID = null, PROV = null, BORDERS = null, BBOX = null, MAPDIRTY = true, MAPSIG = null;
 function blob(L, x, y){ const dx = (x - L.cx) / L.rx, dy = (y - L.cy) / L.ry, th = Math.atan2(dy, dx); return Math.hypot(dx, dy) < 1 + .10*Math.sin(3*th + L.s) + .07*Math.sin(5*th + 2*L.s) + .04*Math.sin(11*th + 3*L.s); }
+function inCont(x, y){
+  const dx = (x - CONT.cx) / CONT.rx, dy = (y - CONT.cy) / CONT.ry, th = Math.atan2(dy, dx);
+  const d = Math.pow(Math.abs(dx) ** 3 + Math.abs(dy) ** 3, 1 / 3);
+  return d < 1 + .05 * Math.sin(3 * th + CONT.s) + .04 * Math.sin(7 * th + 2 * CONT.s) + .025 * Math.sin(13 * th + 3 * CONT.s);
+}
 function layoutFrontier(){
+  POS = {};
+  ASSETS.forEach(a => { if (SEEDS[a.symbol]){ [a.lon, a.lat] = SEEDS[a.symbol]; POS[a.symbol] = SEEDS[a.symbol]; } });
   const fs = ASSETS.filter(a => a.frontier).sort((a, b) => T(b.last_activity) - T(a.last_activity)).slice(0, FR_SLOTS.length);
   ASSETS.forEach(a => { if (a.frontier) a._onMap = false; });
-  fs.forEach((a, i) => { a.lon = FR_SLOTS[i][0]; a.lat = FR_SLOTS[i][1]; a._onMap = true; });
-  LANDS = BASE_LANDS.concat(fs.map((a, i) => ({id:'F' + i, cx:FR_SLOTS[i][0], cy:FR_SLOTS[i][1] - 1, rx:6, ry:4, s:1.3 + i * 1.9, syms:[a.symbol]})));
-  const sig = fs.map(a => a.symbol).join(','); if (sig !== MAPSIG){ MAPSIG = sig; GRID = null; PROV = null; MAPDIRTY = true; }
+  fs.forEach((a, i) => { [a.lon, a.lat] = FR_SLOTS[i]; a._onMap = true; POS[a.symbol] = FR_SLOTS[i]; });
+  for (let i = fs.length; i < FR_SLOTS.length; i++) POS['FOG' + i] = FR_SLOTS[i];
+  const sig = Object.keys(POS).join(','); if (sig !== MAPSIG){ MAPSIG = sig; GRID = null; PROV = null; MAPDIRTY = true; }
 }
-const onMap = a => a && (!a.frontier || a._onMap);
-const regName = a => a.frontier ? '개척지' : a.kind === 'FX' ? '해협' : a.region === 'CRYPTO' ? '공중섬' : a.region === 'US' ? '아메리카' : '코리아';
+const onMap = a => a && (a.frontier ? a._onMap : !!SEEDS[a.symbol]);
+const regName = a => a.frontier ? '개척지' : a.kind === 'FX' ? '협곡' : a.region === 'CRYPTO' ? '고원' : a.region === 'US' ? '아메리카' : '코리아';
+const regOf = id => id.startsWith('FOG') ? '개척지' : A[id] ? regName(A[id]) : '';
 function buildGrid(){
   GRID = new Array(MW * MH).fill(null);
-  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) for (const L of LANDS){
-    if (!blob(L, x + .5, y + .5)) continue;
+  const ids = Object.keys(POS);
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++){
+    if (!inCont(x + .5, y + .5)) continue;
     let best = null, bd = 1e9;
-    for (const s of L.syms){ const a = A[s]; if (!a) continue; const d = (a.lon - x) ** 2 + (a.lat - y) ** 2; if (d < bd){ bd = d; best = s; } }
-    GRID[y * MW + x] = best || L.id; break;
+    for (const id of ids){ const [px, py] = POS[id]; const d = (px - x) ** 2 + (py - y) ** 2 * 1.1; if (d < bd){ bd = d; best = id; } }
+    GRID[y * MW + x] = best;
   }
 }
 function buildProv(){
@@ -500,7 +509,9 @@ function drawMapBase(cv){
     const p = at(x, y), n4 = [at(x-1,y), at(x+1,y), at(x,y-1), at(x,y+1)];
     if (!p){ g.fillStyle = n4.some(Boolean) ? '#1c3d5e' : ((x * 7 + y * 13) % 29 === 0 ? '#1a3655' : (x + y * 3) % 17 === 0 ? '#11294a' : '#0d1f37'); }
     else if (n4.some(n => !n)){ g.fillStyle = (x + y) % 3 ? '#c4b07a' : '#b09c66'; }
+    else if ([at(x+1,y), at(x,y+1), at(x-1,y), at(x,y-1)].some(n => n && n !== p && regOf(n) !== regOf(p))){ g.fillStyle = (x + y) % 2 ? '#05070a' : '#2a2f38'; }
     else if ([at(x+1,y), at(x,y+1)].some(n => n && n !== p)){ g.fillStyle = '#14170f'; }
+    else if (p.startsWith('FOG')){ g.fillStyle = (x * 7 + y * 3) % 5 === 0 ? '#59606b' : (x + y) % 2 ? '#454b55' : '#4c535e'; }
     else {
       const sd = sideAt(p, x, y), a = A[p], dim = a && !isOpen(a) ? .82 : 1, d = ((x * 3 + y * 5) % 7 === 0) ? 14 : ((x * 5 + y) % 11 === 0 ? -8 : 0);
       if (sd === 2) g.fillStyle = (x + y) % 2 ? '#7a1f2a' : '#1f3a73';
@@ -508,7 +519,7 @@ function drawMapBase(cv){
     }
     g.fillRect(x * C, y * C, C, C);
   }
-  for (const L of LANDS) for (const sy of L.syms){ const a = A[sy]; if (onMap(a)) castle(g, a.lon * C, a.lat * C - 16); }
+  for (const id in POS){ const a = A[id]; if (onMap(a)) castle(g, a.lon * C, a.lat * C - 16); }
   MAPDIRTY = false;
 }
 function castle(g, x, y){
@@ -544,12 +555,13 @@ function powerHTML(){
   const P = computePower(), pr = Math.round(P.tot.r / Math.max(1e-9, P.tot.r + P.tot.b) * 100);
   return `<div class="power" id="power"><div class="row sb"><b class="up pix">상승군 ${pr}%</b><span class="pix muted s">⚔️ 오늘의 세력도</span><b class="down pix">${100 - pr}% 하락군</b></div>
     <div class="bar"><i class="bu" style="width:${pr}%"></i><i class="bd" style="width:${100 - pr}%"></i></div>
-    <div class="regs">${['아메리카','코리아','해협','공중섬','개척지'].filter(k => P.reg[k]).map(k => { const r = P.reg[k], q = Math.round(r.r / (r.r + r.b) * 100); return `<span>${k} <i class="${q >= 50 ? 'up' : 'down'}">${q >= 50 ? '🔴' + q : '🔵' + (100 - q)}%</i></span>`; }).join('')}</div></div>`;
+    <div class="regs">${['고원','아메리카','협곡','코리아','개척지'].filter(k => P.reg[k]).map(k => { const r = P.reg[k], q = Math.round(r.r / (r.r + r.b) * 100); return `<span>${k} <i class="${q >= 50 ? 'up' : 'down'}">${q >= 50 ? '🔴' + q : '🔵' + (100 - q)}%</i></span>`; }).join('')}</div></div>`;
 }
 function mapHTML(){
   return powerHTML() + `<div class="mapwrap" style="margin-top:0"><div class="map" id="map"><canvas id="mapc" width="${MW*CELL}" height="${MH*CELL}" class="px"></canvas><canvas id="mapfx" width="${MW*CELL}" height="${MH*CELL}" class="px"></canvas>
-    ${LABELS.filter(l => l[0] !== '개척지' || ASSETS.some(a => a._onMap)).map(([t, x, y]) => `<div class="maplbl" style="left:${x/MW*100}%;top:${y/MH*100}%">${t}</div>`).join('')}
+    ${LABELS.map(([t, x, y]) => `<div class="maplbl" style="left:${x/MW*100}%;top:${y/MH*100}%">${t}</div>`).join('')}
     ${ASSETS.filter(onMap).map(a => `<button class="pin ${heat(a) >= .5 ? 'fire' : ''}" data-pin="${a.symbol}" data-act="quick" data-sym="${esc(a.symbol)}" style="left:${a.lon/MW*100}%;top:${(a.lat + 1.5)/MH*100}%">${heat(a) >= .5 ? '<em class="fl">🔥</em>' : ''}<b>${esc(a.short)}</b><span class="num" data-c="${a.symbol}">${fmtC(a)}</span></button>`).join('')}
+    ${Object.keys(POS).filter(id => id.startsWith('FOG')).map(id => `<button class="pin fog" data-act="goto" data-href="#/claim" style="left:${POS[id][0]/MW*100}%;top:${(POS[id][1] + 1.5)/MH*100}%"><b>❔ 미개척</b><span>개척하기</span></button>`).join('')}
   </div></div><div class="muted s" style="text-align:center;margin-top:6px">빨강 = 상승군 · 파랑 = 하락군 · 빗금 = 교전 지대 · <b style="color:var(--text)">영토를 눌러 바로 참전</b></div>`;
 }
 let boomTimer = null;
@@ -878,7 +890,7 @@ async function vFronts(){
   const fr = ASSETS.filter(a => a.frontier).sort((a, b) => heat(b) - heat(a));
   return topbar('영토 목록', '#/') + `<a class="btn pri full" style="margin-top:14px" href="#/claim">🚩 새 영토 개척하기 <span class="s" style="font-weight:500">(종목 추가)</span></a>`
     + ['KR','JP','CRYPTO','US'].map(r => `<h3 class="sec">${REGION[r]}</h3><div class="flist">${ASSETS.filter(a => !a.frontier && (a.region === r || (r === 'JP' && a.kind === 'FX'))).filter(a => r === 'JP' || a.kind !== 'FX').map(frontRow).join('')}</div>`).join('')
-    + `<h3 class="sec">🏝 개척지 군도 <span class="muted s">${fr.length}/40 · 지도엔 최근 활발한 6곳</span></h3><div class="flist">${fr.map(frontRow).join('') || empty('아직 개척된 영토가 없어요. 첫 개척자가 되어 보세요')}</div>`
+    + `<h3 class="sec">🌫 개척지 <span class="muted s">${fr.length}/40 · 지도엔 최근 활발한 6곳</span></h3><div class="flist">${fr.map(frontRow).join('') || empty('아직 개척된 영토가 없어요. 첫 개척자가 되어 보세요')}</div>`
     + `<div class="muted s" style="margin-top:12px">막대 = 상승군 점령률. 하루 등락이 기준만큼 움직이면 한쪽이 완전히 점령해요 (주식 5~8%, 지수 2.5~3%, 환율 1%, 국채 10bp). 국채는 금리가 내리면(채권 강세) 상승군이에요.</div>${disc()}`;
 }
 async function vFront(sym){
