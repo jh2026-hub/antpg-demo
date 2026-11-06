@@ -72,7 +72,7 @@ create table public.pixel_arts (
   author_id   uuid references public.profiles on delete set null,
   author_name text not null,
   title       text not null check (char_length(title) between 1 and 12),
-  px          text not null check (px ~ '^[0-9a-f.]{1024}$'),
+  px          text not null check (char_length(px) = 1024 and px ~ '^[0-9a-f.]+$'),
   uses_count  int not null default 0,
   is_hidden   boolean not null default false,
   created_at  timestamptz not null default now()
@@ -408,7 +408,7 @@ begin
   p_title := btrim(coalesce(p_title,''));
   if p_title = '' then p_title := '이름 없는 깃발'; end if;
   perform _check_text(p_title);
-  if p_px !~ '^[0-9a-f.]{1024}$' or p_px ~ '^\.+$' then raise exception '그림이 비어 있어요'; end if;
+  if char_length(coalesce(p_px,'')) <> 1024 or p_px !~ '^[0-9a-f.]+$' or p_px ~ '^\.+$' then raise exception '그림이 비어 있어요'; end if;
   insert into pixel_arts (author_id, author_name, title, px) values (me.id, me.nickname, left(p_title, 12), p_px) returning id into v_id;
   update profiles set last_art_at = now() where id = me.id;
   return v_id;
@@ -516,8 +516,8 @@ begin
     where id = r.id;
   end loop;
   -- 2) close showdowns
-  update battles b set status = 'CLOSED', close_price = a.price
-  from assets a where a.symbol = b.symbol and b.status = 'OPEN' and b.closes_at <= now();
+  update battles bt set status = 'CLOSED', close_price = q.price
+  from assets q where q.symbol = bt.symbol and bt.status = 'OPEN' and bt.closes_at <= now();
   -- 3) resolve showdowns
   for r in select * from battles where status = 'CLOSED' and resolves_at <= now() for update skip locked loop
     select * into a from assets where symbol = r.symbol;

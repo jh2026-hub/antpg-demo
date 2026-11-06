@@ -39,7 +39,7 @@ button{cursor:pointer}
 .tabbar a{flex:1;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;color:var(--muted)}
 .tabbar a.on{color:var(--gold)}
 .tabbar .ic{font-size:20px;line-height:1.25}
-.btn{min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line);background:var(--card2);font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn{min-height:44px;padding:0 16px;border-radius:12px;white-space:nowrap;flex:none;border:1px solid var(--line);background:var(--card2);font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px}
 .btn.pri{background:var(--gold);color:#1d1600;border-color:transparent}
 .btn.bu{background:var(--up);color:#fff;border-color:transparent}
 .btn.bd{background:var(--down);color:#fff;border-color:transparent}
@@ -778,7 +778,7 @@ async function render(keep){
 function softRender(){ if (isTyping() || /\/new|barracks\/(flag|poster)/.test(location.hash) || $('.modal')) return; render(true); }
 window.addEventListener('hashchange', () => { if (!/\/new/.test(location.hash)){ UI.side = null; UI.pollOn = false; } render(); });
 function drawSpark(cv){
-  const a = HIST[cv.dataset.spark]; if (!a || a.length < 2) return;
+  const a = HIST[cv.dataset.spark]; if (!a || a.length < 20){ cv.style.display = 'none'; return; }
   const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight; if (!w) return;
   cv.width = w * dpr; cv.height = h * dpr; const g = cv.getContext('2d'); g.scale(dpr, dpr);
   const mn = Math.min(...a), mx = Math.max(...a), rg = mx - mn || 1;
