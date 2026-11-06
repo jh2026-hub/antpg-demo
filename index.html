@@ -204,13 +204,43 @@ textarea.f{min-height:90px;resize:none}
 .ash i{position:absolute;top:-10px;width:3px;height:3px;border-radius:50%;background:#5a5048;z-index:800;pointer-events:none;animation:snow linear infinite}
 .mini .mush{bottom:42%;width:58px;height:50px;margin-left:-29px}.mini .mush::before{height:28px}.mini .mush::after{width:11px;height:28px;margin-left:-5.5px}.mini .mush i{top:20px;height:7px;border-width:2px}
 .peak .orb{filter:drop-shadow(0 0 8px gold)}
+.cev{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}.cev span{font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;background:#fdecec;color:#c23a3a}.cev span.g{background:#e8f6ee;color:#1f8a52}
+@media (prefers-color-scheme: dark){.cev span{background:#3a2224;color:#ff9b9b}.cev span.g{background:#1c3428;color:#7fd8a6}}
+.evs{display:flex;flex-direction:column;gap:6px;margin-top:8px}.evs:empty{display:none}
+.ev{display:flex;align-items:center;gap:8px;background:var(--card);border-radius:12px;padding:7px 12px;box-shadow:var(--shadow);border-left:4px solid #f04452;white-space:nowrap;overflow:hidden}
+.ev.g{border-left-color:#2fbf71}.ev .ee{font-size:20px;line-height:1;flex:none}.ev b{font-size:13.5px;flex:none}.ev .why{font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis}
+.evs{gap:5px!important}
+.ufo{position:absolute;left:0;top:9%;width:60px;margin-left:-30px;z-index:820;pointer-events:none;text-align:center}
+.ufo span{display:block;font-size:44px;line-height:1;animation:hover 1.1s ease-in-out infinite alternate}@keyframes hover{to{translate:0 -6px}}
+.ufo .beam{position:absolute;left:50%;top:38px;width:96px;margin-left:-48px;height:170px;background:linear-gradient(rgba(170,255,160,.6),rgba(170,255,160,.04));clip-path:polygon(42% 0,58% 0,100% 100%,0 100%);animation:beam 1.4s ease-in-out infinite alternate}
+@keyframes beam{from{opacity:.45}to{opacity:.95}}
+.ufo .rise{position:absolute;left:50%;top:160px;font-size:16px;font-style:normal;animation:rise 2.2s linear infinite}@keyframes rise{from{translate:-50% 0;opacity:1}to{translate:-50% -120px;scale:.3;opacity:0}}
+.coin{position:absolute;font-size:16px;z-index:810;pointer-events:none;animation:coin 1.3s ease-in forwards}@keyframes coin{to{translate:0 var(--dy);rotate:200deg}}
+.dino{position:absolute;left:0;top:0;font-size:62px;line-height:1;pointer-events:none;transform-origin:50% 100%}
+.dino span{display:block;animation:stomp .5s ease-in-out infinite}@keyframes stomp{0%,100%{translate:0 0;rotate:-4deg}50%{translate:0 -7px;rotate:4deg}}
+.dino .bub{left:50%;bottom:100%;position:absolute}
+.ants{position:absolute;left:0;right:0;bottom:30px;height:20px;z-index:300;pointer-events:none}
+.ants i{position:absolute;font-style:normal;font-size:14px;animation:march 16s linear infinite}@keyframes march{from{left:-8%}to{left:108%}}
+.ants.out i{font-size:18px;animation:flee 6s linear infinite}@keyframes flee{from{left:108%}to{left:-8%}}
+.whale{position:absolute;left:28%;top:31%;font-size:40px;z-index:3;pointer-events:none;animation:whale 6s ease-in-out infinite}
+@keyframes whale{0%,52%,100%{translate:0 26px;opacity:0;rotate:0deg}58%{opacity:1}64%{translate:30px -26px;rotate:-25deg}74%{translate:70px -40px;rotate:5deg}84%{translate:110px 18px;rotate:40deg;opacity:1}88%{opacity:0}}
+.spout{position:absolute;left:62%;top:26%;font-size:22px;z-index:3;pointer-events:none;opacity:0;animation:spout 4s ease-out infinite}@keyframes spout{0%,60%{opacity:0;translate:0 10px}70%{opacity:1;translate:0 -14px}90%,100%{opacity:0;translate:0 -24px}}
+.shark{position:absolute;top:33%;font-size:26px;z-index:3;pointer-events:none;animation:shark 8s ease-in-out infinite alternate}@keyframes shark{from{left:4%}to{left:84%}}
+.rocket{position:absolute;left:70%;bottom:32%;font-size:34px;z-index:820;pointer-events:none;animation:rocket 5s ease-in infinite}
+@keyframes rocket{0%,24%{translate:0 0;opacity:1}24.1%{translate:0 0}30%{translate:-1px 0}36%{translate:1px 0}80%{translate:60px -260px;opacity:1}81%,100%{opacity:0;translate:60px -260px}}
+.hero{position:absolute;top:10%;font-size:36px;z-index:820;pointer-events:none;animation:hero 6.5s linear infinite}@keyframes hero{0%{left:-14%;translate:0 0}50%{translate:0 -14px}100%{left:110%;translate:0 0}}
+.bus{position:absolute;top:56%;font-size:36px;z-index:150;pointer-events:none;animation:bus 9s linear infinite}@keyframes bus{from{left:112%}to{left:-16%}}
+.mammoth{position:absolute;top:43%;font-size:48px;z-index:120;pointer-events:none;animation:mam 26s linear infinite}@keyframes mam{from{left:112%}to{left:-18%}}
+.bolt{position:absolute;top:0;width:30px;margin-left:-15px;z-index:850;pointer-events:none;background:linear-gradient(#fffde8,#ffe14d);clip-path:polygon(45% 0,72% 0,50% 42%,78% 42%,28% 100%,42% 54%,18% 54%);filter:drop-shadow(0 0 8px #ffe14d);animation:boltf .5s ease-out forwards}
+@keyframes boltf{0%,60%{opacity:1}100%{opacity:0}}
+.av.burnt canvas{filter:brightness(.3)!important}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header id="hdr" class="top"></header>
-  <div id="roomtop" hidden><section id="plaza" class="plaza scene"></section><div id="emobar" class="emobar"></div></div>
+  <div id="roomtop" hidden><section id="plaza" class="plaza scene"></section><div id="evbar" class="evs"></div><div id="emobar" class="emobar"></div></div>
   <main id="app"><div class="empty">불러오는 중…</div></main>
 </div>
 <nav class="tabbar"><div class="in">
@@ -265,7 +295,7 @@ const pct = a => +(a.change_pct || 0);
 const fmtC = a => (pct(a) > 0 ? '+' : '') + pct(a).toFixed(2) + '%';
 const dir = v => v > 0 ? 'up' : v < 0 ? 'down' : 'flat';
 async function loadAssets(){
-  const { data } = await sb.from('assets').select('symbol,name,short,kind,region,change_pct,price,market_open,low_52w,high_52w').eq('active', true).order('sort');
+  const { data } = await sb.from('assets').select('symbol,name,short,kind,region,change_pct,price,market_open,low_52w,high_52w,vol_ratio,flows').eq('active', true).order('sort');
   ASSETS = (data || []).map(r => Object.assign(A[r.symbol] = A[r.symbol] || {}, r));
 }
 const PLACES = {
@@ -300,6 +330,55 @@ function scene(a){
   sc.label = `${sc.e} ${sc.n}${frozen ? ' · 🧊 빙하기' : peak ? ' · 🏆 신고가' : ''}`;
   sc.hint = frozen && ['cloud', 'clear', 'sunny', 'rain'].includes(w) ? '52주 저점 근처. 빠질 만큼 빠져서 꽁꽁 얼었어요' : peak && !['quake', 'nuke'].includes(w) ? '52주 신고가 근처! 꼭대기라 공기가 희박해요' : sc.t;
   return sc;
+}
+/* ---------------------------------------------------------------- events: a specific cause shows up as a creature or a thing in the room */
+// catalog: what shows up, and the plain-language reason underneath
+const EVCAT = {
+  ufo_buy:   {e:'🛸', n:'UFO 착륙',     t:'외계인(외국인)이 돈을 뿌리고 가요', good:true},
+  ufo_sell:  {e:'🛸', n:'UFO 납치',     t:'외계인(외국인)이 다 쓸어 가요. 사람도 끌려가요'},
+  dino_buy:  {e:'🦖', n:'공룡 등장',    t:'기관 공룡이 쿵쿵 받쳐 줘요', good:true},
+  dino_sell: {e:'🦖', n:'공룡 습격',    t:'기관 공룡이 짓밟고 지나가요. 도망쳐요!'},
+  ants_buy:  {e:'🐜', n:'개미 군단',    t:'개미들이 줄지어 들어와요', good:true},
+  ants_sell: {e:'🏃', n:'개미 대탈출',  t:'개미들이 짐 싸서 떠나요'},
+  whale:     {e:'🐋', n:'고래 출현',    t:'큰손 고래가 물 뿜으며 사들여요', good:true},
+  shark:     {e:'🦈', n:'상어 출현',    t:'상어가 물속을 맴돌아요. 발 조심'},
+  rocket:    {e:'🚀', n:'52주 신고가',  t:'로켓 발사! 1년 중 제일 높아요', good:true},
+  mammoth:   {e:'🦣', n:'52주 신저가',  t:'매머드가 나타났어요. 1년 중 제일 낮아요'},
+  hero:      {e:'🦸', n:'나홀로 영웅',  t:'시장은 빠지는데 혼자 날아다녀요', good:true},
+  bolt:      {e:'⚡', n:'나만 벼락',    t:'이 방에만 벼락이 떨어져요. 찌릿'},
+  bus:       {e:'🚌', n:'관광버스',     t:'구경꾼이 버스로 몰려와요'},
+  chorus:    {e:'😭', n:'곡소리 합창',  t:'방금 다들 털렸대요. 다 같이 흑흑'},
+  party:     {e:'🎉', n:'파티 타임',    t:'방금 다들 벌었대요. 배 아파요'},
+};
+const EVQ = new URLSearchParams(location.search).get('ev');   // preview: ?ev=ufo_sell,dino_buy
+const amtEok = v => { const x = Math.abs(v); return (v < 0 ? '−' : '+') + (x >= 1e4 ? (x / 1e4).toFixed(1) + '조' : Math.round(x).toLocaleString('ko-KR') + '억'); };
+const refOf = a => a.kind === 'CRYPTO' ? (a.symbol === 'BTCUSDT' ? null : A.BTCUSDT) : a.kind === 'INDEX' ? null : a.region === 'US' ? A.SPX : A.KOSPI;
+function events(a){
+  if (EVQ) return EVQ.split(',').filter(k => EVCAT[k]).map(k => ({...EVCAT[k], k, why:'미리보기', w:9}));
+  const E = [], add = (k, why, w) => E.push({...EVCAT[k], k, why, w});
+  const fl = a.flows, f = fl && fl.now;
+  if (f && fl.kind === 'investor'){
+    const idx = a.kind === 'INDEX', T = idx ? {foreign:5000, inst:3000, retail:5000} : {foreign:1000, inst:1000, retail:2000};
+    const when = !fl.live && fl.asof ? ` (${+fl.asof.slice(4, 6)}/${+fl.asof.slice(6)})` : '';
+    for (const [who, nm, kb, ks] of [['foreign','외국인','ufo_buy','ufo_sell'], ['inst','기관','dino_buy','dino_sell'], ['retail','개인','ants_buy','ants_sell']]){
+      const v = +f[who] || 0;
+      if (Math.abs(v) >= T[who]) add(v > 0 ? kb : ks, `${nm} ${amtEok(v)} 순${v > 0 ? '매수' : '매도'}${when}`, Math.abs(v) / T[who]);
+    }
+  }
+  if (fl && fl.kind === 'taker'){
+    const hs = (fl.hours || []).slice(-3), b = hs.reduce((x, h) => x + h.buy, 0), sl = hs.reduce((x, h) => x + h.sell, 0), sh = b + sl ? b / (b + sl) : .5;
+    if (sh >= .58) add('whale', `최근 3시간 시장가 매수 ${Math.round(sh * 100)}%`, (sh - .5) * 20);
+    if (sh <= .42) add('shark', `최근 3시간 시장가 매도 ${Math.round((1 - sh) * 100)}%`, (.5 - sh) * 20);
+  }
+  const p = +a.price, lo = +a.low_52w, hi = +a.high_52w;
+  if (hi > 0 && p >= hi * .999) add('rocket', `52주 최고가 돌파`, 5);
+  if (lo > 0 && p <= lo * 1.001) add('mammoth', `52주 최저가 경신`, 5);
+  const ref = refOf(a);
+  if (ref){ const d = pct(a) - pct(ref), lim = a.kind === 'CRYPTO' ? 4 : 5;
+    if (d >= lim) add('hero', `${ref.short}보다 ${d.toFixed(1)}%p 강해요`, d / lim);
+    if (d <= -lim) add('bolt', `${ref.short}보다 ${Math.abs(d).toFixed(1)}%p 더 빠졌어요`, -d / lim); }
+  if (+a.vol_ratio >= 3) add('bus', `거래량 평소의 ${(+a.vol_ratio).toFixed(1)}배`, +a.vol_ratio / 3);
+  return E.sort((x, y) => y.w - x.w).slice(0, 3);
 }
 const sceneCls = sc => `scene w-${sc.w} p-${sc.place}${sc.night ? ' night' : ''}${sc.frozen ? ' frozen' : ''}${sc.peak ? ' peak' : ''}`;
 
@@ -375,7 +454,7 @@ function roomCard(a, st){
   return `<a class="room" href="#/r/${encodeURIComponent(a.symbol)}"><div class="mini ${sceneCls(sc)}">
       ${miniFx(sc)}<span class="mw">${sc.night ? '🌙' : sc.e}</span>${sc.frozen ? '<span class="mbadge">🧊 52주 저점</span>' : sc.peak ? '<span class="mbadge">🏆 52주 고점</span>' : ''}<span class="mon" data-on="${esc(a.symbol)}">${on ? `<span class="dot"></span>${on}명` : ''}</span><span class="mem">${st.em.join('')}</span></div>
     <div class="rinfo"><div class="row sb"><b>${esc(a.short)}</b><span class="num ${dir(pct(a))}" data-c="${esc(a.symbol)}">${fmtC(a)}</span></div>
-      <div class="muted s">${sc.label}${sc.night ? ' · 마감' : ''} · 오늘 ${st.n}명</div></div></a>`;
+      <div class="muted s">${sc.label}${sc.night ? ' · 마감' : ''} · 오늘 ${st.n}명</div>${(ev => ev.length ? `<div class="cev">${ev.slice(0, 2).map(e => `<span class="${e.good ? 'g' : 'bd'}">${e.e} ${e.n}</span>`).join('')}</div>` : '')(events(a))}</div></a>`;
 }
 async function vHome(){
   const since = new Date(now() - 24 * 3600e3).toISOString();
@@ -512,7 +591,7 @@ const PZ = (() => {
   const hash = s => { let h = 2166136261; for (const c of String(s)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
   const look = id => { const h = hash(id); return {skin:SKIN[h % 4], hair:HAIR[(h >>> 2) % 8], shirt:SHIRT[(h >>> 5) % 9], pants:PANTS[(h >>> 9) % 4], hat:(h >>> 12) % 5, hatc:SHIRT[(h >>> 16) % 9]}; };
   let PKEY; try { PKEY = localStorage.getItem('pz-key'); if (!PKEY){ PKEY = Math.random().toString(36).slice(2, 10); localStorage.setItem('pz-key', PKEY); } } catch(e){ PKEY = Math.random().toString(36).slice(2, 10); }
-  const actors = new Map(); let el, raf = 0, last = 0, lobby = null, ROOM = null, SC = WX.cloud, PRES = {}, RESID = [], BOTS = null, TODAYN = 0, lastSend = 0, popFor = null, gen = 0;
+  const actors = new Map(); let EVS = [], ENT = {}, COMM = null; let el, raf = 0, last = 0, lobby = null, ROOM = null, SC = WX.cloud, PRES = {}, RESID = [], BOTS = null, TODAYN = 0, lastSend = 0, popFor = null, gen = 0;
   const myId = () => ME ? ME.id : 'g:' + PKEY;
   const W = () => (el && el.clientWidth) || 360, H = () => (el && el.clientHeight) || 270;
   const gy0 = () => H() * .47, gy1 = () => H() - 30;
@@ -575,12 +654,14 @@ const PZ = (() => {
       if ((SC.shiver || (a.mood === 'unfair' && !moving)) && Math.random() < .5) sh = (Math.random() - .5) * (SC.quake ? 5 : SC.shiver ? 2.4 : 2);
       if (SC.quake && !a.me && !(a.fall > n0) && Math.random() < dt * .06){ a.fall = n0 + 1600; a.fdir = Math.random() < .5 ? -1 : 1; if (Math.random() < .6) say(a, pick(['꽈당!', '으악!', '아이고 허리야']), 1500); }
       const down = a.fall > n0; if (down){ a.tx = a.x; a.ty = a.y; }
+      if (a.lift > n0){ const q = (n0 - a.liftAt) / 2600; bob -= Math.sin(Math.PI * q) * 70; sh += Math.sin(n0 / 60) * 2; a.tx = a.x; a.ty = a.y; }
       const s = .82 + .3 * (a.y - gy0()) / Math.max(1, gy1() - gy0());
       a.el.style.transform = `translate3d(${(a.x - 15 + sh).toFixed(1)}px,${(a.y - 51 + bob).toFixed(1)}px,0) scale(${s.toFixed(3)})${down ? ` rotate(${a.fdir * 84}deg)` : ''}`;
       a.el.style.zIndex = 10 + (a.y | 0);
       if (a.lastFace !== a.face){ a.cv.style.transform = a.face < 0 ? 'scaleX(-1)' : ''; a.lastFace = a.face; }
       draw(a);
     }
+    evStep(dt, n0);
     raf = requestAnimationFrame(step);
   }
 
@@ -602,9 +683,56 @@ const PZ = (() => {
     const on = Object.values(PRES).filter(x => (x[0] || {}).room === ROOM).length || 1;
     const c = el.querySelector('.pzcap'); if (c) c.innerHTML = `<span class="dot"></span> 지금 ${on}명 · 오늘 ${TODAYN}명`;
   }
+  const keyOf = a => { const sc = scene(a); return [sc.w, sc.night, sc.place, sc.frozen, sc.peak, ...events(a).map(e => e.k)].join('|'); };
+  function evLayers(E){
+    const R = (n, f) => Array.from({length: n}, f).join(''); let h = '';
+    for (const e of E){
+      if (e.k === 'ufo_buy' || e.k === 'ufo_sell') h += `<div class="ufo ${e.k === 'ufo_sell' ? 'sell' : ''}"><div class="beam"></div><span>🛸</span>${e.k === 'ufo_sell' ? R(3, (_, i) => `<i class="rise" style="animation-delay:${-i * .7}s">${['🏠', '💵', '🧍'][i]}</i>`) : ''}</div>`;
+      if (e.k === 'dino_buy' || e.k === 'dino_sell') h += `<div class="dino ${e.k === 'dino_sell' ? 'sell' : ''}"><span>🦖</span></div>`;
+      if (e.k === 'ants_buy') h += `<div class="ants">${R(12, (_, i) => `<i style="animation-delay:${-i * .55}s">🐜</i>`)}</div>`;
+      if (e.k === 'ants_sell') h += `<div class="ants out">${R(7, (_, i) => `<i style="animation-delay:${-i * .8}s">🏃</i>`)}</div>`;
+      if (e.k === 'whale') h += '<div class="whale">🐋</div><div class="spout">💦</div>';
+      if (e.k === 'shark') h += '<div class="shark">🦈</div>';
+      if (e.k === 'rocket') h += '<div class="rocket">🚀</div>';
+      if (e.k === 'hero') h += '<div class="hero">🦸</div>';
+      if (e.k === 'bus') h += '<div class="bus">🚌</div>';
+      if (e.k === 'mammoth') h += '<div class="mammoth">🦣</div>';
+    }
+    return h;
+  }
+  function community(){
+    const t0 = now() - 60 * 60e3, xs = RESID.filter(r => !r.bot && r.at && T(r.at) > t0);
+    if (xs.length < 4) return null;
+    const sad = xs.filter(r => ['rekt', 'empty', 'unfair'].includes(r.mood)).length / xs.length, glad = xs.filter(r => ['won', 'held'].includes(r.mood)).length / xs.length;
+    return sad >= .7 ? {...EVCAT.chorus, k:'chorus', why:`최근 1시간 ${xs.length}명 중 ${Math.round(sad * 100)}%가 털림`} : glad >= .7 ? {...EVCAT.party, k:'party', why:`최근 1시간 ${xs.length}명 중 ${Math.round(glad * 100)}%가 웃음`} : null;
+  }
+  function renderEv(){
+    const c = community(), E = c ? [...EVS, c] : EVS; COMM = c;
+    $('#evbar').innerHTML = E.map(e => `<div class="ev ${e.good ? 'g' : ''}" title="${esc(e.t)}"><span class="ee">${e.e}</span><b>${e.n}</b><span class="why">${esc(e.why)}</span></div>`).join('');
+  }
+  function evStep(dt, n0){
+    const u = ENT.ufo;
+    if (u){ u.x += u.vx * dt; if (u.x < 40 || u.x > W() - 40){ u.vx *= -1; u.x = clamp(u.x, 40, W() - 40); } u.el.style.left = u.x + 'px';
+      if (n0 > u.next){
+        if (!u.sell){ u.next = n0 + 500; const c = document.createElement('span'); c.className = 'coin'; c.textContent = pick(['💰', '💵', '🪙']); c.style.left = (u.x + rnd(-20, 20)) + 'px'; c.style.top = (H() * .09 + 50) + 'px'; c.style.setProperty('--dy', rnd(gy0() - H() * .09 - 40, gy1() - H() * .09 - 60) + 'px'); el.appendChild(c); setTimeout(() => c.remove(), 1300); }
+        else { u.next = n0 + 4500; const v = [...actors.values()].filter(a => !a.me && !(a.lift > n0)).sort((p, q) => Math.abs(p.x - u.x) - Math.abs(q.x - u.x))[0];
+          if (v && Math.abs(v.x - u.x) < 90){ v.lift = n0 + 2600; v.liftAt = n0; say(v, pick(['살려줘!!', '내 계좌!!', '으아아 끌려간다']), 2200); } }
+      } }
+    const d = ENT.dino;
+    if (d){ d.x -= 34 * dt; if (d.x < -80) d.x = W() + 60; const y = gy0() + (gy1() - gy0()) * .3;
+      d.el.style.transform = `translate3d(${d.x - 31}px,${y - 62}px,0)`; d.el.style.zIndex = 10 + (y | 0);
+      for (const a of actors.values()){ if (a.me || Math.abs(a.x - d.x) > 70 || Math.abs(a.y - y) > 60) continue;
+        if (d.sell && !(a.flee > n0)){ a.flee = n0 + 2500; Object.assign(a, {tx: clamp(a.x + (a.x < d.x ? -140 : 140), 16, W() - 16), ty: a.y, idle: false, rush: true}); if (Math.random() < .5) say(a, pick(['도망쳐!!', '공룡이다!!', '밟힌다!']), 1500); }
+        if (!d.sell && !(a.cheer > n0)){ a.cheer = n0 + 4000; emote(a, '🙌'); if (Math.random() < .5) say(a, pick(['기관 형님!', '받쳐 줘요!', '공룡 최고']), 1500); } }
+      if (n0 > d.next){ d.next = n0 + 6000; const b = document.createElement('div'); b.className = 'bub show'; b.style.cssText = 'position:absolute;left:50%;bottom:100%;transform:translateX(-50%);background:#fff;color:#1f2126;font-size:12px;font-weight:800;padding:4px 8px;border-radius:10px;white-space:nowrap'; b.textContent = d.sell ? '크아앙! 쿵! 쿵!' : '쿵! 받쳐 줄게'; d.el.appendChild(b); setTimeout(() => b.remove(), 2200); } }
+    const bo = ENT.bolt;
+    if (bo && n0 > bo.next){ bo.next = n0 + 3500 + Math.random() * 2000; const v = pick([...actors.values()].filter(a => !a.me)); if (v){
+      const z = document.createElement('div'); z.className = 'bolt'; z.style.left = v.x + 'px'; z.style.height = (v.y - 40) + 'px'; el.appendChild(z); setTimeout(() => z.remove(), 500);
+      v.el.classList.add('burnt'); setTimeout(() => v.el.classList.remove('burnt'), 2500); say(v, pick(['찌릿!!', '왜 나만…', '머리가 탔어']), 1800); } }
+  }
   function build(a){
     const sc = scene(a); SC = sc; const R = (n, f) => Array.from({length: n}, f).join('');
-    el.className = `plaza ${sceneCls(sc)}${sc.umb ? ' umb' : ''}`; el.dataset.key = sc.w + sc.night + sc.place;
+    el.className = `plaza ${sceneCls(sc)}${sc.umb ? ' umb' : ''}`; el.dataset.key = keyOf(a);
     let fx = '';
     if (sc.night) fx += `<div class="stars">${R(22, () => `<i style="left:${rnd(0, 100)}%;top:${rnd(1, 36)}%;animation-delay:${-rnd(0, 2)}s"></i>`)}</div><div class="shade"></div>`;
     const orb = sc.night ? '🌙' : ['clear', 'sunny', 'fest'].includes(sc.w) ? '☀️' : '';
@@ -626,8 +754,13 @@ const PZ = (() => {
     const P = sc.k === 'nuke' ? {deco:[['🏚️',8,47],['🔥',91,46],['🏚️',80,92],['🔥',20,93],['☢️',62,51]]} : PLACES[sc.place];
     const place = (sc.place === 'beach' ? '<div class="sea"></div>' : '') + (sc.place === 'city' ? '<div class="skyline">🏢🏬🏙️🏢🏦🏬🏢</div>' : '')
       + P.deco.map(([e, x, y]) => `<div class="deco" style="left:${x}%;top:${y}%;z-index:${10 + Math.round(y * 2.7)}">${sc.frozen && e === '🌳' ? '🌲' : sc.frozen && e === '🌴' ? '⛄' : e}</div>`).join('');
-    el.innerHTML = place + fx + `<div class="pzcap"></div><div class="pzw">${sc.night ? '🌙 ' + sc.n : sc.label.replace(' · ', ' ')}${sc.night ? ' · 마감' : ''}${sc.night && (sc.frozen || sc.peak) ? (sc.frozen ? ' 🧊' : ' 🏆') : ''}</div><div class="pzhint"><span>${sc.hint}</span></div>`;
+    EVS = events(a); ENT = {}; fx += evLayers(EVS);
+    el.innerHTML = place + fx + `<div class="pzcap"></div><div class="pzw">${sc.night ? '🌙 ' + sc.n : sc.label.replace(' · ', ' ')}${sc.night ? ' · 마감' : ''}${sc.night && (sc.frozen || sc.peak) ? (sc.frozen ? ' 🧊' : ' 🏆') : ''}</div><div class="pzhint"><span>${EVS[0] ? EVS[0].e + ' ' + EVS[0].t : sc.hint}</span></div>`;
     for (const x of actors.values()) el.appendChild(x.el);
+    const u = el.querySelector('.ufo'); if (u) ENT.ufo = {el: u, x: W() * .3, vx: 38, sell: u.classList.contains('sell'), next: 0};
+    const d = el.querySelector('.dino'); if (d) ENT.dino = {el: d, x: W() + 40, sell: d.classList.contains('sell'), next: 0};
+    if (EVS.some(e => e.k === 'bolt')) ENT.bolt = {next: now() + 1500};
+    renderEv();
   }
   async function load(){
     if (!ROOM) return; const room = ROOM, g = gen;
@@ -640,10 +773,10 @@ const PZ = (() => {
     const seen = new Set(); RESID = []; TODAYN = 0;
     for (const m of ms || []){
       if (seen.has(m.author_id)) continue; seen.add(m.author_id); if (!m.author?.is_bot) TODAYN++;
-      if (RESID.length < 30) RESID.push({id: m.author_id, nick: m.author?.nickname || '누군가', bot: !!m.author?.is_bot, mood: m.mood, body: m.body, moodId: m.id});
+      if (RESID.length < 30) RESID.push({id: m.author_id, nick: m.author?.nickname || '누군가', bot: !!m.author?.is_bot, mood: m.mood, body: m.body, moodId: m.id, at: m.created_at});
     }
     const key = room + kstDay(); BOTS.slice().sort((x, y) => hash(x.id + key) - hash(y.id + key)).slice(0, 3).forEach(b => { if (!seen.has(b.id)) RESID.push({id: b.id, nick: b.nickname, bot: true}); });
-    sync(); track();
+    sync(); track(); renderEv();
   }
   function track(){ if (!lobby) return; const mine = ROOM && RESID.find(r => r.id === myId()); lobby.track({id: myId(), nick: ME ? ME.nickname : '', mood: mine ? mine.mood : null, room: ROOM}).catch(() => {}); }
   function send(ev, payload){ if (lobby) lobby.send({type: 'broadcast', event: ev, payload: {...payload, room: ROOM}}).catch(() => {}); }
@@ -694,12 +827,13 @@ const PZ = (() => {
         const xs = [...actors.values()].filter(a => !a.me && !a.el.querySelector('.bub.show')); if (!xs.length) return;
         const a = pick(xs);
         say(a, a.body && Math.random() < .7 ? cut(a.body, 28) : pick(IDLE[['quake', 'nuke'].includes(SC.k) ? SC.k : SC.frozen && Math.random() < .6 ? 'ice' : SC.peak && Math.random() < .6 ? 'peak' : SC.night ? 'night' : SC.k] || IDLE.cloud));
+        if (COMM && Math.random() < .5) for (const x of actors.values()) if (!x.me && Math.random() < .6) { emote(x, COMM.k === 'chorus' ? '😭' : '🎉'); if (Math.random() < .3) say(x, COMM.k === 'chorus' ? pick(['흑흑', '으허엉', '내 돈…']) : pick(['예이!', '오늘 치킨!', '🎉🎉']), 1800); }
       }, 3000);
     },
     enter(sym){
       const a = A[sym]; if (!a) return;
       if (ROOM !== sym){ gen++; ROOM = sym; closePop(); for (const x of actors.values()) x.el.remove(); actors.clear(); RESID = []; TODAYN = 0; build(a); sync(); load(); }
-      else { const sc = scene(a); if (el.dataset.key !== sc.w + sc.night + sc.place) build(a); }
+      else if (el.dataset.key !== keyOf(a)) build(a);
       track(); if (!raf){ last = performance.now(); raf = requestAnimationFrame(step); }
     },
     leave(){ if (ROOM){ ROOM = null; closePop(); for (const x of actors.values()) x.el.remove(); actors.clear(); track(); } },
@@ -713,7 +847,7 @@ const PZ = (() => {
       if (m.symbol !== ROOM) return;
       let r = RESID.find(x => x.id === m.author_id);
       if (!r){ r = {id: m.author_id}; RESID.unshift(r); if (!au?.is_bot) TODAYN++; }
-      Object.assign(r, {nick: au?.nickname || '누군가', bot: !!au?.is_bot, mood: m.mood, body: m.body, moodId: m.id});
+      Object.assign(r, {nick: au?.nickname || '누군가', bot: !!au?.is_bot, mood: m.mood, body: m.body, moodId: m.id, at: m.created_at || new Date().toISOString()}); renderEv();
       sync(); const a = actors.get(m.author_id);
       if (a){ a.drawn = ''; emote(a, MOOD[m.mood].e, 2); setTimeout(() => say(a, m.body ? cut(m.body, 28) : MOOD[m.mood].n + '!', 5000), 300); }
       if (m.author_id === myId()) track();
