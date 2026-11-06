@@ -1,291 +1,158 @@
-// Operator bots. Runs every 5 minutes (pg_cron, x-cron-secret). Finds events (big moves, volume spikes,
-// foreign/institution flows, market open/close, showdown results, new territories, fresh user posts,
-// lost/won calls) and writes short satirical war reports and comments as clearly-labeled bot accounts.
-// No AI and no cost: every text is assembled from sentence fragments plus the live numbers.
+// Bots for "오늘 장 어땠어?". Runs every 5 minutes (pg_cron, x-cron-secret).
+// - comment on fresh user moods (토닥 / 같이 웃기 / 축하), one persona per mood, sometimes a second
+// - share a mood themselves when the market makes a big move, or when the room has been quiet
+// - chat under each other's moods so the feed feels alive
+// No AI and no cost: every line is picked from sentence banks and filled with live numbers.
+// Bot posts are labeled in the UI and excluded from today's mood stats.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { L, REACTORS_UP, REACTORS_DOWN, COMMENTERS, IDLERS } from './lines.ts';
+import { L } from './lines.ts';
 
-type Asset = { symbol: string; name: string; short: string; kind: string; region: string; threshold: number; price: number | null; change: number | null; change_pct: number | null; market_open: boolean | null; vol_ratio: number | null; frontier: boolean; added_at: string | null; flows: any };
-type Task = { id: string; kind: 'post' | 'comment'; bot: string; symbol?: string; category?: string; post_id?: string; title: string; body: string; log: string[] };
+type Asset = { symbol: string; name: string; short: string; kind: string; region: string; price: number | null; change_pct: number | null; market_open: boolean | null };
+type Task = { id: string; kind: 'mood' | 'comment'; bot: string; mood?: string; symbol?: string | null; mood_id?: string; body: string; log: string[] };
 
-const MAX_POSTS = 3, MAX_COMMENTS = 6, DAILY_POST_CAP = 70;
+const MAX_MOODS = 2, MAX_COMMENTS = 8, DAILY_MOOD_CAP = 40;
 const pick = <T>(a: T[]) => a[Math.floor(Math.random() * a.length)];
-const maybe = (p: number, s: string) => Math.random() < p ? s : '';
+const shuffle = <T>(a: T[]) => a.slice().sort(() => Math.random() - .5);
 const kst = () => new Date(Date.now() + 9 * 3600e3);
 const kDate = () => kst().toISOString().slice(0, 10);
+const CRISIS = /죽고\s*싶|자살|극단적\s*선택|사라지고\s*싶|살기\s*싫|다\s*끝내고\s*싶/;
+const OLD_WAR = /병영|동지|전사|패전|승전|진영|전투|척살|포로|기원 접수|촛불|참여|판정/;   // lines written for the retired board
 
-// ---------------------------------------------------------------- Korean helpers
-// pick the right particle for the last syllable: 이/가, 은/는, 을/를, 과/와, 으로/로
+// ---------------------------------------------------------------- Korean helpers ({name|이가} → 코스피가)
 function hasBatchim(w: string) {
   const ch = w.trim().slice(-1), c = ch.charCodeAt(0);
   if (c >= 0xac00 && c <= 0xd7a3) return (c - 0xac00) % 28 !== 0;
-  return /[0-9lmnLMN]$/.test(ch) && !/[2459]$/.test(ch);   // rough guess for digits / latin letters
+  return /[0-9lmnLMN]$/.test(ch) && !/[2459]$/.test(ch);
 }
-const J = (w: string, withB: string, without: string) => w + (hasBatchim(w) ? withB : without);
-// "{name|이가}" style placeholders
 function fill(s: string, v: Record<string, string>) {
   return s.replace(/\{(\w+)(?:\|(\S+?))?\}/g, (_, k, p) => {
     const w = v[k] ?? ''; if (!p) return w;
     const [a, b] = ({ 이가: ['이', '가'], 은는: ['은', '는'], 을를: ['을', '를'], 과와: ['과', '와'], 으로: ['으로', '로'] } as Record<string, string[]>)[p] || ['', ''];
-    return J(w, a, b);
+    return w + (hasBatchim(w) ? a : b);
   }).replace(/\s{2,}/g, ' ').trim();
 }
-const compose = (v: Record<string, string>, ...parts: (string[] | string)[]) =>
-  fill(parts.map(p => Array.isArray(p) ? pick(p) : p).filter(Boolean).join(' '), v);
+const fmtC = (a: Asset) => `${+(a.change_pct || 0) > 0 ? '+' : ''}${(+(a.change_pct || 0)).toFixed(2)}%`;
+const vars = (a?: Asset): Record<string, string> => a ? { name: a.name, short: a.short, chg: fmtC(a) } : {};
 
-// ---------------------------------------------------------------- market helpers
-const mv = (a: Asset) => a.kind === 'BOND' ? -(+(a.change || 0)) : +(a.change_pct || 0);
-const ctl = (a: Asset) => Math.round(50 + 50 * Math.max(-1, Math.min(1, mv(a) / +a.threshold)));
-const fmtC = (a: Asset) => a.kind === 'BOND' ? `금리 ${(+(a.change || 0) * 100 > 0 ? '+' : '')}${(+(a.change || 0) * 100).toFixed(1)}bp` : `${+(a.change_pct || 0) > 0 ? '+' : ''}${(+(a.change_pct || 0)).toFixed(2)}%`;
-const side = (a: Asset) => mv(a) >= 0 ? '상승파' : '하락파';
-const eok = (v: number) => Math.abs(v) >= 1e4 ? `${(Math.abs(v) / 1e4).toFixed(1)}조` : `${Math.round(Math.abs(v)).toLocaleString('ko-KR')}억`;
-function tod() { const h = kst().getUTCHours(); return h < 5 ? '새벽' : h < 9 ? '이른 아침' : h < 12 ? '오전' : h < 14 ? '점심시간' : h < 18 ? '오후' : h < 22 ? '저녁' : '야심한 밤'; }
-const DOW = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
-function kindWord(a: Asset) { return a.kind === 'CRYPTO' ? '코인판' : a.kind === 'BOND' ? '채권 해역' : a.kind === 'FX' ? '환율 협곡' : a.region === 'US' ? '미국장' : a.frontier ? '개척지' : '국장'; }
-function vars(a: Asset, extra: Record<string, string> = {}): Record<string, string> {
-  const k = kst();
-  return { name: a.name, short: a.short, chg: fmtC(a), ctl: String(ctl(a)), side: side(a), enemy: side(a) === '상승파' ? '하락파' : '상승파',
-    tod: tod(), dow: DOW[k.getUTCDay()], where: kindWord(a), color: ctl(a) >= 50 ? '빨강' : '파랑', ...extra };
+// ---------------------------------------------------------------- sentence banks
+// comments under a user's mood, by mood. {name}/{chg} only used when the mood names a ticker.
+const CM: Record<string, string[]> = {
+  rekt: ['털린 사람 여기 한 명 추가요. 같이 줄 서요 🫠', '계좌가 파란 건 하늘을 닮아서예요. 넓은 마음으로…', '오늘 털린 거 내일의 나한테 맡깁시다.', '손실은 일시적, 이 글은 영원. 기록 남겨 줘서 고마워요.', '괜찮아요, 시장도 가끔 실수해요. 거의 매일이지만.', '저도 오늘 앱 열었다가 바로 닫았어요 🤝', '{name} {chg}… 그 와중에 글 남긴 멘탈 인정합니다.', '{name|이가} 오늘 좀 너무했네요. 대신 사과드립니다.'],
+  empty: ['허탈할 땐 치킨이 국룰입니다 🍗', '멍때리기 대회 나가면 오늘 우승각이에요.', '차트 보지 말고 하늘 한번 봐요. 하늘은 안 빠져요.', '그 기분 알아요. 화면만 쳐다보다 하루 끝나는 느낌.', '허탈함은 반으로 나누면 반이 된대요. 저 반 가져갈게요.', '{name} {chg}… 할 말을 잃게 만드는 숫자네요.'],
+  unfair: ['억울한 건 당연해요. 시장이 나만 피해 간 거 맞아요.', '판 날 오르고 산 날 내리는 거, 과학적으로 증명된 현상이에요.', '시장한테 정식으로 항의서 넣어 드릴게요. 답장은 안 와요.', '억울하면 샌드백 한 대 치고 오세요 🥊', '{name}, 왜 하필 오늘이야. 같이 따져 줄게요.', '내가 사면 고점, 팔면 저점. 오늘도 법칙 성립.'],
+  meh: ['그냥저냥이 제일 좋은 날이에요. 진짜로.', '무난한 하루, 계좌도 무난하길.', '평화로운 날엔 커피나 한 잔 ☕', '아무 일 없는 게 제일 큰 일이죠.', '오늘은 시장도 나도 졸린 날.'],
+  held: ['버틴 게 제일 어려운 거예요. 오늘의 MVP 👏', '멘탈 근육 +1 획득!', '흔들려도 안 판 손가락, 칭찬합니다.', '버티는 사람이 결국 웃더라고요. 대체로요.', '{name} {chg}에도 버티셨다니, 존경합니다.'],
+  won: ['축하해요! 근데 너무 크게 웃으면 옆 사람이 울어요 😂', '벌었으면 오늘 밥은 그쪽이 사는 걸로.', '부럽다… 진심 반, 질투 반.', '이 기세 그대로 겸손 유지! 🙏', '{name} {chg}! 오늘은 당신이 주인공.', '자랑은 적당히, 치킨은 넉넉히 🍗'],
+};
+// persona pools per mood, and which of their own slots fit
+const POOL: Record<string, string[]> = {
+  rekt: ['grandma', 'cynic', 'optimist', 'ramen', 'salaryman', 'doomer'], empty: ['grandma', 'ramen', 'salaryman', 'cynic', 'optimist'],
+  unfair: ['cynic', 'contra', 'salaryman', 'ramen', 'grandma'], meh: ['salaryman', 'ramen', 'grandma', 'cynic', 'seer'],
+  held: ['grandma', 'optimist', 'salaryman', 'chartist', 'meter'], won: ['optimist', 'grandma', 'cynic', 'degen', 'salaryman', 'contra'],
+};
+const SLOT: Record<string, string[]> = { rekt: ['vent', 'lose'], empty: ['vent'], unfair: ['vent', 'lose'], meh: ['chat'], held: ['win', 'chat'], won: ['win'] };
+
+// moods bots post on a big move
+const MOVE: Record<string, string[]> = {
+  down: ['{name} {chg}. 오늘 다들 괜찮아요? 저는 아니에요.', '{name|이가} {chg}… 앱 지울까 고민 중', '{chg} 실화인가요 {name}', '{name} {chg}. 오늘 저녁은 라면입니다.', '{name|이가} 오늘 {chg}. 할 말은 많지만 하지 않겠습니다.'],
+  up: ['{name} {chg}! 오늘만큼은 내가 천재', '{name|이가} {chg}… 이게 무슨 일이죠', '{name} {chg}. 근데 왜 내 계좌는 그대로죠?', '{chg} 찍은 {name}, 오늘 치킨 각', '{name|이가} {chg}. 겸손하게 기뻐하는 중'],
+};
+// bot-to-bot chatter under bot moods
+const BANTER = ['ㅋㅋㅋ 공감 100%', '저도요… 🫠', '이분 매일 이래요', '오늘도 한 명 추가', '그래도 버텨 봐요', '내일은 다를 거예요. 아마도.'];
+
+function personaLine(who: string, mood: string, v: Record<string, string>, hasSym: boolean) {
+  const own = (SLOT[mood] || []).flatMap(s => L[who]?.[s] || []);
+  const bank = [...CM[mood], ...own].filter(s => !OLD_WAR.test(s) && (hasSym || !s.includes('{')));
+  return bank.length ? fill(pick(bank), v) : null;
 }
-
-// ---------------------------------------------------------------- fragment banks
-const F = {
-  // headlines
-  moveTitleUp: ['[속보] {name} {chg}', '{name} {chg}, 상승파 대질주', '{tod} {name} {chg} 돌파', '{name} {chg}… 하락파 멘붕', '빨간 깃발 휘날리는 {name} {chg}', '{name} 로켓 {chg} 발사'],
-  moveTitleDown: ['[속보] {name} {chg}', '{name} {chg}, 하락파 신났다', '{tod} {name} {chg} 와르르', '{name} {chg}… 상승파 멘붕', '파란 비 쏟아지는 {name} {chg}', '{name} {chg} 미끄럼틀'],
-  bondTitle: ['[해역 속보] {name} {chg}', '{name} {chg}, 채권 함대 {side} 우세', '{tod}의 채권 해역, {name} {chg}'],
-  fxTitle: ['[협곡 속보] {name} {chg}', '{name} {chg}, 환율 협곡이 흔들린다', '{tod} {name} {chg}… 수입업자들 표정 관리 중'],
-  // body: opener / fact / quip / closer
-  opener: ['{where}에서 긴급 소식.', '방금 알림이 울렸다.', '{dow} {tod}, 시장이 요동친다.', '방금 들어온 소식이다.', '현장에서 전한다.', '연합 통신 속보.'],
-  fact: ['{name|이가} 오늘 {chg} 움직였고 상승파 점령률은 {ctl}%.', '{name} {chg}. 지도는 {color}으로 물들었다.', '현재 {name} {chg}, 상승파 점령률 {ctl}%.'],
-  quipUp: ['어제 판 개미들은 오늘 조용하다.', '갑자기 다들 원래 알고 있었다고 한다.', 'FOMO 초대장이 대량 발송됐다.', '존버 팀이 드디어 고개를 들었다.', '하락파는 "잠깐 쉬는 것"이라고 해명했다.', '빨간불을 본 개미들이 일제히 계좌를 열어 봤다.', '이럴 때 꼭 "이제 시작"이라는 사람이 나타난다.', '익절한 사람은 배 아프고, 안 판 사람은 불안하다.'],
-  quipDown: ['오늘은 차트 안 본 사람이 승자다.', '단톡방마다 한숨 이모티콘이 쏟아진다.', '존버 팀은 자리를 지키는 중이라는데, 그 자리가 어딘지 아무도 모른다.', '상승파는 "건강한 조정"이라고 발표했다.', '파란 화면 앞에서 개미들이 단체로 명상에 들어갔다.', '"장기 투자자입니다"라는 말이 다시 유행이다.', '앱을 지웠다 깔았다 하는 개미가 늘고 있다.', '바닥이라고 외친 사람이 벌써 세 번째다.'],
-  quipBondUp: ['금리가 내려 채권 함대가 웃는다. 대출 있는 개미도 살짝 웃는다.', '채권 강세. 연준 한마디에 함대가 출렁였다는 소문이다.'],
-  quipBondDown: ['금리가 올라 채권 함대가 가라앉는 중. 예금 이자 생각하는 개미만 웃는다.', '채권 약세. 금리 상승의 파도가 해역을 덮쳤다.'],
-  quipFx: ['해외 직구 장바구니가 조용히 비워지고 있다.', '여행 계획 짜던 개미가 환율 계산기를 다시 두드린다.', '수출 팀은 미소를, 수입 팀은 한숨을.'],
-  quipCrypto: ['고원은 쉬는 날이 없다. 잠도 없다.', '새벽 세 시에도 장이 열려 있는 유일한 곳.', '"이번엔 다르다"는 말이 고원에 또 울려 퍼진다.'],
-  closer: ['이유는 아무도 모른다. 원래 그렇다.', '전문가들은 사후에 이유를 찾아낼 예정이다.', '재미로만 보시오.', '다음 소식을 기다려라.', '참여는 자유, 멘탈은 각자.', ''],
-  // volume
-  volTitle: ['{name} 거래량 평소의 {vr}배', '{name}에 사람 {vr}배 몰림', '{name} 마을이 북적인다 (거래량 {vr}배)'],
-  volQuip: ['누가 사고 누가 파는지는 모르지만 다들 바쁘다.', '축제인지 피난인지는 내일 알게 된다.', '조용하던 동네에 갑자기 장이 섰다.', '이럴 땐 보통 누군가는 알고 있다. 그게 우리는 아니다.'],
-  // flows
-  flowTitleBuy: ['외국인, {name}에 {amt} 투입', '[수급] 외국인 {name} {amt} 순매수', '외국인 상륙: {name} {amt}'],
-  flowTitleSell: ['외국인, {name}에서 {amt} 철수', '[수급] 외국인 {name} {amt} 순매도', '외국인 탈출: {name} {amt}'],
-  flowQuip: ['개인은 {retail}, 기관은 {inst}로 응수했다.', '그 사이 개인은 {retail}. 늘 그렇듯 반대편에 섰다.', '기관 {inst}, 개인 {retail}. 이 판의 주인은 누구인가.'],
-  // sessions
-  openTitle: ['🔔 {name} 장 열림', '🔔 {name} 장 시작, 출발 {chg}', '🔔 {dow} {name} 개장'],
-  openBody: ['커피 들고 자리로. 출발은 {chg}.', '오늘의 목표: "본전만 찾자". 시작은 {chg}.', '각자 자리에서 기도를 시작해 주시기 바랍니다. 출발 {chg}.'],
-  closeTitle: ['🌙 {name} 장 마감, 오늘 {chg}', '🌙 {name} 장 마감 {chg}', '🌙 {dow} {name} 오늘 끝'],
-  closeBody: ['오늘의 승자는 {side}. 패자는 저녁 메뉴로 위로받길.', '{side|이가} 웃으며 퇴근했다. 반대편은 야근 중.', '오늘 하루도 수고했다, 개미들. 계좌는 수고하지 않았지만.'],
-  // briefing
-  briefTitle: ['🗺 {tod} 시황 브리핑', '🗺 정기 시황 보고', '🗺 지금 판세 상승파 {pw}%'],
-  briefBody: ['판세 상승파 {pw}% 대 하락파 {pwd}%. 가장 뜨거운 곳은 {hot}.', '현재 지도의 {pw}%가 빨강. 격전지는 {hot}.', '상승파 {pw}%, 하락파 {pwd}%. 제일 핫한 곳: {hot}.'],
-  briefQuip: ['운영진은 "상황을 예의주시 중"이라고 밝혔다. 늘 그렇듯.', '참여는 무료, 멘탈은 유료.', '지도를 보고 결정하지 말고, 지도를 보고 웃자.', '개미들은 오늘도 각자의 이유로 확신에 차 있다.'],
-  // contrarian general
-  contraTitle: ['🙃 역지표형의 한마디', '🙃 형 왈: 다수가 가면 나는 반대로', '🙃 긴급 공지 (믿지 마시오)'],
-  contraBody: ['최근 3시간 사람들은 {major} {majn}명, {minor} {minn}명.', '다수({majn}명)가 {major} 쪽에 줄을 섰다.'],
-  contraQuip: ['역사적으로 다수가 맞은 적이… 가끔 있긴 했다.', '이 형은 늘 그렇듯 반대편에서 홀로 서 있겠다. 외롭다.', '소문이 돌 때가 가장 위험한 법. 물론 형도 자주 틀린다.', '형의 승률은 기밀이다. 묻지 마라.'],
-  // fortune teller
-  seerTitle: ['🔮 {dow}의 종목 운세', '🔮 도사가 본 오늘의 시장', '🔮 오늘의 점괘'],
-  fortune: ['대길(大吉)이라 하면 떨어지겠지', '흉 속에 길이 숨어 있다', '동쪽에서 귀인이 온다 (아마 기관)', '급하게 쫓아가지 마라', '오늘은 쉬는 것도 전략', '서두르면 체한다', '귀가 얇아지는 날', '구관이 명관', '바람이 바뀐다, 방향은 모름'],
-  seerClose: ['재미로만 보시오. 운세보다 손절선.', '맞으면 도사 덕, 틀리면 시장 탓.', '복채는 받지 않는다. 손실도 책임지지 않는다.'],
-  // showdowns / frontier
-  battleTitle: ['🎯 대결 결과: {q}', '🎯 결과 발표: {q}'],
-  battleBody: ['판정 결과 "{win}" 승리. 참여 {n}명.', '"{win}" 쪽이 이겼다. 참여 {n}명.'],
-  battleQuip: ['승자는 인정 도장을, 패자는 교훈을 챙기시오.', '진 쪽은 다음 대결에서 만회하라.', '이긴 쪽은 겸손하게, 진 쪽은 조용히.'],
-  frontierTitle: ['🚩 새 종목 추가: {name}', '🚩 {name} 땅에 깃발이 꽂혔다', '🚩 {name} 입장!'],
-  frontierBody: ['누군가 {name|을를} 데려왔다. 지금 {chg}.', '{name} 추가 완료. 판에 새 종목이 생겼다. 현재 {chg}.'],
-  frontierQuip: ['첫 참여자에게는 아무것도 없지만 명예는 있다.', '이제 오를지 내릴지 찍을 차례.', '새 판이 열렸다.'],
-};
-// comments
-const C = {
-  vent: ['토닥토닥. 계좌는 파랗지만 마음까지 파랄 필요는 없소.', '나도 거기 있었소. 같이 버팁시다, 동지여.', '물린 게 아니라 장기 투자로 전환된 거요. 그렇다고 해 둡시다.', '{name} {chg}인 날엔 다들 그 자리에 있소. 혼자가 아니오.', '자리에서 컵라면 하나 끓여 드리리다.', '오늘은 앱 끄고 산책 어떻소. 시장은 내일도 열리오.'],
-  wish: ['🔮 기원 접수. 하늘이 바쁘시니 순번대로 처리될 예정.', '🔮 촛불 하나 보탠다. 효과는 장담 못 함.', '🔮 {name}의 기운이… 흐릿하다. 계속 빌어 보시오.', '🔮 간절함은 전해졌소. 시장에게 전해질지는 모르겠지만.'],
-  call: ['확신에 찬 참여, 보기 좋소. 시장이 알아줄지는 별개요.', '다수가 그쪽이면 형은 반대로 가겠소. 행운을.', '그 근거, 차트에서 왔소 꿈에서 왔소?', '{name} {chg} 상황에서 그 선택이라… 용기는 인정하오.', '판정 시간까지 화장실은 미리 다녀오시오.'],
-  chat: ['시장에서도 밥은 먹어야지.', '이 글 보고 매매 결정하면 안 되오. 그래도 재밌군.', '병영에 활기가 도는군.', '좋은 수다는 장의 윤활유요.'],
-  info: ['정보 감사하오. 다만 정보와 수익은 사이가 안 좋소.', '좋은 정리군. 시장이 읽어 줄지는 모르겠지만.', '기록해 두겠소. 나중에 맞았는지 같이 봅시다.'],
-  lose: ['💀 패전 확인. 괜찮소, 시장도 가끔 틀린 사람을 맞다고 하니까.', '💀 이번엔 졌소. 다음엔… 또 모르지.', '💀 전사 처리됐소. 부활은 다음 참여에서.', '💀 {name}이 배신했군. 늘 그렇듯.'],
-  win: ['🎖 승전 축하하오! 이 기세 그대로… 겸손을 유지하시오.', '🎖 적중! 오늘은 당신이 형이오.', '🎖 인정 도장 수여. 액자에 걸어 두시오.'],
-};
-
-// a line from a persona's bank, or null if that persona has nothing for the slot
-const line = (bot: string, slot: string, v: Record<string, string>) => { const bank = L[bot]?.[slot]; return bank && bank.length ? fill(pick(bank), v) : null; };
-const shuffle = <T>(a: T[]) => a.slice().sort(() => Math.random() - .5);
 
 // ---------------------------------------------------------------- main
 Deno.serve(async (req) => {
   if (req.headers.get('x-cron-secret') !== Deno.env.get('CRON_SECRET')) return new Response('forbidden', { status: 403 });
   const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-  const now = Date.now(), date = kDate(), k = kst(), hour = k.getUTCHours();
+  const now = Date.now(), date = kDate(), hour = kst().getUTCHours();
   const ago = (min: number) => new Date(now - min * 60e3).toISOString();
 
-  const [{ data: assets }, { data: bots }, { data: recent }, { data: states }] = await Promise.all([
-    sb.from('assets').select('symbol,name,short,kind,region,threshold,price,change,change_pct,market_open,vol_ratio,frontier,added_at,flows').eq('active', true),
+  const [{ data: assets }, { data: bots }, { data: recent }, { data: moods }] = await Promise.all([
+    sb.from('assets').select('symbol,name,short,kind,region,price,change_pct,market_open').eq('active', true),
     sb.from('profiles').select('id,bot_role').eq('is_bot', true),
-    sb.from('bot_log').select('key,at,val').gte('at', ago(60 * 48)),
-    sb.from('bot_log').select('key,at,val').like('key', 'state:%'),
+    sb.from('bot_log').select('key,at').gte('at', ago(60 * 48)),
+    sb.from('moods').select('id,mood,symbol,body,created_at,author:profiles!moods_author_id_fkey(is_bot,bot_role),comments:mood_comments(author:profiles!mood_comments_author_id_fkey(is_bot,bot_role))')
+      .eq('is_hidden', false).gte('created_at', ago(24 * 60)).order('created_at', { ascending: false }).limit(200),
   ]);
   if (!assets || !bots) return new Response('no data', { status: 500 });
   const BOT: Record<string, string> = Object.fromEntries(bots.map(b => [b.bot_role, b.id]));
-  const seen = new Map([...(recent || []), ...(states || [])].map(l => [l.key, l]));
+  const seen = new Set((recent || []).map(l => l.key));
   const A: Record<string, Asset> = Object.fromEntries((assets as Asset[]).map(a => [a.symbol, a]));
-  const all = Object.values(A);
+  const all = Object.values(A), ms = (moods || []) as any[];
+  const botMoodsToday = ms.filter(m => m.author?.is_bot).length;
 
-  const { count: botPostsToday } = await sb.from('posts').select('id, author:profiles!posts_author_id_fkey!inner(is_bot)', { count: 'exact', head: true }).eq('author.is_bot', true).gte('created_at', ago(60 * 24));
-  const capReached = (botPostsToday || 0) >= DAILY_POST_CAP;
-  const tasks: Task[] = [], stateWrites: { key: string; val: string }[] = [];
-  const nPosts = () => tasks.filter(t => t.kind === 'post').length, nComments = () => tasks.filter(t => t.kind === 'comment').length;
-  const post = (t: Omit<Task, 'kind'>) => { if (!capReached && nPosts() < MAX_POSTS && !t.log.some(x => seen.has(x))) tasks.push({ ...t, kind: 'post' }); };
-  const comment = (t: Omit<Task, 'kind' | 'title'>) => { if (nComments() < MAX_COMMENTS && !t.log.some(x => seen.has(x))) tasks.push({ ...t, title: '', kind: 'comment' }); };
+  const tasks: Task[] = [];
+  const n = (k: string) => tasks.filter(t => t.kind === k).length;
+  const addMood = (t: Omit<Task, 'kind'>) => { if (botMoodsToday + n('mood') < DAILY_MOOD_CAP && n('mood') < MAX_MOODS && !t.log.some(x => seen.has(x))) tasks.push({ ...t, kind: 'mood' }); };
+  const addCmt = (t: Omit<Task, 'kind'>) => { if (n('comment') < MAX_COMMENTS && !t.log.some(x => seen.has(x))) tasks.push({ ...t, kind: 'comment' }); };
 
-  // 1) market open / close
-  for (const sym of ['KOSPI', 'SPX']) {
-    const a = A[sym]; if (!a || a.market_open == null) continue;
-    const prev = seen.get('state:' + sym)?.val, cur = String(a.market_open);
-    if (prev !== undefined && prev !== cur) {
-      const v = vars(a);
-      post({ id: `sess-${sym}`, bot: 'reporter', symbol: sym, category: 'info', log: [`sess:${sym}:${date}:${cur}`],
-        title: compose(v, a.market_open ? F.openTitle : F.closeTitle), body: compose(v, a.market_open ? F.openBody : F.closeBody, maybe(.5, pick(F.closer))) });
+  // 1) comment on fresh user moods: first reply soon, a second one sometimes
+  for (const m of ms) {
+    if (m.author?.is_bot || Date.parse(m.created_at) < now - 90 * 60e3 || Date.parse(m.created_at) > now - 60e3) continue;
+    if (CRISIS.test(m.body || '')) continue;          // no jokes there; the page shows help lines instead
+    const botsIn = new Set(((m.comments || []) as any[]).filter(c => c.author?.is_bot).map(c => c.author.bot_role));
+    if (botsIn.size >= 2 || (botsIn.size === 1 && Math.random() > .25) || (botsIn.size === 0 && Math.random() > .9)) continue;
+    const a = m.symbol ? A[m.symbol] : undefined;
+    for (const who of shuffle(POOL[m.mood] || POOL.meh)) {
+      if (botsIn.has(who)) continue;
+      const txt = personaLine(who, m.mood, vars(a), !!a); if (!txt) continue;
+      addCmt({ id: `c-${m.id}-${who}`, bot: who, mood_id: m.id, body: txt, log: [`mc:${m.id}:${botsIn.size}`] }); break;
     }
-    if (prev !== cur) stateWrites.push({ key: 'state:' + sym, val: cur });
   }
 
-  // 2) big moves: first step and the extreme step only, at most one per run (biggest first)
-  for (const a of all.slice().sort((x, y) => Math.abs(mv(y) / y.threshold) - Math.abs(mv(x) / x.threshold))) {
+  // 2) big move → a persona shares a mood (first level and the extreme level, once a day each)
+  for (const a of all.slice().sort((x, y) => Math.abs(+(y.change_pct || 0)) - Math.abs(+(x.change_pct || 0)))) {
     if (!a.market_open || a.price == null) continue;
-    const m = a.kind === 'BOND' ? Math.abs(+(a.change || 0) * 100) : Math.abs(+(a.change_pct || 0));
-    const steps = a.kind === 'BOND' ? [8, 15, 25] : a.kind === 'FX' ? [0.8, 1.5, 2.5] : a.kind === 'INDEX' ? [2, 3.5, 5] : [3, 5, 8];
-    const lvl = steps.filter(s => m >= s).length;
-    if (!lvl || lvl === 2 || seen.has(`move:${a.symbol}:${date}:${lvl}`)) continue;
-    const v = vars(a), up = mv(a) >= 0;
-    const title = compose(v, a.kind === 'BOND' ? F.bondTitle : a.kind === 'FX' ? F.fxTitle : up ? F.moveTitleUp : F.moveTitleDown);
-    const quip = a.kind === 'BOND' ? (up ? F.quipBondUp : F.quipBondDown) : a.kind === 'FX' ? F.quipFx : a.kind === 'CRYPTO' && Math.random() < .4 ? F.quipCrypto : up ? F.quipUp : F.quipDown;
-    post({ id: `move-${a.symbol}`, bot: 'reporter', symbol: a.symbol, category: 'info', log: [`move:${a.symbol}:${date}:${lvl}`],
-      title, body: compose(v, maybe(.7, pick(F.opener)), F.fact, quip, maybe(.6, pick(F.closer))) });
-    break;
+    const c = +(a.change_pct || 0), steps = a.kind === 'INDEX' ? [2, 3.5, 5] : [3, 5, 8];
+    const lvl = steps.filter(s => Math.abs(c) >= s).length;
+    if (!lvl || lvl === 2) continue;
+    const up = c > 0, who = up ? pick(a.kind === 'CRYPTO' ? ['degen', 'optimist'] : ['optimist', 'salaryman', 'chartist']) : pick(['doomer', 'ramen', 'salaryman', 'cynic']);
+    addMood({ id: `mv-${a.symbol}`, bot: who, mood: up ? pick(['won', 'won', 'held']) : pick(['rekt', 'rekt', 'empty', 'unfair']), symbol: a.symbol,
+      body: fill(pick(MOVE[up ? 'up' : 'down']), vars(a)), log: [`mmove:${a.symbol}:${date}:${lvl}`] });
+    if (n('mood')) break;
   }
 
-  // 3) volume spikes
-  for (const a of all) {
-    if (!a.market_open || !a.vol_ratio || a.vol_ratio < 2.5) continue;
-    const v = vars(a, { vr: (+a.vol_ratio).toFixed(1) });
-    post({ id: `vol-${a.symbol}`, bot: 'reporter', symbol: a.symbol, category: 'info', log: [`vol:${a.symbol}:${date}`],
-      title: compose(v, F.volTitle), body: compose(v, F.fact, F.volQuip, maybe(.5, pick(F.closer))) });
-  }
-
-  // 4) foreign money: KOSPI intraday net flow beyond ±5,000억
+  // 3) quiet room (no mood in 40 min, 07–24시) → one persona says something
   {
-    const a = A.KOSPI, f = a?.flows?.now;
-    if (a && f && a.flows.live && Math.abs(f.foreign) >= 5000) {
-      const buy = f.foreign > 0, v = vars(a, { amt: eok(f.foreign), retail: (f.retail >= 0 ? '+' : '−') + eok(f.retail), inst: (f.inst >= 0 ? '+' : '−') + eok(f.inst) });
-      post({ id: 'flow-KOSPI', bot: 'reporter', symbol: 'KOSPI', category: 'info', log: [`flow:KOSPI:${date}:${buy ? 'b' : 's'}`],
-        title: compose(v, buy ? F.flowTitleBuy : F.flowTitleSell), body: compose(v, F.flowQuip, `코스피는 ${v.chg}.`, maybe(.5, pick(F.closer))) });
+    const last = ms[0] ? Date.parse(ms[0].created_at) : 0;
+    if (hour >= 7 && last < now - 40 * 60e3 && !n('mood') && Math.random() < .6) {
+      const avg = all.length ? all.reduce((s, a) => s + +(a.change_pct || 0), 0) / all.length : 0;
+      const mood = avg <= -1.5 ? pick(['rekt', 'empty', 'unfair']) : avg >= 1.5 ? pick(['won', 'held']) : pick(['meh', 'meh', 'held', 'empty']);
+      const who = pick(['grandma', 'cynic', 'ramen', 'salaryman', 'optimist', 'doomer', 'chartist', 'seer']);
+      const bank = (L[who]?.idle || []).filter(s => !OLD_WAR.test(s) && !s.includes('{'));
+      if (bank.length) addMood({ id: `idle-${who}`, bot: who, mood, symbol: null, body: pick(bank), log: [`midle:${date}:${hour}`] });
     }
   }
 
-  // 5) new territories
-  for (const a of all) {
-    if (!a.frontier || !a.added_at || Date.parse(a.added_at) < now - 30 * 60e3) continue;
-    const v = vars(a);
-    post({ id: `fr-${a.symbol}`, bot: 'pr', symbol: a.symbol, category: 'chat', log: [`frontier:${a.symbol}`], title: compose(v, F.frontierTitle), body: compose(v, F.frontierBody, F.frontierQuip) });
-  }
-
-  // 6) showdown results worth announcing (user-made, or system ones with 2+ soldiers)
-  const { data: done } = await sb.from('battles').select('id,symbol,question,option_a,option_b,winning_option,creator_id,entries:battle_entries(option)').eq('status', 'RESOLVED').gte('resolves_at', ago(30));
-  for (const b of done || []) {
-    const n = (b.entries || []).length; if (!b.creator_id && n < 2) continue;
-    const v = { q: b.question.slice(0, 24), win: b.winning_option === 'A' ? b.option_a : b.option_b, n: String(n) };
-    post({ id: `bt-${b.id}`, bot: 'pr', symbol: b.symbol, category: 'chat', log: [`battle:${b.id}`], title: compose(v, F.battleTitle), body: compose(v, F.battleBody, F.battleQuip) });
-  }
-
-  // 7) daily fortune 08:00–09:59 KST
-  if (hour >= 8 && hour < 10) {
-    const xs = all.slice().sort(() => Math.random() - .5).slice(0, 3);
-    const fs = F.fortune.slice().sort(() => Math.random() - .5);
-    if (xs.length === 3) post({ id: 'seer', bot: 'seer', symbol: xs[0].symbol, category: 'chat', log: [`seer:${date}`],
-      title: compose(vars(xs[0]), F.seerTitle), body: xs.map((x, i) => `${x.name}: ${fs[i]}.`).join(' ') + ' ' + pick(F.seerClose) });
-  }
-
-  // 8) contrarian general every 3 hours: mock the recent majority
-  {
-    const { data: calls } = await sb.from('posts').select('side').gte('created_at', ago(180)).not('side', 'is', null);
-    const up = (calls || []).filter(c => c.side === 'UP').length, down = (calls || []).length - up;
-    if (up + down >= 2 && up !== down) {
-      const v = { major: up > down ? '상승파' : '하락파', minor: up > down ? '하락파' : '상승파', majn: String(Math.max(up, down)), minn: String(Math.min(up, down)) };
-      post({ id: 'contra', bot: 'contra', symbol: 'KOSPI', category: 'chat', log: [`contra:${date}:${Math.floor(hour / 3)}`], title: compose(v, F.contraTitle), body: compose(v, F.contraBody, F.contraQuip) });
-    }
-  }
-
-  // 9) briefing when bots have been quiet for 50 minutes
-  {
-    const last = [...seen.values()].filter(l => l.key.startsWith('posted:')).sort((a, b) => Date.parse(b.at) - Date.parse(a.at))[0];
-    if ((!last || Date.parse(last.at) < now - 50 * 60e3) && nPosts() === 0 && all.length) {
-      const pw = Math.round(all.reduce((s, a) => s + ctl(a), 0) / all.length);
-      const hot = all.slice().sort((a, b) => Math.abs(mv(b) / b.threshold) - Math.abs(mv(a) / a.threshold)).slice(0, 3);
-      const v = { ...vars(hot[0]), pw: String(pw), pwd: String(100 - pw), hot: hot.map(h => `${h.name}(${fmtC(h)})`).join(', ') };
-      post({ id: 'brief', bot: 'reporter', symbol: hot[0].symbol, category: 'info', log: [`brief:${date}:${hour}:${k.getUTCMinutes() >= 30 ? 1 : 0}`],
-        title: compose(v, F.briefTitle), body: compose(v, F.briefBody, F.briefQuip) });
-    }
-  }
-
-  // 10) bot banter: other personas react under recent bot reports (a little thread per post)
-  const { data: botPosts } = await sb.from('posts').select('id,symbol,category,author:profiles!posts_author_id_fkey(is_bot,bot_role),comments(author:profiles!comments_author_id_fkey(bot_role))').gte('created_at', ago(45)).eq('is_hidden', false).order('created_at', { ascending: false }).limit(8);
-  for (const p of botPosts || []) {
-    const au = p.author as any; if (!au?.is_bot) continue;
-    const done = new Set([au.bot_role, ...((p.comments as any[]) || []).map(c => c.author?.bot_role).filter(Boolean)]);
-    if (done.size >= 5 || Math.random() > .6) continue;
-    const a = A[p.symbol]; const v = a ? vars(a) : { name: p.symbol, chg: '' };
-    const up = a ? mv(a) >= 0 : true;
-    let pool = up ? REACTORS_UP : REACTORS_DOWN;
-    if (a?.kind === 'CRYPTO') pool = [...pool, 'degen', 'degen'];
-    if (p.category === 'chat') pool = COMMENTERS.chat;
-    const who = shuffle(pool).find(b => !done.has(b)); if (!who) continue;
-    const txt = line(who, p.category === 'chat' ? 'chat' : up ? 'react_up' : 'react_down', v); if (!txt) continue;
-    comment({ id: `b-${p.id}-${who}`, bot: who, post_id: p.id, body: txt, log: [`banter:${p.id}:${who}`] });
-  }
-
-  // 11) persona comments on fresh user posts
-  const { data: fresh } = await sb.from('posts').select('id,category,side,symbol,author:profiles!posts_author_id_fkey(is_bot)').gte('created_at', ago(60)).eq('is_hidden', false).order('created_at', { ascending: false }).limit(20);
-  for (const p of fresh || []) {
-    if ((p.author as any)?.is_bot || Math.random() > .8) continue;
-    const a = A[p.symbol]; const v = a ? vars(a) : { name: p.symbol, chg: '' };
-    const isCall = p.category === 'forecast' || p.category === 'bet';
-    const pool = COMMENTERS[isCall ? 'call' : p.category] || COMMENTERS.chat;
-    const slot = isCall ? (p.side === 'DOWN' ? 'call_down' : 'call_up') : p.category;
-    for (const who of shuffle(pool)) { const txt = line(who, slot, v); if (txt){ comment({ id: `c-${p.id}`, bot: who, post_id: p.id, body: txt, log: [`cmt:${p.id}`] }); break; } }
-  }
-
-  // 12) calls that just won or lost
-  const { data: scored } = await sb.from('posts').select('id,result,symbol,category,author:profiles!posts_author_id_fkey(is_bot)').in('category', ['forecast', 'bet', 'wish']).not('result', 'is', null).gte('settle_at', ago(15)).limit(10);
-  for (const p of scored || []) {
-    if ((p.author as any)?.is_bot) continue;
-    const lost = p.result === 'LOSE'; if (!lost && Math.random() > .6) continue;
-    const a = A[p.symbol]; const v = a ? vars(a) : { name: p.symbol, chg: '' };
-    const pool = p.category === 'wish' ? ['seer', 'grandma', 'optimist'] : lost ? ['cynic', 'doomer', 'grandma', 'ramen', 'optimist', 'salaryman', 'contra'] : ['pr', 'optimist', 'grandma', 'salaryman', 'ramen', 'degen'];
-    for (const who of shuffle(pool)) { const txt = line(who, lost ? 'lose' : 'win', v); if (txt){ comment({ id: `r-${p.id}`, bot: who, post_id: p.id, body: txt, log: [`res:${p.id}`] }); break; } }
-  }
-
-  // 13) idle musings when the square is quiet (35 min), one persona at a time
-  {
-    const last = [...seen.values()].filter(l => l.key.startsWith('posted:')).sort((a, b) => Date.parse(b.at) - Date.parse(a.at))[0];
-    if ((!last || Date.parse(last.at) < now - 35 * 60e3) && nPosts() === 0 && Math.random() < .7) {
-      const who = pick(IDLERS), a = who === 'degen' ? A.BTCUSDT : pick(all);
-      const v = a ? vars(a) : {}; const title = line(who, 'idle_t', v), body = line(who, 'idle', v);
-      if (title && body && a) post({ id: `idle-${who}`, bot: who, symbol: a.symbol, category: 'chat', title, body, log: [`idle:${date}:${hour}:${who}`] });
-    }
+  // 4) bot-to-bot: someone chimes in under a recent bot mood
+  for (const m of ms.filter(m => m.author?.is_bot && Date.parse(m.created_at) > now - 40 * 60e3).slice(0, 3)) {
+    const done = new Set([m.author.bot_role, ...((m.comments || []) as any[]).map(c => c.author?.bot_role).filter(Boolean)]);
+    if (done.size >= 3 || Math.random() > .5) continue;
+    const who = shuffle(POOL[m.mood] || POOL.meh).find(b => !done.has(b)); if (!who) continue;
+    const a = m.symbol ? A[m.symbol] : undefined;
+    const txt = Math.random() < .3 ? pick(BANTER) : personaLine(who, m.mood, vars(a), !!a); if (!txt) continue;
+    addCmt({ id: `b-${m.id}-${who}`, bot: who, mood_id: m.id, body: txt, log: [`mb:${m.id}:${who}`] });
   }
 
   // ---------------------------------------------------------------- write
-  const wrote: string[] = [], errs: string[] = [], logRows: { key: string; val?: string }[] = [...stateWrites];
+  const wrote: string[] = [], errs: string[] = [], logRows: string[] = [];
   for (const t of tasks) {
     const bot = BOT[t.bot]; if (!bot) continue;
     try {
-      if (t.kind === 'post'){ const { error } = await sb.rpc('bot_post', { p_bot: bot, p_symbol: t.symbol, p_category: t.category, p_title: t.title.slice(0, 40), p_body: t.body.slice(0, 400) }); if (error) throw error; logRows.push({ key: `posted:${t.id}:${now}` }); }
-      else { const { error } = await sb.rpc('bot_comment', { p_bot: bot, p_post: t.post_id, p_body: t.body.slice(0, 180) }); if (error) throw error; }
-      t.log.forEach(key => logRows.push({ key })); wrote.push(t.id);
+      const { error } = t.kind === 'mood'
+        ? await sb.rpc('bot_share_mood', { p_bot: bot, p_mood: t.mood, p_symbol: t.symbol ?? null, p_body: t.body })
+        : await sb.rpc('bot_mood_comment', { p_bot: bot, p_mood: t.mood_id, p_body: t.body });
+      if (error) throw error;
+      logRows.push(...t.log); wrote.push(t.id);
     } catch (e) { errs.push(`${t.id}: ${String((e as any)?.message || e).slice(0, 80)}`); }
   }
-  if (logRows.length) await sb.from('bot_log').upsert(logRows.map(r => ({ key: r.key, val: r.val ?? null, at: new Date().toISOString() })));
+  if (logRows.length) await sb.from('bot_log').upsert(logRows.map(key => ({ key, val: null, at: new Date().toISOString() })));
   await sb.from('bot_log').delete().lt('at', ago(60 * 24 * 3)).not('key', 'like', 'state:%');
-  return new Response(JSON.stringify({ wrote, errs: errs.length ? errs : undefined, samples: tasks.slice(0, 2).map(t => t.title || t.body) }), { headers: { 'content-type': 'application/json' } });
+  return new Response(JSON.stringify({ wrote, errs: errs.length ? errs : undefined, samples: tasks.slice(0, 3).map(t => t.body) }), { headers: { 'content-type': 'application/json' } });
 });
