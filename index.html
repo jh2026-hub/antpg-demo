@@ -175,6 +175,45 @@ table.t .r{text-align:right}
 .score{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;text-align:center}
 .score b{font-family:'Galmuri11',monospace;font-size:32px;display:block;line-height:1.1}
 .lb td{vertical-align:middle}
+/* control map, quick play, heat */
+.power{margin:12px -16px 0;padding:10px 16px 8px;background:#0e131c;border-top:1px solid var(--line)}
+.power .bar{height:16px;margin:6px 0}
+.regs{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:11.5px;color:var(--muted)}
+.regs i{font-style:normal;font-weight:700}
+.pin{cursor:pointer}
+.pin.fire{border-color:#ff8a3d;box-shadow:0 0 0 2px rgba(255,120,40,.45),0 0 14px rgba(255,120,40,.6);animation:firepin .7s ease-in-out infinite alternate}
+.pin .fl{position:absolute;top:-13px;right:-7px;font-size:14px;font-style:normal;animation:flick .5s ease-in-out infinite alternate}
+@keyframes firepin{to{box-shadow:0 0 0 3px rgba(255,160,60,.6),0 0 22px rgba(255,90,30,.8)}}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chip2{font-size:12px;padding:3px 8px;border-radius:999px;background:var(--card2);border:1px solid var(--line);white-space:nowrap}
+.chip2.hot{background:#3a1a0e;border-color:#ff8a3d;color:#ffcf9a;animation:firepin .8s ease-in-out infinite alternate}
+.qq{font-weight:800;font-size:17px;text-align:center;margin:14px 0 4px}
+.qbtns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 8px}
+.qb{min-height:96px;border-radius:16px;border:0;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-weight:800;transition:transform .12s}
+.qb span{font-size:26px;line-height:1}.qb b{font-size:19px}.qb small{font-size:12px;opacity:.85;font-weight:600}
+.qb.up{background:linear-gradient(160deg,#ff5a6a,#c3243a)}.qb.down{background:linear-gradient(160deg,#5b9bff,#1f4fc0)}
+.qb:active{transform:scale(.95)}.qb:disabled{opacity:.5}
+.inl{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.ib{min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--card2);font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px}
+.ib.on{border-color:var(--gold);background:#2a2412}.ib.u{border-color:#6b2a33;color:#ffb3bb}.ib.d{border-color:#23406e;color:#a9c8ff}
+.ib:active{transform:scale(.94)}
+.mycall{display:grid;grid-template-columns:auto 1fr auto;gap:2px 8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.mycall .s2{grid-column:2/4;font-size:12.5px;color:var(--muted)}
+.mycall .st{font-size:12px;font-weight:700}.mycall .st.win{color:#4ade80}.mycall .st.lose{color:#fca5a5}
+.onb{border-color:#6b5a1e;background:linear-gradient(160deg,#231f10,var(--card))}
+.onb .x{background:none;border:0;color:var(--muted);font-size:18px;width:36px;height:36px}
+.steps{list-style:none;padding:0;margin:8px 0 12px;display:grid;gap:8px}
+.steps li{display:flex;gap:10px;align-items:center;font-size:14px}
+.steps li b{width:26px;height:26px;border-radius:50%;background:var(--gold);color:#1d1600;display:flex;align-items:center;justify-content:center;flex:none;font-family:'Galmuri11',monospace}
+.rules{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.rules button{min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--card2);font-size:13px;text-align:left;padding:6px 10px;line-height:1.3}
+.rules button.on{border-color:var(--gold);background:#2a2412;color:var(--gold);font-weight:700}
+.rules button:disabled{opacity:.35}
+.cr{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+.cr>div{min-width:0}.cr b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.field.fire:after{content:'';position:absolute;left:0;right:0;bottom:0;height:60%;pointer-events:none;background:linear-gradient(0deg,rgba(255,90,20,.32),transparent);animation:glow .6s ease-in-out infinite alternate}
+@keyframes glow{to{opacity:.55}}
+.bondnote{font-size:12px;color:var(--muted);margin-top:4px}
 /* motion */
 #mapfx{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1}
 .bar .bu{transform-origin:left}.bar .bd{transform-origin:right}
@@ -241,7 +280,7 @@ const CAT = Object.fromEntries(CATS.map(([k,e,n]) => [k, {e, n}]));
 const RXSET = {forecast:['charge','shield','flag','medal'], bet:['charge','shield','flag','medal'], wish:['pray','medal','hug','lol'], vent:['hug','metoo','lol','medal'], info:['medal','charge','metoo','lol'], chat:['lol','metoo','hug','charge']};
 const rxSum = p => Object.keys(RX).reduce((s, k) => s + (p['rx_' + k] || 0), 0);
 const catChips = (sel, act) => `<div class="cats"><button class="${!sel ? 'on' : ''}" data-act="${act}" data-v="">전체</button>${CATS.map(([k,e,n]) => `<button class="${sel === k ? 'on' : ''}" data-act="${act}" data-v="${k}">${e} ${n}</button>`).join('')}</div>`;
-const REGION = {KR:'코리아 반도', JP:'환율 해협', CRYPTO:'크립토 공중섬', US:'아메리카 대륙'};
+const REGION = {KR:'코리아 반도', JP:'환율 해협', CRYPTO:'크립토 공중섬', US:'아메리카 대륙', FRONTIER:'개척지 군도'};
 const ALLOWED_LINKS = ['naver.com','dart.fss.or.kr','kind.krx.co.kr','yna.co.kr','hankyung.com','mk.co.kr','sec.gov','reuters.com','bloomberg.com','coindesk.com','federalreserve.gov','bok.or.kr'];
 
 /* ========================================================== utils */
@@ -277,11 +316,28 @@ function fmtC(a){
   if (a.kind === 'BOND'){ const bp = (a.change || 0) * 100; return (bp > 0 ? '+' : '') + bp.toFixed(1) + 'bp'; }
   const c = a.change_pct || 0; return (c > 0 ? '+' : '') + c.toFixed(2) + '%';
 }
-const mv = a => a.kind === 'BOND' ? (a.change || 0) : (a.change_pct || 0);
+// bonds trade on yield: a falling yield is a stronger bond, so it counts as 상승군
+const mv = a => a.kind === 'BOND' ? -(a.change || 0) : (a.change_pct || 0);
 const score = a => Math.max(-1, Math.min(1, mv(a) / a.threshold));
 const dir = v => v > 0 ? 'up' : v < 0 ? 'down' : 'flat';
 const control = a => Math.round(50 + 50 * score(a));
 const isOpen = a => a.market_open !== false;
+function heat(a){
+  if (!a) return 0;
+  const f = FORCES[a.symbol] || {}, vr = +a.vol_ratio || 0;
+  let h = Math.abs(score(a)) * .55 + Math.min(.45, Math.max(0, (vr - 1) * .25)) + Math.min(.3, (f.recent || 0) * .08) + .05;
+  if (!isOpen(a)) h *= .35;
+  return Math.min(1, h);
+}
+const heatLbl = h => h >= .75 ? '🔥🔥 대화재' : h >= .5 ? '🔥 불타는 중' : h >= .3 ? '⚔️ 교전 격화' : '';
+function heatChips(a){
+  const h = heat(a), f = FORCES[a.symbol] || {}, vr = +a.vol_ratio || 0, out = [];
+  if (heatLbl(h)) out.push(`<span class="chip2 ${h >= .5 ? 'hot' : ''}">${heatLbl(h)}</span>`);
+  out.push(`<span class="chip2">${isOpen(a) ? '🟢 장중' : '🌙 장 마감'}</span>`);
+  if (vr >= 1.3) out.push(`<span class="chip2 ${vr >= 2 ? 'hot' : ''}">📈 거래량 평소의 ${vr.toFixed(1)}배</span>`);
+  if (f.recent) out.push(`<span class="chip2">⚔️ 1시간 참전 ${f.recent}명</span>`);
+  return out.join('');
+}
 function stateOf(a){
   const s = score(a);
   if (!isOpen(a)) return s > .15 ? '🏳️ 휴전 · 상승군 점령 유지' : s < -.15 ? '🏳️ 휴전 · 하락군 점령 유지' : '🏳️ 휴전 중 (장 마감)';
@@ -293,9 +349,11 @@ async function loadAssets(){
   const { data, error } = await sb.from('assets').select('*').order('sort');
   if (error) throw error;
   ASSETS = data.map(r => { const o = A[r.symbol] || {}; const live = o.liveWS && now() - o.liveAt < 15000;
-    Object.assign(o, r, {threshold:+r.threshold, lon:+r.lon, lat:+r.lat});
+    const keep = o.frontier && o._onMap ? {lon:o.lon, lat:o.lat} : {lon:+r.lon, lat:+r.lat};
+    Object.assign(o, r, {threshold:+r.threshold, vol_ratio:r.vol_ratio == null ? null : +r.vol_ratio}, keep);
     if (live){ o.price = o._p; o.change = o._c; o.change_pct = o._cp; } else { o.price = r.price == null ? null : +r.price; o.change = +r.change || 0; o.change_pct = +r.change_pct || 0; }
-    A[r.symbol] = o; return o; });
+    A[r.symbol] = o; return o; }).filter(o => o.active !== false);
+  layoutFrontier();
 }
 async function loadForces(){ try { const d = await rpc('front_forces'); FORCES = {}; d.forEach(x => FORCES[x.symbol] = x); } catch(e){} }
 function onAssetRow(r){
@@ -305,7 +363,7 @@ function onAssetRow(r){
   const prev = a.price;
   if (live){ a.price = a._p; a.change = a._c; a.change_pct = a._cp; } else { a.price = +r.price; a.change = +r.change; a.change_pct = +r.change_pct; }
   if (HIST[r.symbol]) HIST[r.symbol].push(+r.price);
-  if (!live && prev && a.price !== prev) mapDelta(a, prev);
+  if (!live && prev && a.price !== prev){ mapDelta(a, prev); }
   scheduleLive(); MAPDIRTY = true;
 }
 let wsTry = 0;
@@ -329,7 +387,7 @@ function refreshLive(){
   $$('[data-st]').forEach(el => { const a = A[el.dataset.st]; if (a) el.textContent = stateOf(a); });
   $$('[data-tag]').forEach(el => { const a = A[el.dataset.tag]; if (!a) return; const live = a.liveWS && now() - a.liveAt < 15000;
     el.textContent = live ? '● 실시간' : !isOpen(a) ? '장 마감' : a.delayed ? '지연 시세' : '● 실시간'; el.classList.toggle('live', live || (isOpen(a) && !a.delayed)); });
-  $$('[data-pin]').forEach(el => { const a = A[el.dataset.pin]; if (!a) return; el.style.borderTopColor = colOf(score(a)); el.classList.toggle('hot', Math.abs(score(a)) > .45 && isOpen(a)); });
+  $$('[data-pin]').forEach(el => { const a = A[el.dataset.pin]; if (!a) return; el.style.borderTopColor = colOf(score(a)); el.classList.toggle('fire', heat(a) >= .5); el.classList.toggle('hot', Math.abs(score(a)) > .45 && isOpen(a)); });
   $$('[data-fl]').forEach(el => { const a = A[el.dataset.fl]; if (!a) return; const c = control(a); el.textContent = el.dataset.side === 'U' ? `상승군 ${c}%` : `${100-c}% 하락군`; });
 }
 
@@ -360,13 +418,18 @@ function rankOf(st){
   if (t < 3) return '훈련병'; if (t < 10) return '이병'; if (t < 20) return '일병'; if (t < 30) return '상병';
   if (r >= .7) return '⭐ 백전노장'; if (r >= .6) return '대위'; if (r <= .3) return '🕵️ 적군 첩자 의심'; return '병장';
 }
-function need(){ if (!ME){ nickModal(); return false; } return true; }
+let LAST_ACT = null;
+function need(){ if (!ME){ UI.pending = LAST_ACT; nickModal(); return false; } return true; }
+const ADJ = ['용감한','졸린','배고픈','존버하는','물린','신난','침착한','성급한','눈치빠른','겁없는','떡상한','흔들리는','든든한','날쌘'];
+const NOUN = ['이병','척후병','포병','기마병','수병','나팔수','보급병','저격수','공병','통신병','돌격대','파수꾼'];
+const randName = () => ADJ[Math.random() * ADJ.length | 0] + NOUN[Math.random() * NOUN.length | 0] + (10 + Math.random() * 90 | 0);
 function nickModal(){
-  modal(`<div class="pix" style="font-size:20px;color:var(--gold)">⚔️ ${ME ? '개명' : '입대'}</div>
-    <div class="muted s" style="margin-top:6px">${ME ? '새 이름을 정해 주세요.' : '병사 이름만 정하면 바로 참전할 수 있어요. 계정은 이 브라우저에 묶여요.'}</div>
-    <input class="f" id="nk" maxlength="12" placeholder="병사 이름 (2~12자, 한글·영문·숫자)" style="margin-top:14px" autocomplete="off">
-    <button class="btn pri full" style="margin-top:10px" data-act="nick">${ME ? '바꾸기' : '입대하기'}</button>`);
-  setTimeout(() => $('#nk')?.focus(), 50);
+  const first = !ME;
+  modal(`<div class="pix" style="font-size:20px;color:var(--gold)">⚔️ ${first ? '입대' : '개명'}</div>
+    <div class="muted s" style="margin-top:6px">${first ? '이름만 정하면 끝! 아무 이름이나 괜찮고 나중에 바꿀 수 있어요.' : '새 이름을 정해 주세요.'}</div>
+    <div class="row" style="margin-top:14px"><input class="f" id="nk" maxlength="12" placeholder="병사 이름 (2~12자)" autocomplete="off" value="${first ? randName() : ''}"><button class="btn" data-act="reroll" aria-label="다른 이름">🎲</button></div>
+    <button class="btn pri full" style="margin-top:10px" data-act="nick">${first ? (UI.pending ? '입대하고 계속하기 ›' : '입대하기') : '바꾸기'}</button>`);
+  setTimeout(() => { const i = $('#nk'); if (i){ i.focus(); i.select(); } }, 50);
 }
 async function doNick(){
   const n = $('#nk').value.trim(); if (n.length < 2) return toast('이름은 2~12자');
@@ -375,52 +438,77 @@ async function doNick(){
     const { data:{ session } } = await sb.auth.getSession();
     if (!session){ const { error } = await sb.auth.signInAnonymously(); if (error) throw error; }
     const first = !ME; ME = await rpc('set_nickname', {nick:n});
-    closeModal(); render(true); toast(first ? `${ME.nickname} 훈련병, 입대를 환영한다!` : '이름을 바꿨어요');
+    const pend = UI.pending; UI.pending = null; closeModal();
+    if (pend){ await pend(); return; }
+    render(true); toast(first ? `${ME.nickname}, 입대를 환영해요!` : '이름을 바꿨어요');
   } catch(e){ toast(errMsg(e)); btn.disabled = false; }
 }
 
-/* ========================================================== fantasy world map */
+/* ========================================================== world map: territory control */
+// Each territory is split by a front line: 상승군 holds the west part, 하락군 the east part,
+// in proportion to who is winning today. A hatched band marks the contested zone.
 const MW = 100, MH = 124, CELL = 4;
-const LANDS = [
+const BASE_LANDS = [
   {id:'US', cx:29, cy:37, rx:26, ry:28, s:1.3, syms:['SPX','NVDA','TSLA','US2Y','US10Y']},
   {id:'KR', cx:68, cy:94, rx:29, ry:23, s:4.1, syms:['KOSPI','005930','000660','KR3Y','KR10Y']},
   {id:'USD', cx:62, cy:63, rx:8, ry:5, s:2.7, syms:['USDKRW']},
   {id:'JPY', cx:30, cy:75, rx:7, ry:5, s:5.5, syms:['JPYKRW']},
 ];
+const FR_SLOTS = [[10,88],[24,92],[9,103],[23,107],[11,117],[27,119]];
 const SKY = [{sym:'BTCUSDT', rx:9, ry:5, s:3.3, cls:''}, {sym:'ETHUSDT', rx:7, ry:4, s:6.1, cls:'b'}];
-const LABELS = [['아메리카 대륙',29,4],['코리아 반도',68,122.3],['환율 해협',46,66],['크립토 공중섬',82,4]];
+const LABELS = [['아메리카 대륙',29,4],['코리아 반도',68,122.3],['환율 해협',46,66],['크립토 공중섬',82,4],['개척지',9,82.5]];
+let LANDS = BASE_LANDS, GRID = null, PROV = null, BORDERS = null, BBOX = null, MAPDIRTY = true, MAPSIG = null;
 function blob(L, x, y){ const dx = (x - L.cx) / L.rx, dy = (y - L.cy) / L.ry, th = Math.atan2(dy, dx); return Math.hypot(dx, dy) < 1 + .10*Math.sin(3*th + L.s) + .07*Math.sin(5*th + 2*L.s) + .04*Math.sin(11*th + 3*L.s); }
-let GRID = null, MAPDIRTY = true;
+function layoutFrontier(){
+  const fs = ASSETS.filter(a => a.frontier).sort((a, b) => T(b.last_activity) - T(a.last_activity)).slice(0, FR_SLOTS.length);
+  ASSETS.forEach(a => { if (a.frontier) a._onMap = false; });
+  fs.forEach((a, i) => { a.lon = FR_SLOTS[i][0]; a.lat = FR_SLOTS[i][1]; a._onMap = true; });
+  LANDS = BASE_LANDS.concat(fs.map((a, i) => ({id:'F' + i, cx:FR_SLOTS[i][0], cy:FR_SLOTS[i][1] - 1, rx:6, ry:4, s:1.3 + i * 1.9, syms:[a.symbol]})));
+  const sig = fs.map(a => a.symbol).join(','); if (sig !== MAPSIG){ MAPSIG = sig; GRID = null; PROV = null; MAPDIRTY = true; }
+}
+const onMap = a => a && (!a.frontier || a._onMap);
+const regName = a => a.frontier ? '개척지' : a.kind === 'FX' ? '해협' : a.region === 'CRYPTO' ? '공중섬' : a.region === 'US' ? '아메리카' : '코리아';
 function buildGrid(){
   GRID = new Array(MW * MH).fill(null);
   for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) for (const L of LANDS){
     if (!blob(L, x + .5, y + .5)) continue;
-    let best = L.id, bd = 1e9;
+    let best = null, bd = 1e9;
     for (const s of L.syms){ const a = A[s]; if (!a) continue; const d = (a.lon - x) ** 2 + (a.lat - y) ** 2; if (d < bd){ bd = d; best = s; } }
-    GRID[y * MW + x] = best; break;
+    GRID[y * MW + x] = best || L.id; break;
   }
 }
-function provRGB(sym){
-  const a = A[sym]; if (!a) return [92,104,70];
-  const s = score(a), k = Math.min(1, Math.abs(s) * 1.25) * (isOpen(a) ? 1 : .75);
-  const base = [92,104,70], t = s > 0 ? [214,58,74] : [58,108,214];
-  return base.map((b, i) => Math.round(b + (t[i] - b) * k));
-}
-function drawMapBase(cv){
+function buildProv(){
   if (!GRID) buildGrid();
+  PROV = {}; BORDERS = []; BBOX = {};
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++){
+    const i = y * MW + x, p = GRID[i]; if (!p) continue;
+    (PROV[p] = PROV[p] || []).push(i);
+    const b = BBOX[p] = BBOX[p] || {x0:x, x1:x, y0:y, y1:y}; b.x0 = Math.min(b.x0, x); b.x1 = Math.max(b.x1, x); b.y0 = Math.min(b.y0, y); b.y1 = Math.max(b.y1, y);
+    const r = x + 1 < MW ? GRID[i + 1] : null, d = y + 1 < MH ? GRID[i + MW] : null;
+    if (r && r !== p) BORDERS.push([i, p, r]); if (d && d !== p) BORDERS.push([i, p, d]);
+  }
+}
+function wig(p, y){ let s = 0; for (const ch of p) s = (s * 31 + ch.charCodeAt(0)) % 997; return .07 * Math.sin(y * .55 + s) + .035 * Math.sin(y * 1.7 + s * 2.3); }
+function tOf(p, x, y){ const b = BBOX[p]; return (x + .5 - b.x0) / Math.max(1, b.x1 - b.x0 + 1) + wig(p, y); }
+function sideAt(p, x, y){ const a = A[p]; if (!a) return 0; const c = control(a) / 100, t = tOf(p, x, y); if (Math.abs(t - c) < .045) return 2; return t < c ? 1 : -1; }
+function frontX(p, y){ const a = A[p], b = BBOX[p]; return b.x0 + (control(a) / 100 - wig(p, y)) * (b.x1 - b.x0 + 1); }
+const RED = [176,44,58], BLUE = [42,90,176];
+function drawMapBase(cv){
+  if (!PROV) buildProv();
   const g = cv.getContext('2d'), C = CELL, at = (x, y) => (x < 0 || y < 0 || x >= MW || y >= MH) ? null : GRID[y * MW + x];
   for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++){
     const p = at(x, y), n4 = [at(x-1,y), at(x+1,y), at(x,y-1), at(x,y+1)];
-    if (!p){
-      const shore = n4.some(Boolean);
-      g.fillStyle = shore ? '#1c3d5e' : ((x * 7 + y * 13) % 29 === 0 ? '#1a3655' : (x + y * 3) % 17 === 0 ? '#11294a' : '#0d1f37');
-    } else if (n4.some(n => !n)){ g.fillStyle = (x + y) % 3 ? '#c4b07a' : '#b09c66'; }
-    else if ([at(x+1,y), at(x,y+1)].some(n => n && n !== p)){ g.fillStyle = '#1b1f14'; }
-    else { const [r, gg, b] = provRGB(p), d = ((x * 3 + y * 5) % 7 === 0) ? 16 : ((x * 5 + y) % 11 === 0 ? -10 : 0); g.fillStyle = `rgb(${r-d},${gg-d},${b-d})`; }
+    if (!p){ g.fillStyle = n4.some(Boolean) ? '#1c3d5e' : ((x * 7 + y * 13) % 29 === 0 ? '#1a3655' : (x + y * 3) % 17 === 0 ? '#11294a' : '#0d1f37'); }
+    else if (n4.some(n => !n)){ g.fillStyle = (x + y) % 3 ? '#c4b07a' : '#b09c66'; }
+    else if ([at(x+1,y), at(x,y+1)].some(n => n && n !== p)){ g.fillStyle = '#14170f'; }
+    else {
+      const sd = sideAt(p, x, y), a = A[p], dim = a && !isOpen(a) ? .82 : 1, d = ((x * 3 + y * 5) % 7 === 0) ? 14 : ((x * 5 + y) % 11 === 0 ? -8 : 0);
+      if (sd === 2) g.fillStyle = (x + y) % 2 ? '#7a1f2a' : '#1f3a73';
+      else { const c = sd === 1 ? RED : sd === -1 ? BLUE : [92,104,70]; g.fillStyle = `rgb(${Math.round((c[0] - d) * dim)},${Math.round((c[1] - d) * dim)},${Math.round((c[2] - d) * dim)})`; }
+    }
     g.fillRect(x * C, y * C, C, C);
   }
-  // castles on every territory
-  for (const L of LANDS) for (const s of L.syms){ const a = A[s]; if (!a) continue; castle(g, a.lon * C, a.lat * C - 16); }
+  for (const L of LANDS) for (const sy of L.syms){ const a = A[sy]; if (onMap(a)) castle(g, a.lon * C, a.lat * C - 16); }
   MAPDIRTY = false;
 }
 function castle(g, x, y){
@@ -429,11 +517,14 @@ function castle(g, x, y){
 }
 function skyCanvas(I){
   const a = A[I.sym], w = I.rx * 2 + 2, h = I.ry * 2 + 9, c = document.createElement('canvas');
-  c.width = w * CELL; c.height = h * CELL; const g = c.getContext('2d'), [r, gg, b] = provRGB(I.sym);
+  c.width = w * CELL; c.height = h * CELL; const g = c.getContext('2d'), ctl = control(a) / 100;
+  const L = {cx:w/2, cy:I.ry + 1, rx:I.rx, ry:I.ry, s:I.s};
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){
-    const L = {cx:w/2, cy:I.ry + 1, rx:I.rx, ry:I.ry, s:I.s}; let col = null;
-    if (y <= I.ry + 1 && blob(L, x + .5, y + .5)) col = (y > I.ry - 1) ? '#c4b07a' : `rgb(${r},${gg},${b})`;
-    else if (y > I.ry && Math.abs(x + .5 - w/2) < (h - y) * (I.rx / 9)) col = (x + y) % 2 ? '#3d3350' : '#4a3e60';
+    let col = null;
+    if (y <= I.ry + 1 && blob(L, x + .5, y + .5)){
+      if (y > I.ry - 1) col = '#c4b07a';
+      else { const t = (x + .5 - 1) / (w - 2) + .06 * Math.sin(y * 1.3 + I.s); col = Math.abs(t - ctl) < .06 ? ((x + y) % 2 ? '#7a1f2a' : '#1f3a73') : t < ctl ? `rgb(${RED})` : `rgb(${BLUE})`; }
+    } else if (y > I.ry && Math.abs(x + .5 - w/2) < (h - y) * (I.rx / 9)) col = (x + y) % 2 ? '#3d3350' : '#4a3e60';
     if (col){ g.fillStyle = col; g.fillRect(x * CELL, y * CELL, CELL, CELL); }
   }
   castle(g, w / 2 * CELL, (I.ry - 3) * CELL);
@@ -441,35 +532,47 @@ function skyCanvas(I){
   c.style.left = (a.lon / MW * 100) + '%'; c.style.top = ((a.lat + 2) / MH * 100) + '%'; c.style.width = (w / MW * 100) + '%';
   return c;
 }
+function computePower(){
+  if (!PROV) buildProv();
+  const reg = {}, add = (k, n, c) => { const r = reg[k] = reg[k] || {r:0, b:0}; r.r += n * c; r.b += n * (1 - c); };
+  for (const p in PROV){ const a = A[p]; if (a) add(regName(a), PROV[p].length, control(a) / 100); }
+  SKY.forEach(I => { const a = A[I.sym]; if (a) add(regName(a), Math.PI * I.rx * I.ry, control(a) / 100); });
+  const tot = Object.values(reg).reduce((s, r) => ({r: s.r + r.r, b: s.b + r.b}), {r:0, b:0});
+  return {tot, reg};
+}
+function powerHTML(){
+  const P = computePower(), pr = Math.round(P.tot.r / Math.max(1e-9, P.tot.r + P.tot.b) * 100);
+  return `<div class="power" id="power"><div class="row sb"><b class="up pix">상승군 ${pr}%</b><span class="pix muted s">⚔️ 오늘의 세력도</span><b class="down pix">${100 - pr}% 하락군</b></div>
+    <div class="bar"><i class="bu" style="width:${pr}%"></i><i class="bd" style="width:${100 - pr}%"></i></div>
+    <div class="regs">${['아메리카','코리아','해협','공중섬','개척지'].filter(k => P.reg[k]).map(k => { const r = P.reg[k], q = Math.round(r.r / (r.r + r.b) * 100); return `<span>${k} <i class="${q >= 50 ? 'up' : 'down'}">${q >= 50 ? '🔴' + q : '🔵' + (100 - q)}%</i></span>`; }).join('')}</div></div>`;
+}
 function mapHTML(){
-  return `<div class="mapwrap"><div class="map" id="map"><canvas id="mapc" width="${MW*CELL}" height="${MH*CELL}" class="px"></canvas><canvas id="mapfx" width="${MW*CELL}" height="${MH*CELL}" class="px"></canvas>
-    ${LABELS.map(([t, x, y]) => `<div class="maplbl" style="left:${x/MW*100}%;top:${y/MH*100}%">${t}</div>`).join('')}
-    ${ASSETS.map(a => `<a class="pin" data-pin="${a.symbol}" href="#/f/${a.symbol}" style="left:${a.lon/MW*100}%;top:${(a.lat + 1.5)/MH*100}%"><b>${esc(a.short)}</b><span class="num" data-c="${a.symbol}">${fmtC(a)}</span></a>`).join('')}
-  </div></div><div class="muted s" style="text-align:center;margin-top:6px">빨강 = 상승군 점령 · 파랑 = 하락군 점령 · 영토를 누르면 전투 현장</div>`;
+  return powerHTML() + `<div class="mapwrap" style="margin-top:0"><div class="map" id="map"><canvas id="mapc" width="${MW*CELL}" height="${MH*CELL}" class="px"></canvas><canvas id="mapfx" width="${MW*CELL}" height="${MH*CELL}" class="px"></canvas>
+    ${LABELS.filter(l => l[0] !== '개척지' || ASSETS.some(a => a._onMap)).map(([t, x, y]) => `<div class="maplbl" style="left:${x/MW*100}%;top:${y/MH*100}%">${t}</div>`).join('')}
+    ${ASSETS.filter(onMap).map(a => `<button class="pin ${heat(a) >= .5 ? 'fire' : ''}" data-pin="${a.symbol}" data-act="quick" data-sym="${esc(a.symbol)}" style="left:${a.lon/MW*100}%;top:${(a.lat + 1.5)/MH*100}%">${heat(a) >= .5 ? '<em class="fl">🔥</em>' : ''}<b>${esc(a.short)}</b><span class="num" data-c="${a.symbol}">${fmtC(a)}</span></button>`).join('')}
+  </div></div><div class="muted s" style="text-align:center;margin-top:6px">빨강 = 상승군 · 파랑 = 하락군 · 빗금 = 교전 지대 · <b style="color:var(--text)">영토를 눌러 바로 참전</b></div>`;
 }
 let boomTimer = null;
 function mapDelta(a, prev, cur){
-  const map = $('#map'); if (!map || document.hidden) return;
   cur = cur ?? a.price; if (!prev || !cur || cur === prev) return;
-  const up = cur > prev, txt = a.kind === 'BOND' ? `${up ? '▲' : '▼'}${Math.abs((cur - prev) * 100).toFixed(1)}bp` : `${up ? '▲' : '▼'}${Math.abs((cur / prev - 1) * 100).toFixed(2)}%`;
-  const el = document.createElement('span'); el.className = 'delta'; el.textContent = txt; el.style.color = up ? '#ff8a96' : '#8ab6ff';
+  const rise = cur > prev, strong = a.kind === 'BOND' ? !rise : rise; a._mom = strong ? 1 : -1;
+  const map = $('#map'); if (!map || document.hidden || !onMap(a)) return;
+  const txt = a.kind === 'BOND' ? `금리${rise ? '▲' : '▼'}${Math.abs((cur - prev) * 100).toFixed(1)}bp` : `${rise ? '▲' : '▼'}${Math.abs((cur / prev - 1) * 100).toFixed(2)}%`;
+  const el = document.createElement('span'); el.className = 'delta'; el.textContent = txt; el.style.color = strong ? '#ff8a96' : '#8ab6ff';
   el.style.left = (a.lon / MW * 100) + '%'; el.style.top = ((a.lat - 2) / MH * 100) + '%'; map.appendChild(el); setTimeout(() => el.remove(), 1700);
 }
-let MAPraf = 0, PROV = null, BORDERS = null;
-function buildProv(){
-  PROV = {}; BORDERS = [];
-  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++){
-    const i = y * MW + x, p = GRID[i]; if (!p) continue;
-    (PROV[p] = PROV[p] || []).push(i);
-    const r = x + 1 < MW ? GRID[i + 1] : null, d = y + 1 < MH ? GRID[i + MW] : null;
-    if (r && r !== p) BORDERS.push([i, p, r]); if (d && d !== p) BORDERS.push([i, p, d]);
-  }
-}
+let MAPraf = 0;
 function mapFxStart(){
   cancelAnimationFrame(MAPraf);
-  const cv = $('#mapfx'); if (!cv) return; if (!GRID) buildGrid(); if (!PROV) buildProv();
+  const cv = $('#mapfx'); if (!cv) return; if (!PROV) buildProv();
   const g = cv.getContext('2d'), C = CELL; let last = 0;
   const clouds = [0, 1, 2, 3].map(i => ({x: Math.random() * MW, y: 6 + i * 30 + Math.random() * 10, v: .04 + Math.random() * .05, w: 9 + Math.random() * 9}));
+  const flames = [];
+  function arrow(x, y, dir, col, off){
+    g.fillStyle = col;
+    for (let m = 0; m < 6; m++) g.fillRect((x - dir * m + dir * off) * C, y * C, C, C);
+    for (let j = 1; j < 4; j++){ g.fillRect((x - dir * j + dir * off) * C, (y - j) * C, C, C); g.fillRect((x - dir * j + dir * off) * C, (y + j) * C, C, C); }
+  }
   function frame(t){
     if (!document.body.contains(cv)) return;
     MAPraf = requestAnimationFrame(frame);
@@ -478,13 +581,25 @@ function mapFxStart(){
     g.fillStyle = 'rgba(150,200,255,.22)';
     for (let k = 0; k < 90; k++){ const y = (k * 53 + 7) % MH, x = Math.floor((k * 97 + t / 140 * (1 + k % 3)) % MW);
       if (!GRID[y * MW + x] && !GRID[y * MW + (x + 1) % MW] && !GRID[y * MW + (x + 2) % MW]) g.fillRect(x * C, y * C + 1, C * 3, 2); }
-    for (const sym in PROV){ const a = A[sym]; if (!a || !isOpen(a)) continue; const s = score(a); if (Math.abs(s) < .3) continue;
-      const al = (Math.sin(t / 280 + sym.length * 1.7) * .5 + .5) * .28 * Math.abs(s);
-      g.fillStyle = s > 0 ? `rgba(255,90,100,${al.toFixed(3)})` : `rgba(90,150,255,${al.toFixed(3)})`;
-      for (const i of PROV[sym]) g.fillRect((i % MW) * C, ((i / MW) | 0) * C, C, C); }
-    for (const [i, p, q] of BORDERS){ const a = A[p], b = A[q]; if (!a || !b) continue; const sa = score(a), sq = score(b);
-      const hotb = (sa > .1 && sq < -.1) || (sa < -.1 && sq > .1); if (!hotb || Math.random() > .3) continue;
-      g.fillStyle = Math.random() < .5 ? '#ffe08a' : '#ff8a3d'; g.fillRect((i % MW) * C, ((i / MW) | 0) * C, C, C); }
+    for (const p in PROV){
+      const a = A[p]; if (!a || !BBOX[p]) continue;
+      const h = heat(a), open = isOpen(a), s = score(a), b = BBOX[p];
+      // front line glow
+      if (open){ g.fillStyle = `rgba(255,224,138,${(.35 + .35 * Math.sin(t / 160 + p.length)).toFixed(2)})`;
+        for (let y = b.y0 + 1; y < b.y1; y += 2){ const fx = Math.round(frontX(p, y)); if (GRID[y * MW + fx] === p && Math.random() < .55) g.fillRect(fx * C, y * C, C, C); } }
+      // advance arrow toward the losing side
+      if (open && Math.abs(s) > .12){ const dir = a._mom || Math.sign(s), y = Math.round((b.y0 + b.y1) / 2), fx = Math.round(frontX(p, y)), off = Math.floor(t / 260) % 3;
+        if (GRID[y * MW + fx] === p) arrow(fx + dir, y, dir, dir > 0 ? 'rgba(255,215,220,.9)' : 'rgba(210,228,255,.9)', off); }
+      // flames on hot fronts
+      if (h >= .45){ const n = Math.random() < h ? Math.ceil(h * 3) : 0;
+        for (let k = 0; k < n; k++){ const y = b.y0 + Math.floor(Math.random() * (b.y1 - b.y0 + 1)), x = Math.round(frontX(p, y) + (Math.random() - .5) * 6);
+          if (GRID[y * MW + x] === p) flames.push({x, y, life: 0, max: 6 + Math.random() * 6 * h}); } }
+    }
+    for (let i = flames.length - 1; i >= 0; i--){ const f = flames[i], k = f.life / f.max;
+      g.fillStyle = k < .25 ? '#fff3b0' : k < .5 ? '#ffb340' : k < .8 ? '#ff5a1f' : 'rgba(80,40,30,.6)';
+      g.fillRect(f.x * C, (f.y - f.life * .7) * C, C, C);
+      if (++f.life > f.max) flames.splice(i, 1); }
+    if (flames.length > 400) flames.splice(0, flames.length - 400);
     g.fillStyle = 'rgba(255,255,255,.08)';
     for (const c of clouds){ c.x += c.v; if (c.x > MW + 24) c.x = -24;
       for (let dx = 0; dx < c.w; dx++) for (let dy = 0; dy < 5; dy++) if (Math.abs(dx - c.w / 2) / (c.w / 2) + Math.abs(dy - 2) / 3 < 1.05) g.fillRect(Math.round(c.x + dx) * C, (c.y + dy) * C, C, C); }
@@ -498,10 +613,10 @@ function mapInit(){
   clearInterval(boomTimer);
   boomTimer = setInterval(() => {
     const map = $('#map'); if (!map){ clearInterval(boomTimer); return; }
-    if (MAPDIRTY){ drawMapBase($('#mapc')); $$('[data-sky]').forEach(c => c.replaceWith(skyCanvas(SKY.find(I => I.sym === c.dataset.sky)))); }
-    ASSETS.forEach(a => {
-      const s = Math.abs(score(a)); if (!isOpen(a) || Math.random() > .06 + s * .45) return;
-      const b = document.createElement('span'); b.className = 'boom'; b.textContent = s > .5 ? '💥' : '✦';
+    if (MAPDIRTY){ drawMapBase($('#mapc')); $$('[data-sky]').forEach(c => c.replaceWith(skyCanvas(SKY.find(I => I.sym === c.dataset.sky)))); const pw = $('#power'); if (pw) pw.outerHTML = powerHTML(); }
+    ASSETS.filter(onMap).forEach(a => {
+      const h = heat(a); if (!isOpen(a) || Math.random() > .04 + h * .5) return;
+      const b = document.createElement('span'); b.className = 'boom'; b.textContent = h > .6 ? '🔥' : Math.abs(score(a)) > .5 ? '💥' : '✦';
       b.style.left = ((a.lon + (Math.random() - .5) * 14) / MW * 100) + '%'; b.style.top = ((a.lat + (Math.random() - .5) * 10) / MH * 100) + '%';
       b.style.color = score(a) > 0 ? '#ff8a96' : '#8ab6ff'; map.appendChild(b); setTimeout(() => b.remove(), 900);
     });
@@ -532,12 +647,13 @@ function bfStart(sym){
     const w = cv.clientWidth, h = cv.clientHeight;
     if (cv.width !== Math.round(w * dpr)){ cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
     const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const sc = score(a), open = isOpen(a), heat = open ? .25 + Math.abs(sc) : 0;
+    const sc = score(a), open = isOpen(a), blaze = open ? .25 + Math.abs(sc) : 0, hh = heat(a);
+    field.classList.toggle('fire', hh >= .5);
     front += (control(a) / 100 - front) * .03;
     const fx = Math.max(.12, Math.min(.88, front)) * w, gy = h * .58;
     const sky = g.createLinearGradient(0, 0, 0, gy); sky.addColorStop(0, '#0b1020'); sky.addColorStop(1, !open ? '#1a1d24' : sc > 0 ? '#3a1820' : sc < 0 ? '#16233f' : '#1c2230');
     g.fillStyle = sky; g.fillRect(0, 0, w, gy);
-    if (open && heat > .6){ g.fillStyle = `rgba(255,140,60,${(.05 + .05 * Math.sin(t / 90)).toFixed(3)})`; g.fillRect(0, 0, w, gy); }
+    if (open && (blaze > .6 || hh >= .5)){ g.fillStyle = `rgba(255,140,60,${(.05 + .05 * Math.sin(t / 90)).toFixed(3)})`; g.fillRect(0, 0, w, gy); }
     g.fillStyle = '#3b2025'; g.fillRect(0, gy, fx, h - gy);
     g.fillStyle = '#1d2a44'; g.fillRect(fx, gy, w - fx, h - gy);
     g.fillStyle = 'rgba(0,0,0,.18)'; for (let x = 0; x < w; x += 8) for (let y = gy + 4; y < h; y += 10) if (((x / 8) + (y / 10)) % 3 === 0) g.fillRect(x, y, 4, 3);
@@ -548,7 +664,7 @@ function bfStart(sym){
     if (fb && fb.complete) g.drawImage(fb, 4, gy - 40 + wave, 36, 36); if (fd && fd.complete) g.drawImage(fd, w - 40, gy - 40 - wave, 36, 36);
     const bob = i => open ? Math.sin(t / 160 + i) * 1.5 : 0;
     const fire = (u, x, y, team) => {
-      if (!open || --u.cd > 0 || Math.random() > heat * .08) return;
+      if (!open || --u.cd > 0 || Math.random() > (blaze + hh * .5) * .08) return;
       u.cd = 30 + Math.random() * 70;
       const tx = team ? fx + 10 + Math.random() * Math.max(20, w - fx - 30) : 10 + Math.random() * Math.max(20, fx - 30);
       tracers.push({x0: x + (team ? 13 : -1), y0: y + 10, x1: tx, y1: gy + 8 + Math.random() * (h - gy - 16), k:0, c: team ? '255,210,122' : '170,215,255'});
@@ -574,10 +690,66 @@ function bfStart(sym){
     for (let i = smoke.length - 1; i >= 0; i--){ const m = smoke[i]; m.y += m.vy; m.x += m.vx; m.r += .08; m.a -= .006;
       g.fillStyle = `rgba(150,150,160,${Math.max(0, m.a).toFixed(3)})`; g.beginPath(); g.arc(m.x, m.y, m.r, 0, Math.PI * 2); g.fill();
       if (m.a <= 0) smoke.splice(i, 1); }
+    if (hh >= .45) for (let k = 0; k < 6 * hh; k++){ const fx2 = fx + (Math.random() - .5) * 90, fy = gy + Math.random() * 8, fl = Math.random() * 14 * hh;
+      g.fillStyle = Math.random() < .5 ? '#ffb340' : '#ff5a1f'; g.fillRect(Math.round(fx2), Math.round(fy - fl), 3, 3); g.fillStyle = '#fff3b0'; g.fillRect(Math.round(fx2), Math.round(fy), 2, 2); }
     if (!open){ g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(0, 0, w, h); }
     BFraf = requestAnimationFrame(frame);
   }
   BFraf = requestAnimationFrame(frame);
+}
+
+/* ========================================================== quick play */
+function quickPanel(a, inSheet){
+  const w = UI.qwin || 60, bond = a.kind === 'BOND', sym = esc(a.symbol);
+  return `<div class="qq">${bond ? '이 채권, 앞으로 어떻게 될까요?' : '앞으로 어떻게 될까요?'}</div>
+    <div class="seg" style="margin-top:8px">${[10,60,1440].map(m => `<button data-act="qwin" data-v="${m}" class="${w === m ? 'on' : ''}">${WIN_LBL[m]} 뒤</button>`).join('')}</div>
+    <div class="qbtns"><button class="qb up" data-act="qcall" data-sym="${sym}" data-v="UP"><span>🔴</span><b>${bond ? '채권 강세' : '오른다'}</b><small>${bond ? '금리가 내린다' : '상승군 합류'}</small></button>
+      <button class="qb down" data-act="qcall" data-sym="${sym}" data-v="DOWN"><span>🔵</span><b>${bond ? '채권 약세' : '내린다'}</b><small>${bond ? '금리가 오른다' : '하락군 합류'}</small></button></div>
+    <div class="muted s" style="text-align:center">한 번 누르면 참전 끝 · ${WIN_LBL[w]} 뒤 실제 시세로 승패가 나요</div>
+    ${inSheet ? `<button class="btn full" style="margin-top:12px" data-act="goto" data-href="#/f/${encodeURIComponent(a.symbol)}">⚔️ 전투 현장·수급 보기 ›</button>` : ''}`;
+}
+function quickSheet(sym){
+  const a = A[sym]; if (!a) return; UI.qsym = sym;
+  modal(`<div class="qs"><div class="row sb" style="align-items:flex-start"><div style="min-width:0"><div class="b" style="font-size:19px">${esc(a.name)}</div><div class="muted s">${regName(a)} · ${stateOf(a)}</div></div>
+    <div style="text-align:right"><div class="num b" data-p="${esc(sym)}">${fmtP(a)}</div><div class="num b ${dir(mv(a))}" data-c="${esc(sym)}">${fmtC(a)}</div></div></div>
+    ${a.kind === 'BOND' ? '<div class="bondnote">금리↑ = 채권 약세 = 하락군 · 금리↓ = 채권 강세 = 상승군</div>' : ''}
+    <div class="chips">${heatChips(a)}</div>${quickPanel(a, true)}</div>`);
+  refreshLive();
+}
+function burst(side){
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const cv = document.createElement('canvas'); cv.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:90'; document.body.appendChild(cv);
+  const dpr = Math.min(2, devicePixelRatio || 1), w = innerWidth, h = innerHeight; cv.width = w * dpr; cv.height = h * dpr; const g = cv.getContext('2d'); g.scale(dpr, dpr);
+  const cols = side === 'UP' ? ['#f04452','#ff8a96','#f5c542','#fff'] : ['#3b82f6','#8ab6ff','#f5c542','#fff'];
+  const ps = Array.from({length:70}, () => ({x:w / 2, y:h * .6, vx:(Math.random() - .5) * 12, vy:-Math.random() * 12 - 3, c:cols[Math.random() * 4 | 0], s:4 + Math.random() * 4}));
+  const t0 = performance.now();
+  (function step(t){ if (t - t0 > 1300){ cv.remove(); return; } g.clearRect(0, 0, w, h);
+    for (const p of ps){ p.vy += .4; p.x += p.vx; p.y += p.vy; g.fillStyle = p.c; g.fillRect(p.x, p.y, p.s, p.s); } requestAnimationFrame(step); })(t0);
+}
+const ONB = 'mw-onboard-v1';
+function onboardCard(){
+  let done = false; try { done = localStorage.getItem(ONB) === '1'; } catch(e){}
+  if (done) return '';
+  return `<section class="card onb"><div class="row sb"><b>처음 오셨나요? 이렇게 놀아요</b><button class="x" data-act="onbdone" aria-label="닫기">✕</button></div>
+    <ol class="steps"><li><b>1</b>지도에서 영토(종목)를 눌러요</li><li><b>2</b>🔴 오른다 · 🔵 내린다 중 하나만 누르면 참전 끝</li><li><b>3</b>시간이 지나면 실제 시세로 승패! 이기면 계급이 올라요</li></ol>
+    <button class="btn pri full" data-act="quick" data-sym="BTCUSDT">비트코인으로 바로 해보기</button></section>`;
+}
+function winningNow(a, c){ const d = (a.price - c.entry_price) * (a.kind === 'BOND' ? -1 : 1); if (!d) return 0; return (d > 0) === (c.side === 'UP') ? 1 : -1; }
+function myCallsCard(calls){
+  if (!calls || !calls.length) return '';
+  return `<section class="card"><div class="row sb"><h2 class="h pix">⏱ 내 참전 현황</h2><span class="muted s">${calls.length}건 판정 대기</span></div>
+    ${calls.map(c => { const a = A[c.symbol]; if (!a) return ''; const wn = winningNow(a, c), bond = a.kind === 'BOND';
+      return `<a class="mycall" href="#/p/${c.id}"><span class="side ${c.side}">${bond ? (c.side === 'UP' ? '채권강세' : '채권약세') : (c.side === 'UP' ? '오른다' : '내린다')}</span><b style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a.name)}</b><b class="num" data-cd="${T(c.settle_at)}">${mmss(T(c.settle_at) - now())}</b>
+        <span class="s2 num">${fmtP(a, +c.entry_price)} → <span data-p="${esc(a.symbol)}">${fmtP(a)}</span> · <span class="st ${wn === 1 ? 'win' : wn === -1 ? 'lose' : ''}">${wn === 1 ? '👍 이기는 중' : wn === -1 ? '😬 지는 중' : '➖ 제자리'}</span></span></a>`; }).join('')}</section>`;
+}
+function inlineAct(p){
+  if (p.category === 'wish') return `<div class="inl"><button class="ib" data-act="rx" data-id="${p.id}" data-k="pray">🙏 같이 빌기 <b class="num">${p.rx_pray}</b></button></div>`;
+  if (p.category === 'vent') return `<div class="inl"><button class="ib" data-act="rx" data-id="${p.id}" data-k="hug">🫂 토닥 <b class="num">${p.rx_hug}</b></button><button class="ib" data-act="rx" data-id="${p.id}" data-k="metoo">😭 나도 그래 <b class="num">${p.rx_metoo}</b></button></div>`;
+  if (p.category === 'bet' && !p.result && now() < T(p.created_at) + p.window_min * 60000 * .3 && !(ME && p.author_id === ME.id)){
+    const o = p.side === 'UP' ? 'DOWN' : 'UP';
+    return `<div class="inl"><button class="ib ${p.side === 'UP' ? 'u' : 'd'}" data-act="joinbet" data-id="${p.id}" data-v="${p.side}">🤝 동조하기</button><button class="ib ${o === 'UP' ? 'u' : 'd'}" data-act="joinbet" data-id="${p.id}" data-v="${o}">🔥 맞불 놓기</button></div>`;
+  }
+  return '';
 }
 
 /* ========================================================== shared bits */
@@ -609,7 +781,7 @@ function postCard(p, showFront){
   return `<a class="post" href="#/p/${p.id}">
     <div class="meta"><span class="cat">${c.e} ${c.n}</span>${showFront ? `<span class="ftag">${esc(a.name)}</span>` : ''}${flagImg(au.flag_art)}<b style="color:var(--text)">${esc(au.nickname || '탈영병')}</b><span>· ${ago(p.created_at)}</span></div>
     <div class="t">${p.side ? `<span class="side ${p.side}">${sideLbl(p)}</span>` : ''}${esc(p.title)}${p.meme_url ? ' 🖼' : ''}${p.poll ? ' 📊' : ''}</div>
-    <div class="foot">${lead}<span>반응 ${rxSum(p)}</span><span>💬 ${p.comment_count}</span>${resBadge(p)}</div></a>`;
+    <div class="foot">${lead}<span>반응 ${rxSum(p)}</span><span>💬 ${p.comment_count}</span>${resBadge(p)}</div>${inlineAct(p)}</a>`;
 }
 function hot(posts){ const sc = p => (rxSum(p) + p.comment_count * 2 + (p.join_up + p.join_down) * 2 + 1) / (1 + (now() - T(p.created_at)) / 864e5); return posts.slice().sort((a,b) => sc(b) - sc(a)); }
 function renderBody(s){
@@ -617,7 +789,7 @@ function renderBody(s){
   return h.replace(/https?:\/\/[^\s<]+/g, u => { let host = ''; try { host = new URL(u.replace(/&amp;/g,'&')).hostname; } catch(e){}
     return ALLOWED_LINKS.some(d => host === d || host.endsWith('.' + d)) ? `<a href="${u}" target="_blank" rel="noopener nofollow ugc">${u}</a>` : `<span class="muted" title="허용되지 않은 링크라 누를 수 없어요">${u}</span>`; });
 }
-const POSTSEL = 'id,symbol,category,title,side,window_min,settle_at,result,created_at,rx_charge,rx_shield,rx_flag,rx_medal,rx_pray,rx_hug,rx_metoo,rx_lol,join_up,join_down,comment_count,poll,meme_url,author:profiles!posts_author_id_fkey(nickname,flag_art)';
+const POSTSEL = 'id,author_id,symbol,category,title,side,window_min,settle_at,result,created_at,rx_charge,rx_shield,rx_flag,rx_medal,rx_pray,rx_hug,rx_metoo,rx_lol,join_up,join_down,comment_count,poll,meme_url,author:profiles!posts_author_id_fkey(nickname,flag_art)';
 function battleCard(b){
   const a = A[b.symbol] || {}, e = b.entries || [];
   const na = e.filter(x => x.option === 'A').length, nb = e.length - na, t = e.length;
@@ -627,7 +799,14 @@ function battleCard(b){
   return `<a class="card" style="display:block" href="#/battles/${b.id}"><div class="row sb s muted"><span class="ftag">${esc(a.name)}</span><span>${st}</span></div>
     <div class="b" style="margin:8px 0 2px">${b.is_system ? '📯 ' : ''}${esc(b.question)}</div>
     <div class="pool"><div class="pa" style="width:${t ? Math.max(na/t*100,20) : 50}%">A ${esc(b.option_a)} · ${na}</div><div class="pb" style="width:${t ? Math.max(nb/t*100,20) : 50}%">${nb} · ${esc(b.option_b)} B</div></div>
-    <div class="muted s">참전 ${t}명 · ${b.creator ? '선포 ' + esc(b.creator.nickname) : '사령부 선포'}</div></a>`;
+    <div class="muted s">참전 ${t}명 · ${b.creator ? '선포 ' + esc(b.creator.nickname) : '사령부 선포'}</div>${battleInline(b)}</a>`;
+}
+function battleInline(b){
+  if (b.status !== 'OPEN' || T(b.closes_at) < now() + 5000) return '';
+  const mine = ME && (b.entries || []).find(x => x.user_id === ME.id);
+  if (mine) return `<div class="inl"><span class="chip2">✅ ${mine.option === 'A' ? esc(b.option_a) : esc(b.option_b)} 쪽으로 참전함</span></div>`;
+  if (ME && b.creator_id === ME.id) return '';
+  return `<div class="inl"><button class="ib u" data-act="enter" data-id="${b.id}" data-o="A">A ${esc(b.option_a)}</button><button class="ib d" data-act="enter" data-id="${b.id}" data-o="B">B ${esc(b.option_b)}</button></div>`;
 }
 function bars(vals, title){
   const mx = Math.max(1, ...vals.map(v => Math.abs(v.v)));
@@ -663,22 +842,24 @@ function flowCard(a){
 const UI = {sort:'new', btab:'open', side:null, win:60, pollOn:false, tool:'pen', color:8, mtpl:'chart', msym:'BTCUSDT'};
 async function vHome(){
   await loadForces();
-  const [{ data:posts }, { data:bts }, { data:fd }, army] = await Promise.all([
+  const [{ data:posts }, { data:bts }, { data:fd }, army, calls] = await Promise.all([
     sb.from('posts').select(POSTSEL).gte('created_at', new Date(now() - 3 * 864e5).toISOString()).order('created_at', {ascending:false}).limit(80),
-    sb.from('battles').select('*,entries:battle_entries(option),creator:profiles!battles_creator_id_fkey(nickname)').in('status', ['OPEN','CLOSED']).order('closes_at').limit(3),
+    sb.from('battles').select('*,entries:battle_entries(option,user_id),creator:profiles!battles_creator_id_fkey(nickname)').in('status', ['OPEN','CLOSED']).order('closes_at').limit(3),
     sb.from('front_daily').select('defeated').gte('day', new Date(now() - 30 * 864e5).toISOString().slice(0,10)),
     rpc('army_score').catch(() => null),
+    ME ? rpc('my_open_calls').catch(() => []) : [],
   ]);
   const up = ASSETS.filter(a => score(a) >= .15).length, down = ASSETS.filter(a => score(a) <= -.15).length;
   const tu = Object.values(FORCES).reduce((s,x) => s + x.up, 0), td = Object.values(FORCES).reduce((s,x) => s + x.down, 0);
-  const hotFronts = ASSETS.slice().sort((a,b) => Math.abs(score(b)) - Math.abs(score(a))).slice(0, 3);
+  const hotFronts = ASSETS.slice().sort((a,b) => heat(b) - heat(a)).slice(0, 3);
   const defeat = fd && fd.length >= 5 ? Math.round(fd.filter(x => x.defeated).length / fd.length * 100) : null;
   return topbar() + mapHTML() + `
+  ${onboardCard()}${myCallsCard(calls)}
   <section class="card"><div class="row sb"><h2 class="h pix">오늘의 전황</h2><span class="muted s">영토 ${ASSETS.length}곳</span></div>
     <div class="summary"><div><b class="up" data-count="${up}">${up}</b><span class="s">상승군 우세</span></div><div><b class="muted" data-count="${ASSETS.length - up - down}">${ASSETS.length - up - down}</b><span class="s">교착</span></div><div><b class="down" data-count="${down}">${down}</b><span class="s">하락군 우세</span></div></div></section>
   ${army ? armyCard(army) : ''}
   <div class="summary" style="grid-template-columns:1fr 1fr"><a href="#/square" data-act="gocat" data-v="wish"><b style="font-size:20px">🙏</b><span class="s">기원 제단</span></a><a href="#/square" data-act="gocat" data-v="vent"><b style="font-size:20px">😩</b><span class="s">위로의 참호</span></a></div>
-  <h3 class="sec">🔥 최대 격전지 <a class="more" href="#/fronts">전체 영토 ›</a></h3>
+  <h3 class="sec">🔥 지금 가장 뜨거운 곳 <a class="more" href="#/fronts">전체 영토 ›</a></h3>
   <div class="flist">${hotFronts.map(frontRow).join('')}</div>
   <section class="card"><h2 class="h pix">병사들의 참전 현황</h2>${forceBar(tu, td)}
     <div class="muted s" style="margin-top:8px">다수 진영 패배율 ${defeat == null ? '<b>집계 중</b> (참전 기록이 5일 이상 쌓이면 계산돼요)' : `<b class="pix" style="color:var(--gold);font-size:16px">${defeat}%</b> · 최근 30일, 병사 다수가 고른 진영이 다음 날 진 비율`}</div></section>
@@ -689,11 +870,16 @@ async function vHome(){
   ${disc()}`;
 }
 function frontRow(a){
-  return `<a href="#/f/${a.symbol}"><div class="ctl"><i data-ctl="${a.symbol}" style="width:${control(a)}%"></i></div><div class="nm">${esc(a.name)}<div class="muted s" data-st="${a.symbol}">${stateOf(a)}</div></div><div class="pr num"><div data-p="${a.symbol}">${fmtP(a)}</div><b data-c="${a.symbol}" class="${dir(mv(a))}">${fmtC(a)}</b></div></a>`;
+  const h = heat(a);
+  return `<a href="#/f/${encodeURIComponent(a.symbol)}"><div class="ctl"><i data-ctl="${esc(a.symbol)}" style="width:${control(a)}%"></i></div><div class="nm">${h >= .5 ? '🔥 ' : ''}${esc(a.name)}<div class="muted s" data-st="${esc(a.symbol)}">${stateOf(a)}</div></div><div class="pr num"><div data-p="${esc(a.symbol)}">${fmtP(a)}</div><b data-c="${esc(a.symbol)}" class="${dir(mv(a))}">${fmtC(a)}</b></div></a>`;
 }
 async function vFronts(){
-  return topbar('영토 목록', '#/') + ['KR','JP','CRYPTO','US'].map(r => `<h3 class="sec">${REGION[r]}</h3><div class="flist">${ASSETS.filter(a => a.region === r || (r === 'JP' && a.kind === 'FX')).filter(a => r === 'JP' || a.kind !== 'FX').map(frontRow).join('')}</div>`).join('')
-    + `<div class="muted s" style="margin-top:12px">막대 = 상승군 점령률. 하루 등락이 기준만큼 움직이면 한쪽이 완전히 점령해요 (주식 5~7%, 지수 2.5~3%, 환율 1%, 국채 10bp).</div>${disc()}`;
+  await loadForces();
+  const fr = ASSETS.filter(a => a.frontier).sort((a, b) => heat(b) - heat(a));
+  return topbar('영토 목록', '#/') + `<a class="btn pri full" style="margin-top:14px" href="#/claim">🚩 새 영토 개척하기 <span class="s" style="font-weight:500">(종목 추가)</span></a>`
+    + ['KR','JP','CRYPTO','US'].map(r => `<h3 class="sec">${REGION[r]}</h3><div class="flist">${ASSETS.filter(a => !a.frontier && (a.region === r || (r === 'JP' && a.kind === 'FX'))).filter(a => r === 'JP' || a.kind !== 'FX').map(frontRow).join('')}</div>`).join('')
+    + `<h3 class="sec">🏝 개척지 군도 <span class="muted s">${fr.length}/40 · 지도엔 최근 활발한 6곳</span></h3><div class="flist">${fr.map(frontRow).join('') || empty('아직 개척된 영토가 없어요. 첫 개척자가 되어 보세요')}</div>`
+    + `<div class="muted s" style="margin-top:12px">막대 = 상승군 점령률. 하루 등락이 기준만큼 움직이면 한쪽이 완전히 점령해요 (주식 5~8%, 지수 2.5~3%, 환율 1%, 국채 10bp). 국채는 금리가 내리면(채권 강세) 상승군이에요.</div>${disc()}`;
 }
 async function vFront(sym){
   const a = A[sym]; if (!a) return v404();
@@ -706,20 +892,22 @@ async function vFront(sym){
   const list = UI.sort === 'hot' ? hot(posts || []) : (posts || []);
   const f = FORCES[sym] || {up:0, down:0};
   const defeat = fd && fd.length >= 5 ? Math.round(fd.filter(x => x.defeated).length / fd.length * 100) + '%' : '집계 중';
-  return topbar(a.name, '#/fronts') + `
+  return topbar(a.name, '#/') + `
   <div class="band"><div class="row sb">
     <div style="min-width:0"><div class="pix s">${esc(REGION[a.kind === 'FX' ? 'JP' : a.region])} · ${esc(a.name)}</div><div class="num bp" data-p="${sym}">${fmtP(a)}</div></div>
     <div><div class="num bc ${dir(mv(a))}" data-c="${sym}">${fmtC(a)}</div><div style="text-align:right"><span class="tag" data-tag="${sym}"></span></div></div></div>
-    <canvas data-spark="${sym}" style="width:100%;height:34px;display:block;margin-top:6px"></canvas></div>
+    <canvas data-spark="${sym}" style="width:100%;height:34px;display:block;margin-top:6px"></canvas>
+    ${a.kind === 'BOND' ? '<div class="bondnote">금리↑ = 채권 약세 = 하락군 · 금리↓ = 채권 강세 = 상승군</div>' : ''}<div class="chips" style="margin-bottom:0">${heatChips(a)}</div></div>
   <div class="field"><canvas id="bf"></canvas><span class="fl l" data-fl="${sym}" data-side="U"></span><span class="fl r" data-fl="${sym}" data-side="D"></span><span class="state" data-st="${sym}">${stateOf(a)}</span></div>
   <p class="muted s" style="margin:10px 0 0">${esc(a.description)}</p>
+  <section class="card">${quickPanel(a, false)}</section>
   ${flowCard(a)}
   <section class="card"><h2 class="h pix">이 영토의 병사들</h2>${forceBar(f.up, f.down)}<div class="muted s" style="margin-top:6px">다수 진영 패배율 ${defeat}</div></section>
   <h3 class="sec">이 영토의 글</h3>${catChips(UI.fcat, 'fcat')}
   ${sortTabs()}
   ${list.map(p => postCard(p)).join('') || empty('첫 글을 올려 보세요')}
   ${disc()}
-  <a class="fab" href="#/write?f=${sym}&c=forecast">⚔️ 참전하기</a>`;
+  <a class="fab" href="#/write?f=${encodeURIComponent(sym)}&c=chat">✏️ 글쓰기</a>`;
 }
 const PH = {forecast:'예: 오늘 밤 반격 간다', bet:'예: 1시간 안에 하락군 승리에 건다', wish:'예: 제발 본전만…', vent:'예: 고점에 물렸습니다', info:'예: 오늘 나온 실적 정리', chat:'예: 다들 점심 뭐 드세요'};
 async function vWrite(){
@@ -743,7 +931,7 @@ async function vWrite(){
   <label class="l">투표 (선택)</label>
   ${UI.pollOn ? `<div>${[0,1,2,3,4].map(i => `<input class="f" style="margin-bottom:6px" data-po maxlength="20" placeholder="선택지 ${i+1}${i<2?' (필수)':''}">`).join('')}</div><button class="btn sm" data-act="poll">투표 빼기</button>` : `<button class="btn sm" data-act="poll">📊 투표 붙이기</button>`}
   <label class="l">선전 포스터</label>
-  ${UI.draft ? `<img class="memeimg" src="${UI.draft.url}" alt="첨부한 포스터"><button class="btn sm" data-act="undraft">포스터 빼기</button>` : `<a class="btn sm" href="#/barracks/poster?f=${sym}">🖼 포스터 만들러 가기</a>`}
+  ${UI.draft ? `<img class="memeimg" src="${UI.draft.url}" alt="첨부한 포스터"><button class="btn sm" data-act="undraft">포스터 빼기</button>` : `<a class="btn sm" href="#/barracks/poster?f=${encodeURIComponent(sym)}">🖼 포스터 만들러 가기</a>`}
   <button class="btn pri full" style="margin-top:20px" data-act="post" data-sym="${sym}">${CAT[cat].e} ${needSide ? '참전 선언' : cat === 'wish' ? '기원 올리기' : '올리기'}</button>${disc()}`;
 }
 const sortTabs = () => `<div class="sortt"><button class="${UI.sort==='new'?'on':''}" data-act="sort" data-v="new">최신순</button><button class="${UI.sort==='hot'?'on':''}" data-act="sort" data-v="hot">인기순</button></div>`;
@@ -776,9 +964,9 @@ async function vPost(id){
   const showPoll = p.poll && (myVote != null || UI.peek === id);
   const tv = p.poll ? p.poll_counts.reduce((s,x) => s + x, 0) : 0;
   CURPOST = id;
-  return topbar(a.name, '#/f/' + p.symbol) + `
+  return topbar(a.name, '#/f/' + encodeURIComponent(p.symbol)) + `
   <div class="row s" style="margin-top:14px">${flagImg(p.author?.flag_art)}<a class="b" href="#/u/${encodeURIComponent(p.author?.nickname || '')}">${esc(p.author?.nickname || '탈영병')}</a><span class="rank">${rankOf(st)}</span><span class="muted">${ago(p.created_at)}</span></div>
-  <div class="row s" style="margin-top:10px"><span class="cat">${c.e} ${c.n}</span><a class="ftag" href="#/f/${p.symbol}">${esc(a.name)}</a></div>
+  <div class="row s" style="margin-top:10px"><span class="cat">${c.e} ${c.n}</span><a class="ftag" href="#/f/${encodeURIComponent(p.symbol)}">${esc(a.name)}</a></div>
   <h1 style="font-size:20px;margin:8px 0 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap">${p.side ? `<span class="side ${p.side}" style="font-size:13px">${sideLbl(p)}</span>` : ''}${esc(p.title)}</h1>
   ${p.side ? `<div class="card s"><div class="row sb wrapf"><span>${p.category === 'wish' ? '빌던 때' : '참전'} 시세 <b class="num">${fmtP(a, +p.entry_price)}</b> · ${WIN_LBL[p.window_min]} 뒤 ${p.category === 'wish' ? '응답' : '판정'}</span>${resBadge(p)}</div>
     <div class="muted" style="margin-top:4px">${p.result ? `${p.category === 'wish' ? '응답' : '판정'} 시세 <span class="num">${fmtP(a, +p.settled_price)}</span>` : `지금 <b class="num" data-p="${p.symbol}">${fmtP(a)}</b>`} · ${p.side === 'UP' ? '오르면' : '내리면'} ${p.category === 'wish' ? '성취' : '승, 그대로면 패'}</div></div>` : ''}
@@ -830,17 +1018,51 @@ async function vBattles(){
     ${disc()}`;
   }
   const open = tab === 'open';
-  const { data } = await sb.from('battles').select('*,entries:battle_entries(option),creator:profiles!battles_creator_id_fkey(nickname)')
+  const { data } = await sb.from('battles').select('*,entries:battle_entries(option,user_id),creator:profiles!battles_creator_id_fkey(nickname)')
     .in('status', open ? ['OPEN','CLOSED'] : ['RESOLVED','VOID']).order(open ? 'closes_at' : 'resolves_at', {ascending:open}).limit(40);
   return topbar('결전') + `
   <div class="note">누구나 결전을 선포할 수 있어요. A·B 중 한쪽에 참전하면 판정 시각의 실제 시세로 서버가 승패를 가려요. 한쪽에만 병사가 있으면 무효.</div>
   ${tabs}<div style="text-align:right;margin-top:10px"><a class="btn sm pri" href="#/battles/new">📯 결전 선포</a></div>
   ${(data || []).map(battleCard).join('') || empty('결전이 없어요')}${disc()}`;
 }
+const RULES = [
+  ['CHANGE_UP','📈 오를까?'], ['DAY_UP','📅 오늘 플러스 마감?'], ['MOVE_ABOVE','🚀 N% 이상 오를까?'], ['RANGE_BREAK','🌊 크게 출렁일까?'],
+  ['PRICE_ABOVE','🎯 기준가 위에서 끝날까?'], ['TOUCH_ABOVE','⬆️ 한 번이라도 찍을까?'], ['TOUCH_BELOW','⬇️ 한 번이라도 깨질까?'],
+  ['VERSUS','⚔️ 다른 영토와 대결'], ['FLOW_BUY','🪖 수급 대결'], ['ARMY_UP','🏳️ 오늘의 진영전'],
+];
+const GROUP = {foreign:'외국인', inst:'기관', retail:'개인'};
+function battleParams(){ return {pct:+($('#bpct')?.value || 1), val:+($('#bval')?.value || 0), other:$('#bo')?.value, group:$('#bg')?.value || 'foreign'}; }
+function autoText(rule, a, pr){
+  const bond = a.kind === 'BOND', u = bond ? 'bp' : '%', o = A[pr.other] || {};
+  switch (rule){
+    case 'CHANGE_UP': return bond ? [`${a.name} 금리, 마감 후 오를까?`, '금리 상승', '금리 하락'] : [`${a.name}, 마감 후 오를까?`, '오른다', '안 오른다'];
+    case 'DAY_UP': return bond ? [`오늘 ${a.name}, 금리가 내릴까? (채권 강세)`, '금리 하락', '금리 상승'] : [`오늘 ${a.name}, 플러스로 마감할까?`, '플러스', '마이너스'];
+    case 'MOVE_ABOVE': return [`${a.name}${bond ? ' 금리' : ''}, ${pr.pct}${u} 이상 오를까?`, '간다', '못 간다'];
+    case 'RANGE_BREAK': return [`${a.name}${bond ? ' 금리' : ''}, ±${pr.pct}${u} 넘게 출렁일까?`, '출렁', '잠잠'];
+    case 'PRICE_ABOVE': return [`${a.name}, ${fmtP(a, pr.val)} 위에서 끝날까?`, '위', '아래'];
+    case 'TOUCH_ABOVE': return [`${a.name}, ${fmtP(a, pr.val)} 한 번이라도 찍을까?`, '찍는다', '못 찍는다'];
+    case 'TOUCH_BELOW': return [`${a.name}, ${fmtP(a, pr.val)} 아래로 깨질까?`, '깨진다', '버틴다'];
+    case 'VERSUS': return [`${a.name} vs ${o.name || '?'}, 누가 더 오를까?`, a.short, o.short || 'B'];
+    case 'FLOW_BUY': return a.flows?.kind === 'taker' ? [`${a.name}, 공격 매수가 더 많을까?`, '매수 우위', '매도 우위'] : [`${GROUP[pr.group]}, ${a.name} 순매수할까?`, '사들인다', '팔아치운다'];
+    case 'ARMY_UP': return ['오늘의 진영전, 상승군이 이길까?', '상승군', '하락군'];
+  }
+  return ['', 'A', 'B'];
+}
+function fillBattleText(){ const a = A[UI.bsym || 'BTCUSDT'], [q, x, y] = autoText(UI.brule || 'CHANGE_UP', a, battleParams()); if ($('#bq')){ $('#bq').value = q; $('#bA').value = x; $('#bB').value = y; } }
 function ruleText(b){
-  const a = A[b.symbol];
-  if (b.rule.type === 'PRICE_ABOVE') return `판정 시각에 ${esc(a.name)} 시세가 <b class="num">${fmtP(a, +b.rule.value)}</b> 이상이면 A, 아니면 B`;
-  return `마감 때보다 판정 때 ${esc(a.name)} 시세가 오르면 A, 같거나 내리면 B`;
+  const a = A[b.symbol] || {name:b.symbol}, r = b.rule, o = A[b.other_symbol] || {name:b.other_symbol}, bond = a.kind === 'BOND', u = bond ? 'bp' : '%';
+  switch (r.type){
+    case 'PRICE_ABOVE': return `판정 시각에 ${esc(a.name)} 시세가 <b class="num">${fmtP(a, +r.value)}</b> 이상이면 A, 아니면 B`;
+    case 'DAY_UP': return bond ? `판정 시각에 ${esc(a.name)} 금리가 전일보다 낮으면(채권 강세) A` : `판정 시각에 ${esc(a.name)}가 전일 대비 플러스면 A`;
+    case 'MOVE_ABOVE': return `마감 때보다 ${esc(a.name)}${bond ? ' 금리' : ''}가 <b>${r.pct}${u}</b> 이상 오르면 A`;
+    case 'RANGE_BREAK': return `마감 때보다 ${esc(a.name)}${bond ? ' 금리' : ''}가 <b>±${r.pct}${u}</b> 넘게 움직이면 A`;
+    case 'TOUCH_ABOVE': return `마감~판정 사이 ${esc(a.name)}가 한 번이라도 <b class="num">${fmtP(a, +r.value)}</b> 이상을 찍으면 A`;
+    case 'TOUCH_BELOW': return `마감~판정 사이 ${esc(a.name)}가 한 번이라도 <b class="num">${fmtP(a, +r.value)}</b> 이하로 내려가면 A`;
+    case 'VERSUS': return `마감~판정 동안 ${esc(a.name)}가 ${esc(o.name)}보다 더 많이 오르면 A (등락률 비교)`;
+    case 'FLOW_BUY': return r.group === 'taker' ? `판정 시각 최근 24시간 공격 매수가 공격 매도보다 많으면 A` : `판정 시각 ${GROUP[r.group]} 순매수가 플러스면 A`;
+    case 'ARMY_UP': return `판정 시각 오늘의 진영전에서 상승군 승리 수가 하락군보다 많으면 A`;
+  }
+  return `마감 때보다 판정 때 ${esc(a.name)}${bond ? ' 금리' : ''}가 오르면 A, 같거나 내리면 B`;
 }
 async function vBattle(id){
   const { data:b } = await sb.from('battles').select('*,creator:profiles!battles_creator_id_fkey(nickname),entries:battle_entries(option,created_at,user_id,soldier:profiles!battle_entries_user_id_fkey(nickname,flag_art))').eq('id', id).maybeSingle();
@@ -849,7 +1071,8 @@ async function vBattle(id){
   const na = e.filter(x => x.option === 'A').length, nb = e.length - na, t = e.length;
   const mine = ME && e.find(x => x.user_id === ME.id), isCreator = ME && b.creator_id === ME.id;
   let action = '';
-  if (b.status === 'OPEN'){
+  if (b.status === 'OPEN' && T(b.closes_at) < now() + 5000) action = `<div class="note">참전이 마감됐어요. 곧 판정돼요</div>`;
+  else if (b.status === 'OPEN'){
     if (isCreator) action = `<div class="note">내가 선포한 결전엔 참전할 수 없어요 (조작 방지).</div>`;
     else if (mine) action = `<div class="note">${mine.option === 'A' ? 'A ' + esc(b.option_a) : 'B ' + esc(b.option_b)} 쪽으로 참전했어요.</div>`;
     else action = `<div class="row" style="margin-top:12px"><button class="btn bu" style="flex:1" data-act="enter" data-id="${id}" data-o="A">A ${esc(b.option_a)}</button><button class="btn bd" style="flex:1" data-act="enter" data-id="${id}" data-o="B">B ${esc(b.option_b)}</button></div>`;
@@ -859,10 +1082,11 @@ async function vBattle(id){
       ${mine ? `<div style="margin-top:6px" class="b ${mine.option === b.winning_option ? 'up' : 'down'}">${mine.option === b.winning_option ? '🎖 승리한 쪽에 섰어요!' : '💀 패배한 쪽이었어요'}</div>` : ''}</section>`
     : b.status === 'VOID' ? `<section class="card"><div class="b">무효</div><div class="muted s">한쪽에만 병사가 있어서 무효 처리됐어요.</div></section>` : '';
   return topbar('결전', '#/battles') + `
-  <div class="row s muted" style="margin-top:14px"><a class="ftag" href="#/f/${b.symbol}">${esc(a.name)}</a><span>선포 ${b.creator ? esc(b.creator.nickname) : '사령부'}</span></div>
+  <div class="row s muted" style="margin-top:14px"><a class="ftag" href="#/f/${encodeURIComponent(b.symbol)}">${esc(a.name)}</a><span>선포 ${b.creator ? esc(b.creator.nickname) : '사령부'}</span></div>
   <h1 style="font-size:19px;margin:8px 0">${esc(b.question)}</h1>
   <div class="card s"><div class="muted">판정 규칙 (자동)</div><div style="margin-top:4px">${ruleText(b)}</div>
-    <div class="row sb" style="margin-top:8px"><span class="muted">지금</span><b class="num" data-p="${b.symbol}">${fmtP(a)}</b></div>
+    <div class="row sb" style="margin-top:8px"><span class="muted">지금 ${esc(a.short)}</span><b class="num" data-p="${esc(b.symbol)}">${fmtP(a)}</b></div>
+    ${b.other_symbol && A[b.other_symbol] ? `<div class="row sb"><span class="muted">지금 ${esc(A[b.other_symbol].short)}</span><b class="num" data-p="${esc(b.other_symbol)}">${fmtP(A[b.other_symbol])}</b></div>` : ''}
     ${b.close_price != null && b.status === 'CLOSED' ? `<div class="row sb"><span class="muted">마감 시세</span><b class="num">${fmtP(a, +b.close_price)}</b></div>` : ''}
     <div class="row sb"><span class="muted">${b.status === 'OPEN' ? '마감까지' : b.status === 'CLOSED' ? '판정까지' : '상태'}</span><b class="num">${b.status === 'OPEN' ? `<span data-cd="${T(b.closes_at)}">${mmss(T(b.closes_at)-now())}</span>` : b.status === 'CLOSED' ? `<span data-cd="${T(b.resolves_at)}">${mmss(T(b.resolves_at)-now())}</span>` : b.status === 'VOID' ? '무효' : '종전'}</b></div></div>
   <div class="pool"><div class="pa" style="width:${t ? Math.max(na/t*100,20) : 50}%">A · ${na}명</div><div class="pb" style="width:${t ? Math.max(nb/t*100,20) : 50}%">${nb}명 · B</div></div>
@@ -871,17 +1095,25 @@ async function vBattle(id){
   <table class="t">${e.map(x => `<tr><td>${flagImg(x.soldier?.flag_art)} ${esc(x.soldier?.nickname || '')}${ME && x.user_id === ME.id ? ' (나)' : ''}</td><td class="${x.option==='A'?'up':'down'}">${x.option} ${x.option==='A'?esc(b.option_a):esc(b.option_b)}</td><td class="r muted s">${ago(x.created_at)}</td></tr>`).join('') || '<tr><td class="muted">아직 없음</td></tr>'}</table>${disc()}`;
 }
 async function vBattleNew(){
-  const sym = UI.bsym || 'BTCUSDT', a = A[sym];
+  const sym = A[UI.bsym] ? UI.bsym : 'BTCUSDT', a = A[sym], rule = UI.brule || 'CHANGE_UP', bond = a.kind === 'BOND';
+  const pr = UI.bp || {pct: bond ? 5 : 1, val: a.price ? +(a.price * 1.01).toFixed(bond ? 3 : 2) : 0, other: (ASSETS.find(x => x.symbol !== sym && (x.kind === 'BOND') === bond && x.region === a.region && x.kind === a.kind) || ASSETS.find(x => x.symbol !== sym && (x.kind === 'BOND') === bond && x.region === a.region) || ASSETS.find(x => x.symbol !== sym && (x.kind === 'BOND') === bond))?.symbol, group:'foreign'};
+  const [q, qa, qb] = UI.bqTouched && UI.bq ? [UI.bq, UI.bA, UI.bB] : autoText(rule, a, pr);
+  const canFlow = !!a.flows_src;
+  const param = rule === 'MOVE_ABOVE' || rule === 'RANGE_BREAK' ? `<label class="l">변동폭 (${bond ? 'bp' : '%'})</label><input class="f num" id="bpct" type="number" step="0.1" min="0.1" value="${pr.pct}">`
+    : ['PRICE_ABOVE','TOUCH_ABOVE','TOUCH_BELOW'].includes(rule) ? `<label class="l">기준값 · 지금 <span class="num" data-p="${esc(sym)}">${fmtP(a)}</span></label><input class="f num" id="bval" type="number" step="any" value="${pr.val}">`
+    : rule === 'VERSUS' ? `<label class="l">맞붙을 영토</label><select class="f" id="bo">${ASSETS.filter(x => x.symbol !== sym && (x.kind === 'BOND') === bond).map(x => `<option value="${esc(x.symbol)}" ${x.symbol === pr.other ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>`
+    : rule === 'FLOW_BUY' && a.flows?.kind !== 'taker' ? `<label class="l">누구의 순매수?</label><select class="f" id="bg">${Object.entries(GROUP).map(([k, n]) => `<option value="${k}" ${pr.group === k ? 'selected' : ''}>${n}</option>`).join('')}</select>` : '';
   return topbar('결전 선포', '#/battles') + `
-  <div class="note">판정은 자동으로 가능한 두 형식만 돼요. 내가 선포한 결전엔 참전할 수 없어요.</div>
-  <label class="l">영토</label><select class="f" id="bs">${ASSETS.map(x => `<option value="${x.symbol}" ${x.symbol===sym?'selected':''}>${esc(x.name)}</option>`).join('')}</select>
-  <label class="l">판정 규칙</label><select class="f" id="bt"><option value="CHANGE_UP">마감 대비 판정 시각에 오르면 A</option><option value="PRICE_ABOVE">판정 시각 시세가 기준 이상이면 A</option></select>
-  <label class="l">기준값 (기준 규칙일 때) · 지금 <span class="num" data-p="${sym}">${fmtP(a)}</span></label><input class="f num" id="bv" type="number" step="any" value="${a.price ? +a.price.toFixed(a.kind === 'BOND' ? 3 : 2) : ''}">
-  <label class="l">질문</label><input class="f" id="bq" maxlength="60" placeholder="예: 오늘 밤 원/달러, 1,400원 넘을까?">
-  <div class="row"><div style="flex:1"><label class="l">A 진영</label><input class="f" id="bA" maxlength="12" value="오른다"></div><div style="flex:1"><label class="l">B 진영</label><input class="f" id="bB" maxlength="12" value="안 오른다"></div></div>
-  <div class="row"><div style="flex:1"><label class="l">마감</label><select class="f" id="bc"><option value="5">5분 뒤</option><option value="30">30분 뒤</option><option value="60" selected>1시간 뒤</option><option value="360">6시간 뒤</option><option value="1440">하루 뒤</option></select></div>
-    <div style="flex:1"><label class="l">판정</label><select class="f" id="br"><option value="5">마감 5분 후</option><option value="60" selected>마감 1시간 후</option><option value="1440">마감 하루 후</option></select></div></div>
-  <button class="btn pri full" style="margin-top:18px" data-act="mkbattle">📯 선포하기</button>${disc()}`;
+  <div class="note">판정은 모두 자동이에요. 규칙을 고르면 질문이 자동으로 채워져요. 내가 선포한 결전엔 참전할 수 없어요.</div>
+  <label class="l">영토</label><select class="f" id="bs">${ASSETS.map(x => `<option value="${esc(x.symbol)}" ${x.symbol===sym?'selected':''}>${esc(x.name)}</option>`).join('')}</select>
+  <label class="l">무엇으로 겨룰까요?</label><div class="rules">${RULES.map(([k, n]) => `<button data-act="brule" data-v="${k}" class="${rule === k ? 'on' : ''}" ${k === 'FLOW_BUY' && !canFlow ? 'disabled title="이 영토는 수급 정보가 없어요"' : ''}>${n}</button>`).join('')}</div>
+  ${param}
+  <label class="l">질문</label><input class="f" id="bq" maxlength="60" value="${esc(q)}">
+  <div class="row"><div style="flex:1"><label class="l">A 진영</label><input class="f" id="bA" maxlength="12" value="${esc(qa)}"></div><div style="flex:1"><label class="l">B 진영</label><input class="f" id="bB" maxlength="12" value="${esc(qb)}"></div></div>
+  <div class="row"><div style="flex:1"><label class="l">참전 마감</label><select class="f" id="bc"><option value="5">5분 뒤</option><option value="30">30분 뒤</option><option value="60" selected>1시간 뒤</option><option value="360">6시간 뒤</option><option value="1440">하루 뒤</option></select></div>
+    <div style="flex:1"><label class="l">판정</label><select class="f" id="br"><option value="10">마감 10분 후</option><option value="60" selected>마감 1시간 후</option><option value="360">마감 6시간 후</option><option value="1440">마감 하루 후</option></select></div></div>
+  <div class="note" style="margin-top:12px">규칙: ${ruleText({symbol: sym, other_symbol: pr.other, rule: {type: rule, pct: pr.pct, value: pr.val, group: a.flows?.kind === 'taker' ? 'taker' : pr.group}})}</div>
+  <button class="btn pri full" style="margin-top:10px" data-act="mkbattle">📯 선포하기</button>${disc()}`;
 }
 async function vBarracks(){
   await loadArts();
@@ -941,11 +1173,29 @@ async function vAdmin(){
   <h3 class="sec">보고</h3>${(ps || []).map(x => item('post', x, x.title)).join('') || empty('없음')}
   <h3 class="sec">댓글</h3>${(cs || []).map(x => item('comment', x, x.body)).join('') || empty('없음')}${disc()}`;
 }
+async function vClaim(){
+  return topbar('새 영토 개척', '#/fronts') + `<div class="note">국내·미국 주식, ETF, 지수(나스닥·코스닥…), 원자재(금·유가…), 코인까지 검색해서 새 영토로 만들 수 있어요. 한 사람당 하루 3곳, 2주 동안 아무도 안 싸우면 잠들어요.</div>
+    <input class="f" id="cq" placeholder="예: 에코프로, 팔란티어, 금, 솔라나" autocomplete="off" style="margin-top:12px" value="${esc(UI.cq || '')}">
+    <div id="cres">${UI.cres || '<div class="muted s" style="margin-top:12px">이름이나 종목코드로 검색해 보세요</div>'}</div>${disc()}`;
+}
+let CQT = null;
+function claimSearch(q){
+  clearTimeout(CQT); UI.cq = q;
+  if (q.trim().length < 1){ $('#cres').innerHTML = ''; return; }
+  CQT = setTimeout(async () => {
+    $('#cres').innerHTML = '<div class="skel" style="height:48px"></div>';
+    const { data, error } = await sb.functions.invoke('market-search', { body: { q } });
+    if (error || !data){ $('#cres').innerHTML = empty('검색에 실패했어요. 잠시 후 다시 해 주세요'); return; }
+    UI.cres = (data.items || []).map(it => { const ex = A[it.symbol] && A[it.symbol].active !== false;
+      return `<div class="cr"><div><b>${esc(it.name)}</b><div class="muted s">${esc(it.label)}</div></div>${ex ? `<a class="btn sm" href="#/f/${encodeURIComponent(it.symbol)}">이미 영토 ›</a>` : `<button class="btn sm pri" data-act="claim" data-key="${esc(it.key)}">🚩 개척</button>`}</div>`; }).join('') || empty('찾는 종목이 없어요');
+    if ($('#cres')) $('#cres').innerHTML = UI.cres;
+  }, 350);
+}
 const v404 = () => topbar('없는 곳') + empty('찾는 곳이 없어요');
 
 /* ========================================================== router */
 let cmtChan = null, RENDER_ID = 0;
-function parse(){ const h = location.hash.slice(1) || '/'; const [path, qs] = h.split('?'); return {parts:path.split('/').filter(Boolean), qs:new URLSearchParams(qs || '')}; }
+function parse(){ const h = location.hash.slice(1) || '/'; const [path, qs] = h.split('?'); return {parts:path.split('/').filter(Boolean).map(x => { try { return decodeURIComponent(x); } catch(e){ return x; } }), qs:new URLSearchParams(qs || '')}; }
 async function render(keep){
   const id = ++RENDER_ID, y = window.scrollY;
   const {parts, qs} = parse(); const [a, b, c] = parts; let tab = 'home', fn;
@@ -965,6 +1215,7 @@ async function render(keep){
   else if (a === 'me'){ tab = 'me'; if (!ME){ fn = vHome; setTimeout(nickModal, 0); } else fn = () => vProfile(ME.nickname); }
   else if (a === 'u'){ fn = () => vProfile(decodeURIComponent(b)); tab = 'me'; }
   else if (a === 'admin'){ fn = vAdmin; tab = 'me'; }
+  else if (a === 'claim'){ fn = vClaim; }
   else fn = async () => v404();
   $$('.tabbar a').forEach(x => x.classList.toggle('on', x.dataset.tab === tab));
   if (a !== 'p') CURPOST = null;
@@ -991,7 +1242,8 @@ function drawSpark(cv){
   const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight; if (!w) return;
   cv.width = w * dpr; cv.height = h * dpr; const g = cv.getContext('2d'); g.scale(dpr, dpr);
   const mn = Math.min(...a), mx = Math.max(...a), rg = mx - mn || 1;
-  g.strokeStyle = a[a.length-1] >= a[0] ? '#f04452' : '#3b82f6'; g.lineWidth = 1.6; g.beginPath();
+  const bond = A[cv.dataset.spark]?.kind === 'BOND';
+  g.strokeStyle = (a[a.length-1] >= a[0]) !== bond ? '#f04452' : '#3b82f6'; g.lineWidth = 1.6; g.beginPath();
   a.forEach((v,i) => { const x = i / (a.length - 1) * w, y = h - 2 - (v - mn) / rg * (h - 4); i ? g.lineTo(x,y) : g.moveTo(x,y); }); g.stroke();
 }
 function subscribeComments(){
@@ -1019,6 +1271,32 @@ const ACT = {
   rename(){ nickModal(); },
   close(){ closeModal(); },
   sort(el){ UI.sort = el.dataset.v; render(true); },
+  quick(el){ quickSheet(el.dataset.sym); },
+  qwin(el){ UI.qwin = +el.dataset.v; if ($('.modal .qs')) quickSheet(UI.qsym); else render(true); },
+  async qcall(el){
+    if (!need()) return;
+    const sym = el.dataset.sym, a = A[sym], side = el.dataset.v, w = UI.qwin || 60, bond = a.kind === 'BOND';
+    const lbl = bond ? (side === 'UP' ? '채권 강세' : '채권 약세') : (side === 'UP' ? '오른다' : '내린다');
+    $$('[data-act=qcall]').forEach(b => b.disabled = true);
+    try { await rpc('create_post', {p_symbol:sym, p_category:'forecast', p_title:`${a.short} ${WIN_LBL[w]} 뒤 ${lbl}!`, p_body:'', p_side:side, p_window:w, p_poll:null, p_meme_url:null});
+      try { localStorage.setItem(ONB, '1'); } catch(e){}
+      closeModal(); burst(side); toast(`${side === 'UP' ? '🔴 상승군' : '🔵 하락군'} 합류! ${WIN_LBL[w]} 뒤 판정돼요`); render(true);
+    } catch(e){ toast(errMsg(e)); $$('[data-act=qcall]').forEach(b => b.disabled = false); }
+  },
+  goto(el){ closeModal(); location.hash = el.dataset.href; },
+  reroll(){ const i = $('#nk'); if (i){ i.value = randName(); i.select(); } },
+  onbdone(){ try { localStorage.setItem(ONB, '1'); } catch(e){} render(true); },
+  brule(el){ UI.brule = el.dataset.v; UI.bp = null; UI.bqTouched = false; render(true); },
+  async claim(el){
+    if (!need()) return; el.disabled = true; el.textContent = '개척 중…';
+    try {
+      const { data, error } = await sb.functions.invoke('claim-territory', { body: { key: el.dataset.key } });
+      if (error){ let m = '개척에 실패했어요'; try { m = (await error.context.json()).error || m; } catch(e){} throw new Error(m); }
+      await loadAssets(); MAPDIRTY = true; UI.cres = null; UI.cq = '';
+      toast(data.existing ? '이미 있는 영토예요. 그곳으로 갈게요' : '🚩 새 영토를 개척했어요! 첫 참전을 해 보세요');
+      location.hash = '#/f/' + encodeURIComponent(data.symbol);
+    } catch(e){ toast(errMsg(e)); el.disabled = false; el.textContent = '🚩 개척'; }
+  },
   cat(el){ UI.cat = el.dataset.v || null; render(true); },
   fcat(el){ UI.fcat = el.dataset.v || null; render(true); },
   wcat(el){ UI.wcat = el.dataset.v; keepForm(() => render(true)); },
@@ -1083,7 +1361,11 @@ const ACT = {
   },
   async mkbattle(el){
     if (!need()) return; el.disabled = true;
-    try { const id = await rpc('create_battle', {p_symbol:$('#bs').value, p_question:$('#bq').value, p_a:$('#bA').value, p_b:$('#bB').value, p_type:$('#bt').value, p_value:+$('#bv').value || null, p_close_min:+$('#bc').value, p_resolve_min:+$('#br').value});
+    try { const pr = battleParams(), rule = UI.brule || 'CHANGE_UP', r = {type: rule};
+      if (rule === 'MOVE_ABOVE' || rule === 'RANGE_BREAK') r.pct = pr.pct; if (['PRICE_ABOVE','TOUCH_ABOVE','TOUCH_BELOW'].includes(rule)) r.value = pr.val;
+      if (rule === 'VERSUS') r.other = pr.other; if (rule === 'FLOW_BUY') r.group = pr.group;
+      const id = await rpc('create_battle', {p_symbol:$('#bs').value, p_question:$('#bq').value, p_a:$('#bA').value, p_b:$('#bB').value, p_rule:r, p_close_min:+$('#bc').value, p_resolve_min:+$('#br').value});
+      UI.bqTouched = false; UI.bp = null;
       location.hash = '#/battles/' + id; toast('결전을 선포했어요!');
     } catch(e){ toast(errMsg(e)); el.disabled = false; }
   },
@@ -1110,14 +1392,20 @@ const ACT = {
     $('#mmc').toBlob(blob => { UI.draft = {blob, url:URL.createObjectURL(blob)}; UI.wsym = UI.backFront || UI.wsym || UI.msym; location.hash = '#/write'; toast('포스터를 붙였어요'); }, 'image/jpeg', .82);
   },
 };
-document.addEventListener('click', e => { const el = e.target.closest('[data-act]'); if (!el || !ACT[el.dataset.act]) return; e.preventDefault(); ACT[el.dataset.act](el); });
+document.addEventListener('click', e => { const el = e.target.closest('[data-act]'); if (!el || !ACT[el.dataset.act]) return; e.preventDefault(); e.stopPropagation(); const k = el.dataset.act; if (k !== 'nick' && k !== 'reroll') LAST_ACT = () => ACT[k](el); ACT[k](el); });
 document.addEventListener('change', async e => {
-  if (e.target.id === 'bs'){ UI.bsym = e.target.value; render(true); }
+  if (e.target.id === 'bs'){ UI.bsym = e.target.value; UI.bp = null; UI.bqTouched = false; render(true); }
+  if (['bpct','bval','bo','bg'].includes(e.target.id)) render(true);
   if (e.target.id === 'wf'){ UI.wsym = e.target.value; keepForm(() => render(true)); }
   if (e.target.id === 'msym'){ UI.msym = e.target.value; keepMeme(); render(true); }
   if (e.target.id === 'mup') onUpload(e.target.files[0]);
 });
-document.addEventListener('input', e => { if (e.target.id === 'mt1' || e.target.id === 'mt2'){ keepMeme(); memeDraw(); } });
+document.addEventListener('input', e => {
+  if (e.target.id === 'mt1' || e.target.id === 'mt2'){ keepMeme(); memeDraw(); }
+  if (e.target.id === 'cq') claimSearch(e.target.value);
+  if (e.target.id === 'bq' || e.target.id === 'bA' || e.target.id === 'bB') UI.bqTouched = true;
+  if (['bpct','bval','bo','bg'].includes(e.target.id)){ UI.bp = battleParams(); if (!UI.bqTouched) fillBattleText(); }
+});
 document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'nk') doNick(); if (e.key === 'Enter' && e.target.id === 'ci') $('[data-act=cmt]')?.click(); });
 function keepMeme(){ if ($('#mt1')) UI.mt1 = $('#mt1').value; if ($('#mt2')) UI.mt2 = $('#mt2').value; }
 
@@ -1234,7 +1522,7 @@ function renderTicker(force){
   const sig = EVENTS.map(e => e.at).join(',');
   if (!force && sig === tickerSig && el.childElementCount) return; tickerSig = sig;
   const items = [...EVENTS.slice(0, 6).map(e => `<span>📣 ${esc(e.txt)}</span>`),
-    ...ASSETS.map(a => `<span>${stateOf(a).split(' ')[0]} <b>${esc(a.short)}</b> <span data-c="${a.symbol}" class="${dir(mv(a))}">${fmtC(a)}</span></span>`)];
+    ...ASSETS.slice().sort((x, y) => heat(y) - heat(x)).map(a => `<span>${heat(a) >= .5 ? '🔥 <b style="color:#ffb27a">격전</b> ' : stateOf(a).split(' ')[0] + ' '}<b>${esc(a.short)}</b> <span data-c="${a.symbol}" class="${dir(mv(a))}">${fmtC(a)}</span></span>`)];
   el.innerHTML = items.join('<i>|</i>');
   el.style.animationDuration = Math.max(35, items.length * 4.5) + 's';
 }
