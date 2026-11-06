@@ -71,9 +71,10 @@ label.l{display:block;font-size:13px;color:var(--muted);margin:14px 0 6px}
 .mapwrap{margin:12px -16px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:#0d1f37;overflow:hidden}
 .map{position:relative;width:100%;aspect-ratio:100/124}
 #mapc{position:absolute;left:0;top:0;width:100%;height:100%}
-.pin{position:absolute;transform:translate(-50%,0);display:flex;flex-direction:column;align-items:center;padding:2px 6px;min-width:44px;border-radius:7px;background:rgba(8,12,20,.86);border:1px solid rgba(255,255,255,.14);border-top:3px solid #8a8f99;font-size:10.5px;line-height:1.25;white-space:nowrap;z-index:3;box-shadow:0 2px 6px rgba(0,0,0,.5)}
+.pin{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:row;gap:4px;align-items:center;padding:2px 7px;min-width:44px;border-radius:7px;background:rgba(8,12,20,.86);border:1px solid rgba(255,255,255,.14);border-left:4px solid #8a8f99;font-size:10.5px;line-height:1.25;white-space:nowrap;z-index:3;box-shadow:0 2px 6px rgba(0,0,0,.5)}
 .pin b{font-weight:700}
 .pin span{font-size:10px}
+.maplbl.side{left:3%;transform:translate(0,-50%);writing-mode:vertical-rl;letter-spacing:3px;font-size:10px;color:rgba(255,255,255,.55)}
 .pin.hot{animation:pinpulse .9s ease-in-out infinite alternate}
 @keyframes pinpulse{to{box-shadow:0 0 0 3px rgba(245,197,66,.4)}}
 .sky{position:absolute;z-index:2;transform:translate(-50%,-50%);animation:float 3.2s ease-in-out infinite}
@@ -390,7 +391,7 @@ function refreshLive(){
   $$('[data-st]').forEach(el => { const a = A[el.dataset.st]; if (a) el.textContent = stateOf(a); });
   $$('[data-tag]').forEach(el => { const a = A[el.dataset.tag]; if (!a) return; const live = a.liveWS && now() - a.liveAt < 15000;
     el.textContent = live ? '● 실시간' : !isOpen(a) ? '장 마감' : a.delayed ? '지연 시세' : '● 실시간'; el.classList.toggle('live', live || (isOpen(a) && !a.delayed)); });
-  $$('[data-pin]').forEach(el => { const a = A[el.dataset.pin]; if (!a) return; el.style.borderTopColor = colOf(score(a)); el.classList.toggle('fire', heat(a) >= .5); el.classList.toggle('hot', Math.abs(score(a)) > .45 && isOpen(a)); });
+  $$('[data-pin]').forEach(el => { const a = A[el.dataset.pin]; if (!a) return; el.style.borderLeftColor = colOf(score(a)); el.classList.toggle('fire', heat(a) >= .5); el.classList.toggle('hot', Math.abs(score(a)) > .45 && isOpen(a)); });
   $$('[data-fl]').forEach(el => { const a = A[el.dataset.fl]; if (!a) return; const c = control(a); el.textContent = el.dataset.side === 'U' ? `상승군 ${c}%` : `${100-c}% 하락군`; });
 }
 
@@ -447,124 +448,94 @@ async function doNick(){
   } catch(e){ toast(errMsg(e)); btn.disabled = false; }
 }
 
-/* ========================================================== world map: territory control */
-// Each territory is split by a front line: 상승군 holds the west part, 하락군 the east part,
-// in proportion to who is winning today. A hatched band marks the contested zone.
+/* ========================================================== world map: red vs blue */
+// One front line splits the whole continent: 상승군 (red) on the west, 하락군 (blue) on the east.
+// Every territory stands on that line; at its row the line sits at its control %, so a rising
+// territory pushes red east and a falling one lets blue push west. Red area = overall power.
 const MW = 100, MH = 124, CELL = 4;
-// One continent. Every territory is a province seeded at a fixed spot; regions sit side by side:
-// 크립토 고원 (north), 아메리카 (west), 환율 협곡 (center), 코리아 (east), 개척지 (south).
-const CONT = {cx:50, cy:62, rx:47, ry:57, s:2.2};
-const SEEDS = {BTCUSDT:[35,18], ETHUSDT:[62,16], NVDA:[14,40], SPX:[30,46], US2Y:[46,34], TSLA:[16,62], US10Y:[34,64],
-  USDKRW:[56,52], JPYKRW:[52,70], '005930':[72,40], KOSPI:[84,56], '000660':[70,70], KR3Y:[88,36], KR10Y:[86,78]};
-const FR_SLOTS = [[20,90],[38,96],[56,92],[74,96],[28,108],[50,110]];
-const SKY = [];
-const LABELS = [['크립토 고원',48,7],['아메리카',12,29],['코리아',89,27],['환율 협곡',60,63.5],['개척지',10,101]];
-let POS = {}, GRID = null, PROV = null, BORDERS = null, BBOX = null, MAPDIRTY = true, MAPSIG = null;
-function blob(L, x, y){ const dx = (x - L.cx) / L.rx, dy = (y - L.cy) / L.ry, th = Math.atan2(dy, dx); return Math.hypot(dx, dy) < 1 + .10*Math.sin(3*th + L.s) + .07*Math.sin(5*th + 2*L.s) + .04*Math.sin(11*th + 3*L.s); }
+const CONT = {cx:50, cy:63, rx:47, ry:58, s:2.2};
+const ORDER = [['크립토', ['BTCUSDT','ETHUSDT']], ['미국', ['SPX','NVDA','TSLA','US2Y','US10Y']], ['환율', ['USDKRW','JPYKRW']], ['한국', ['KOSPI','005930','000660','KR3Y','KR10Y']]];
+const FR_ON_MAP = 4, SKY = [];
+let LINE = [], GROUPS = [], GRID = null, ROWS = null, MAPDIRTY = true, MAPSIG = null;
 function inCont(x, y){
   const dx = (x - CONT.cx) / CONT.rx, dy = (y - CONT.cy) / CONT.ry, th = Math.atan2(dy, dx);
   const d = Math.pow(Math.abs(dx) ** 3 + Math.abs(dy) ** 3, 1 / 3);
   return d < 1 + .05 * Math.sin(3 * th + CONT.s) + .04 * Math.sin(7 * th + 2 * CONT.s) + .025 * Math.sin(13 * th + 3 * CONT.s);
 }
-function layoutFrontier(){
-  POS = {};
-  ASSETS.forEach(a => { if (SEEDS[a.symbol]){ [a.lon, a.lat] = SEEDS[a.symbol]; POS[a.symbol] = SEEDS[a.symbol]; } });
-  const fs = ASSETS.filter(a => a.frontier).sort((a, b) => T(b.last_activity) - T(a.last_activity)).slice(0, FR_SLOTS.length);
-  ASSETS.forEach(a => { if (a.frontier) a._onMap = false; });
-  fs.forEach((a, i) => { [a.lon, a.lat] = FR_SLOTS[i]; a._onMap = true; POS[a.symbol] = FR_SLOTS[i]; });
-  for (let i = fs.length; i < FR_SLOTS.length; i++) POS['FOG' + i] = FR_SLOTS[i];
-  const sig = Object.keys(POS).join(','); if (sig !== MAPSIG){ MAPSIG = sig; GRID = null; PROV = null; MAPDIRTY = true; }
-}
-const onMap = a => a && (a.frontier ? a._onMap : !!SEEDS[a.symbol]);
-const regName = a => a.frontier ? '개척지' : a.kind === 'FX' ? '협곡' : a.region === 'CRYPTO' ? '고원' : a.region === 'US' ? '아메리카' : '코리아';
-const regOf = id => id.startsWith('FOG') ? '개척지' : A[id] ? regName(A[id]) : '';
 function buildGrid(){
-  GRID = new Array(MW * MH).fill(null);
-  const ids = Object.keys(POS);
-  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++){
-    if (!inCont(x + .5, y + .5)) continue;
-    let best = null, bd = 1e9;
-    for (const id of ids){ const [px, py] = POS[id]; const d = (px - x) ** 2 + (py - y) ** 2 * 1.1; if (d < bd){ bd = d; best = id; } }
-    GRID[y * MW + x] = best;
-  }
+  GRID = new Array(MW * MH).fill(false); ROWS = [];
+  for (let y = 0; y < MH; y++){ let x0 = -1, x1 = -1;
+    for (let x = 0; x < MW; x++) if (inCont(x + .5, y + .5)){ GRID[y * MW + x] = true; if (x0 < 0) x0 = x; x1 = x; }
+    ROWS.push(x0 < 0 ? null : [x0, x1]); }
 }
-function buildProv(){
+const regName = a => a.frontier ? '개척지' : a.kind === 'FX' ? '환율' : a.region === 'CRYPTO' ? '크립토' : a.region === 'US' ? '미국' : '한국';
+const onMap = a => a && LINE.some(l => l.sym === a.symbol);
+function layoutFrontier(){
   if (!GRID) buildGrid();
-  PROV = {}; BORDERS = []; BBOX = {};
-  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++){
-    const i = y * MW + x, p = GRID[i]; if (!p) continue;
-    (PROV[p] = PROV[p] || []).push(i);
-    const b = BBOX[p] = BBOX[p] || {x0:x, x1:x, y0:y, y1:y}; b.x0 = Math.min(b.x0, x); b.x1 = Math.max(b.x1, x); b.y0 = Math.min(b.y0, y); b.y1 = Math.max(b.y1, y);
-    const r = x + 1 < MW ? GRID[i + 1] : null, d = y + 1 < MH ? GRID[i + MW] : null;
-    if (r && r !== p) BORDERS.push([i, p, r]); if (d && d !== p) BORDERS.push([i, p, d]);
-  }
+  const fr = ASSETS.filter(a => a.frontier).sort((a, b) => T(b.last_activity) - T(a.last_activity)).slice(0, FR_ON_MAP).map(a => a.symbol);
+  const groups = ORDER.map(([n, syms]) => [n, syms.filter(x => A[x])]).concat(fr.length ? [['개척지', fr]] : []);
+  const syms = groups.flatMap(g => g[1]), y0 = 9, y1 = MH - 9, step = (y1 - y0) / Math.max(1, syms.length - 1);
+  LINE = syms.map((sym, i) => ({sym, y: y0 + i * step}));
+  GROUPS = []; let i = 0; for (const [n, g] of groups){ GROUPS.push({name:n, y0:y0 + i * step, y1:y0 + (i + g.length - 1) * step}); i += g.length; }
+  placeLine();
+  const sig = syms.join(','); if (sig !== MAPSIG){ MAPSIG = sig; MAPDIRTY = true; }
 }
-function wig(p, y){ let s = 0; for (const ch of p) s = (s * 31 + ch.charCodeAt(0)) % 997; return .07 * Math.sin(y * .55 + s) + .035 * Math.sin(y * 1.7 + s * 2.3); }
-function tOf(p, x, y){ const b = BBOX[p]; return (x + .5 - b.x0) / Math.max(1, b.x1 - b.x0 + 1) + wig(p, y); }
-function sideAt(p, x, y){ const a = A[p]; if (!a) return 0; const c = control(a) / 100, t = tOf(p, x, y); if (Math.abs(t - c) < .045) return 2; return t < c ? 1 : -1; }
-function frontX(p, y){ const a = A[p], b = BBOX[p]; return b.x0 + (control(a) / 100 - wig(p, y)) * (b.x1 - b.x0 + 1); }
+// x of the front line at territory i, inside that row's land
+function placeLine(){
+  for (const l of LINE){ const a = A[l.sym], r = ROWS[Math.round(l.y)] || [10, 90], pad = 6;
+    l.x = r[0] + pad + (r[1] - r[0] - 2 * pad) * control(a) / 100; a.lon = l.x; a.lat = l.y; }
+}
+function frontAt(y){
+  if (!LINE.length) return MW / 2;
+  if (y <= LINE[0].y) return LINE[0].x; const last = LINE[LINE.length - 1]; if (y >= last.y) return last.x;
+  for (let i = 0; i < LINE.length - 1; i++){ const a = LINE[i], b = LINE[i + 1];
+    if (y <= b.y){ const t = (y - a.y) / (b.y - a.y), sm = (1 - Math.cos(Math.PI * t)) / 2; return a.x + (b.x - a.x) * sm + Math.sin(y * 1.3) * .6; } }
+  return MW / 2;
+}
 const RED = [176,44,58], BLUE = [42,90,176];
 function drawMapBase(cv){
-  if (!PROV) buildProv();
-  const g = cv.getContext('2d'), C = CELL, at = (x, y) => (x < 0 || y < 0 || x >= MW || y >= MH) ? null : GRID[y * MW + x];
-  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++){
-    const p = at(x, y), n4 = [at(x-1,y), at(x+1,y), at(x,y-1), at(x,y+1)];
-    if (!p){ g.fillStyle = n4.some(Boolean) ? '#1c3d5e' : ((x * 7 + y * 13) % 29 === 0 ? '#1a3655' : (x + y * 3) % 17 === 0 ? '#11294a' : '#0d1f37'); }
-    else if (n4.some(n => !n)){ g.fillStyle = (x + y) % 3 ? '#c4b07a' : '#b09c66'; }
-    else if ([at(x+1,y), at(x,y+1), at(x-1,y), at(x,y-1)].some(n => n && n !== p && regOf(n) !== regOf(p))){ g.fillStyle = (x + y) % 2 ? '#05070a' : '#2a2f38'; }
-    else if ([at(x+1,y), at(x,y+1)].some(n => n && n !== p)){ g.fillStyle = '#14170f'; }
-    else if (p.startsWith('FOG')){ g.fillStyle = (x * 7 + y * 3) % 5 === 0 ? '#59606b' : (x + y) % 2 ? '#454b55' : '#4c535e'; }
-    else {
-      const sd = sideAt(p, x, y), a = A[p], dim = a && !isOpen(a) ? .82 : 1, d = ((x * 3 + y * 5) % 7 === 0) ? 14 : ((x * 5 + y) % 11 === 0 ? -8 : 0);
-      if (sd === 2) g.fillStyle = (x + y) % 2 ? '#7a1f2a' : '#1f3a73';
-      else { const c = sd === 1 ? RED : sd === -1 ? BLUE : [92,104,70]; g.fillStyle = `rgb(${Math.round((c[0] - d) * dim)},${Math.round((c[1] - d) * dim)},${Math.round((c[2] - d) * dim)})`; }
-    }
-    g.fillRect(x * C, y * C, C, C);
-  }
-  for (const id in POS){ const a = A[id]; if (onMap(a)) castle(g, a.lon * C, a.lat * C - 16); }
+  if (!GRID) buildGrid(); placeLine();
+  const g = cv.getContext('2d'), C = CELL, land = (x, y) => x >= 0 && y >= 0 && x < MW && y < MH && GRID[y * MW + x];
+  for (let y = 0; y < MH; y++){ const fx = frontAt(y + .5);
+    for (let x = 0; x < MW; x++){
+      if (!land(x, y)){ const shore = land(x-1,y) || land(x+1,y) || land(x,y-1) || land(x,y+1);
+        g.fillStyle = shore ? '#1c3d5e' : ((x * 7 + y * 13) % 29 === 0 ? '#1a3655' : (x + y * 3) % 17 === 0 ? '#11294a' : '#0d1f37'); }
+      else if (!land(x-1,y) || !land(x+1,y) || !land(x,y-1) || !land(x,y+1)) g.fillStyle = (x + y) % 3 ? '#c4b07a' : '#b09c66';
+      else { const d = x + .5 - fx;
+        if (Math.abs(d) < 1.1) g.fillStyle = '#f5e6b0';
+        else if (Math.abs(d) < 2.6) g.fillStyle = (x + y) % 2 ? '#7a1f2a' : '#1f3a73';
+        else { const c = d < 0 ? RED : BLUE, t = ((x * 3 + y * 5) % 7 === 0) ? 14 : ((x * 5 + y) % 11 === 0 ? -8 : 0); g.fillStyle = `rgb(${c[0] - t},${c[1] - t},${c[2] - t})`; } }
+      g.fillRect(x * C, y * C, C, C);
+    } }
+  // faint dividers between groups
+  g.fillStyle = 'rgba(255,255,255,.18)';
+  for (let k = 1; k < GROUPS.length; k++){ const y = Math.round((GROUPS[k - 1].y1 + GROUPS[k].y0) / 2), r = ROWS[y]; if (!r) continue;
+    for (let x = r[0] + 2; x <= r[1] - 2; x += 3) g.fillRect(x * C, y * C + 1, C * 2, 2); }
   MAPDIRTY = false;
 }
-function castle(g, x, y){
-  const P = 3, rows = ['k.k.k', 'kkkkk', 'kwkwk', 'kkkkk', 'kkdkk'];
-  rows.forEach((r, j) => [...r].forEach((ch, i) => { if (ch === '.') return; g.fillStyle = ch === 'k' ? '#d9d2c0' : ch === 'w' ? '#3a3a3a' : '#4a3424'; g.fillRect(x + (i - 2.5) * P, y + j * P, P, P); }));
-}
-function skyCanvas(I){
-  const a = A[I.sym], w = I.rx * 2 + 2, h = I.ry * 2 + 9, c = document.createElement('canvas');
-  c.width = w * CELL; c.height = h * CELL; const g = c.getContext('2d'), ctl = control(a) / 100;
-  const L = {cx:w/2, cy:I.ry + 1, rx:I.rx, ry:I.ry, s:I.s};
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){
-    let col = null;
-    if (y <= I.ry + 1 && blob(L, x + .5, y + .5)){
-      if (y > I.ry - 1) col = '#c4b07a';
-      else { const t = (x + .5 - 1) / (w - 2) + .06 * Math.sin(y * 1.3 + I.s); col = Math.abs(t - ctl) < .06 ? ((x + y) % 2 ? '#7a1f2a' : '#1f3a73') : t < ctl ? `rgb(${RED})` : `rgb(${BLUE})`; }
-    } else if (y > I.ry && Math.abs(x + .5 - w/2) < (h - y) * (I.rx / 9)) col = (x + y) % 2 ? '#3d3350' : '#4a3e60';
-    if (col){ g.fillStyle = col; g.fillRect(x * CELL, y * CELL, CELL, CELL); }
-  }
-  castle(g, w / 2 * CELL, (I.ry - 3) * CELL);
-  c.className = 'sky px ' + I.cls; c.dataset.sky = I.sym;
-  c.style.left = (a.lon / MW * 100) + '%'; c.style.top = ((a.lat + 2) / MH * 100) + '%'; c.style.width = (w / MW * 100) + '%';
-  return c;
-}
 function computePower(){
-  if (!PROV) buildProv();
-  const reg = {}, add = (k, n, c) => { const r = reg[k] = reg[k] || {r:0, b:0}; r.r += n * c; r.b += n * (1 - c); };
-  for (const p in PROV){ const a = A[p]; if (a) add(regName(a), PROV[p].length, control(a) / 100); }
-  SKY.forEach(I => { const a = A[I.sym]; if (a) add(regName(a), Math.PI * I.rx * I.ry, control(a) / 100); });
-  const tot = Object.values(reg).reduce((s, r) => ({r: s.r + r.r, b: s.b + r.b}), {r:0, b:0});
-  return {tot, reg};
+  if (!GRID) buildGrid(); placeLine();
+  let r = 0, n = 0; for (let y = 0; y < MH; y++){ const row = ROWS[y]; if (!row) continue; const fx = Math.max(row[0], Math.min(row[1] + 1, frontAt(y + .5))); r += fx - row[0]; n += row[1] - row[0] + 1; }
+  const reg = {}; for (const l of LINE){ const a = A[l.sym], k = regName(a); (reg[k] = reg[k] || []).push(control(a)); }
+  return {pr: n ? Math.round(r / n * 100) : 50, reg};
 }
 function powerHTML(){
-  const P = computePower(), pr = Math.round(P.tot.r / Math.max(1e-9, P.tot.r + P.tot.b) * 100);
-  return `<div class="power" id="power"><div class="row sb"><b class="up pix">상승군 ${pr}%</b><span class="pix muted s">⚔️ 오늘의 세력도</span><b class="down pix">${100 - pr}% 하락군</b></div>
-    <div class="bar"><i class="bu" style="width:${pr}%"></i><i class="bd" style="width:${100 - pr}%"></i></div>
-    <div class="regs">${['고원','아메리카','협곡','코리아','개척지'].filter(k => P.reg[k]).map(k => { const r = P.reg[k], q = Math.round(r.r / (r.r + r.b) * 100); return `<span>${k} <i class="${q >= 50 ? 'up' : 'down'}">${q >= 50 ? '🔴' + q : '🔵' + (100 - q)}%</i></span>`; }).join('')}</div></div>`;
+  const P = computePower();
+  return `<div class="power" id="power"><div class="row sb"><b class="up pix">상승군 ${P.pr}%</b><span class="pix muted s">⚔️ 오늘의 세력도</span><b class="down pix">${100 - P.pr}% 하락군</b></div>
+    <div class="bar"><i class="bu" style="width:${P.pr}%"></i><i class="bd" style="width:${100 - P.pr}%"></i></div>
+    <div class="regs">${Object.entries(P.reg).map(([k, v]) => { const q = Math.round(v.reduce((s, x) => s + x, 0) / v.length); return `<span>${k} <i class="${q >= 50 ? 'up' : 'down'}">${q >= 50 ? '🔴' + q : '🔵' + (100 - q)}%</i></span>`; }).join('')}</div></div>`;
+}
+const pinX = l => Math.max(17, Math.min(83, l.x / MW * 100));   // keep labels on screen; the line itself may hit the coast
+function pinHTML(l){
+  const a = A[l.sym], h = heat(a);
+  return `<button class="pin ${h >= .5 ? 'fire' : ''}" data-pin="${esc(a.symbol)}" data-act="quick" data-sym="${esc(a.symbol)}" style="left:${pinX(l)}%;top:${l.y / MH * 100}%">${h >= .5 ? '<em class="fl">🔥</em>' : ''}<b>${esc(a.short)}</b><span class="num" data-c="${esc(a.symbol)}">${fmtC(a)}</span></button>`;
 }
 function mapHTML(){
+  if (!GRID) buildGrid(); placeLine();
   return powerHTML() + `<div class="mapwrap" style="margin-top:0"><div class="map" id="map"><canvas id="mapc" width="${MW*CELL}" height="${MH*CELL}" class="px"></canvas><canvas id="mapfx" width="${MW*CELL}" height="${MH*CELL}" class="px"></canvas>
-    ${LABELS.map(([t, x, y]) => `<div class="maplbl" style="left:${x/MW*100}%;top:${y/MH*100}%">${t}</div>`).join('')}
-    ${ASSETS.filter(onMap).map(a => `<button class="pin ${heat(a) >= .5 ? 'fire' : ''}" data-pin="${a.symbol}" data-act="quick" data-sym="${esc(a.symbol)}" style="left:${a.lon/MW*100}%;top:${(a.lat + 1.5)/MH*100}%">${heat(a) >= .5 ? '<em class="fl">🔥</em>' : ''}<b>${esc(a.short)}</b><span class="num" data-c="${a.symbol}">${fmtC(a)}</span></button>`).join('')}
-    ${Object.keys(POS).filter(id => id.startsWith('FOG')).map(id => `<button class="pin fog" data-act="goto" data-href="#/claim" style="left:${POS[id][0]/MW*100}%;top:${(POS[id][1] + 1.5)/MH*100}%"><b>❔ 미개척</b><span>개척하기</span></button>`).join('')}
-  </div></div><div class="muted s" style="text-align:center;margin-top:6px">빨강 = 상승군 · 파랑 = 하락군 · 빗금 = 교전 지대 · <b style="color:var(--text)">영토를 눌러 바로 참전</b></div>`;
+    <div class="maplbl" style="left:16%;top:3%;color:#ffb3bb">상승군 진영</div><div class="maplbl" style="left:84%;top:3%;color:#a9c8ff">하락군 진영</div>
+    ${LINE.map(pinHTML).join('')}
+  </div></div><div class="row sb s muted" style="margin-top:6px"><span>경계선 위 종목을 눌러 바로 참전</span><a href="#/claim" style="text-decoration:underline">🚩 종목 추가</a></div>`;
 }
 let boomTimer = null;
 function mapDelta(a, prev, cur){
@@ -573,19 +544,19 @@ function mapDelta(a, prev, cur){
   const map = $('#map'); if (!map || document.hidden || !onMap(a)) return;
   const txt = a.kind === 'BOND' ? `금리${rise ? '▲' : '▼'}${Math.abs((cur - prev) * 100).toFixed(1)}bp` : `${rise ? '▲' : '▼'}${Math.abs((cur / prev - 1) * 100).toFixed(2)}%`;
   const el = document.createElement('span'); el.className = 'delta'; el.textContent = txt; el.style.color = strong ? '#ff8a96' : '#8ab6ff';
-  el.style.left = (a.lon / MW * 100) + '%'; el.style.top = ((a.lat - 2) / MH * 100) + '%'; map.appendChild(el); setTimeout(() => el.remove(), 1700);
+  el.style.left = (a.lon / MW * 100) + '%'; el.style.top = ((a.lat - 2.5) / MH * 100) + '%'; map.appendChild(el); setTimeout(() => el.remove(), 1700);
 }
 let MAPraf = 0;
 function mapFxStart(){
   cancelAnimationFrame(MAPraf);
-  const cv = $('#mapfx'); if (!cv) return; if (!PROV) buildProv();
+  const cv = $('#mapfx'); if (!cv) return; if (!GRID) buildGrid();
   const g = cv.getContext('2d'), C = CELL; let last = 0;
   const clouds = [0, 1, 2, 3].map(i => ({x: Math.random() * MW, y: 6 + i * 30 + Math.random() * 10, v: .04 + Math.random() * .05, w: 9 + Math.random() * 9}));
   const flames = [];
   function arrow(x, y, dir, col, off){
     g.fillStyle = col;
-    for (let m = 0; m < 6; m++) g.fillRect((x - dir * m + dir * off) * C, y * C, C, C);
-    for (let j = 1; j < 4; j++){ g.fillRect((x - dir * j + dir * off) * C, (y - j) * C, C, C); g.fillRect((x - dir * j + dir * off) * C, (y + j) * C, C, C); }
+    for (let m = 0; m < 5; m++) g.fillRect((x - dir * m + dir * off) * C, y * C, C, C);
+    for (let j = 1; j < 3; j++){ g.fillRect((x - dir * j + dir * off) * C, (y - j) * C, C, C); g.fillRect((x - dir * j + dir * off) * C, (y + j) * C, C, C); }
   }
   function frame(t){
     if (!document.body.contains(cv)) return;
@@ -595,19 +566,16 @@ function mapFxStart(){
     g.fillStyle = 'rgba(150,200,255,.22)';
     for (let k = 0; k < 90; k++){ const y = (k * 53 + 7) % MH, x = Math.floor((k * 97 + t / 140 * (1 + k % 3)) % MW);
       if (!GRID[y * MW + x] && !GRID[y * MW + (x + 1) % MW] && !GRID[y * MW + (x + 2) % MW]) g.fillRect(x * C, y * C + 1, C * 3, 2); }
-    for (const p in PROV){
-      const a = A[p]; if (!a || !BBOX[p]) continue;
-      const h = heat(a), open = isOpen(a), s = score(a), b = BBOX[p];
-      // front line glow
-      if (open){ g.fillStyle = `rgba(255,224,138,${(.35 + .35 * Math.sin(t / 160 + p.length)).toFixed(2)})`;
-        for (let y = b.y0 + 1; y < b.y1; y += 2){ const fx = Math.round(frontX(p, y)); if (GRID[y * MW + fx] === p && Math.random() < .55) g.fillRect(fx * C, y * C, C, C); } }
-      // advance arrow toward the losing side
-      if (open && Math.abs(s) > .12){ const dir = a._mom || Math.sign(s), y = Math.round((b.y0 + b.y1) / 2), fx = Math.round(frontX(p, y)), off = Math.floor(t / 260) % 3;
-        if (GRID[y * MW + fx] === p) arrow(fx + dir, y, dir, dir > 0 ? 'rgba(255,215,220,.9)' : 'rgba(210,228,255,.9)', off); }
-      // flames on hot fronts
+    // the front line shimmers
+    g.fillStyle = `rgba(255,236,170,${(.45 + .35 * Math.sin(t / 150)).toFixed(2)})`;
+    for (let y = 0; y < MH; y++){ const r = ROWS[y]; if (!r || Math.random() > .5) continue; const fx = Math.round(frontAt(y + .5) - .5); if (fx > r[0] && fx < r[1]) g.fillRect(fx * C, y * C, C, C); }
+    for (const l of LINE){
+      const a = A[l.sym]; if (!a || !isOpen(a)) continue;
+      const s = score(a), h = heat(a), y = Math.round(l.y), x = Math.round(l.x);
+      if (Math.abs(s) > .12){ const dir = a._mom || Math.sign(s), off = Math.floor(t / 260) % 3;
+        arrow(x + dir * 7, y, dir, dir > 0 ? 'rgba(255,215,220,.9)' : 'rgba(210,228,255,.9)', off); }
       if (h >= .45){ const n = Math.random() < h ? Math.ceil(h * 3) : 0;
-        for (let k = 0; k < n; k++){ const y = b.y0 + Math.floor(Math.random() * (b.y1 - b.y0 + 1)), x = Math.round(frontX(p, y) + (Math.random() - .5) * 6);
-          if (GRID[y * MW + x] === p) flames.push({x, y, life: 0, max: 6 + Math.random() * 6 * h}); } }
+        for (let k = 0; k < n; k++) flames.push({x: x + Math.round((Math.random() - .5) * 8), y: y + Math.round((Math.random() - .5) * 3), life: 0, max: 5 + Math.random() * 6 * h}); }
     }
     for (let i = flames.length - 1; i >= 0; i--){ const f = flames[i], k = f.life / f.max;
       g.fillStyle = k < .25 ? '#fff3b0' : k < .5 ? '#ffb340' : k < .8 ? '#ff5a1f' : 'rgba(80,40,30,.6)';
@@ -623,15 +591,14 @@ function mapFxStart(){
 function mapInit(){
   const cv = $('#mapc'); if (!cv) return;
   drawMapBase(cv); mapFxStart();
-  SKY.forEach(I => A[I.sym] && $('#map').appendChild(skyCanvas(I)));
   clearInterval(boomTimer);
   boomTimer = setInterval(() => {
     const map = $('#map'); if (!map){ clearInterval(boomTimer); return; }
-    if (MAPDIRTY){ drawMapBase($('#mapc')); $$('[data-sky]').forEach(c => c.replaceWith(skyCanvas(SKY.find(I => I.sym === c.dataset.sky)))); const pw = $('#power'); if (pw) pw.outerHTML = powerHTML(); }
-    ASSETS.filter(onMap).forEach(a => {
-      const h = heat(a); if (!isOpen(a) || Math.random() > .04 + h * .5) return;
+    if (MAPDIRTY){ drawMapBase($('#mapc')); LINE.forEach(l => { const el = map.querySelector(`[data-pin="${CSS.escape(l.sym)}"]`); if (el){ el.style.left = pinX(l) + '%'; } }); const pw = $('#power'); if (pw) pw.outerHTML = powerHTML(); }
+    LINE.forEach(l => {
+      const a = A[l.sym], h = heat(a); if (!isOpen(a) || Math.random() > .04 + h * .5) return;
       const b = document.createElement('span'); b.className = 'boom'; b.textContent = h > .6 ? '🔥' : Math.abs(score(a)) > .5 ? '💥' : '✦';
-      b.style.left = ((a.lon + (Math.random() - .5) * 14) / MW * 100) + '%'; b.style.top = ((a.lat + (Math.random() - .5) * 10) / MH * 100) + '%';
+      b.style.left = ((l.x + (Math.random() - .5) * 10) / MW * 100) + '%'; b.style.top = ((l.y + (Math.random() - .5) * 4) / MH * 100) + '%';
       b.style.color = score(a) > 0 ? '#ff8a96' : '#8ab6ff'; map.appendChild(b); setTimeout(() => b.remove(), 900);
     });
   }, 900);
