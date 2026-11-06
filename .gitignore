@@ -1,0 +1,5 @@
+# Supabase local state and anything holding secrets (cron secret, DB password)
+supabase/.temp/
+supabase/.branches/
+supabase/migrations/*_secrets.sql
+.env*

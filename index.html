@@ -3,931 +3,908 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>개미놀이터 데모</title>
-<meta name="description" content="실시간 시세가 흐르는 종목방에서 롱/숏을 걸고, 예측 대결·짤·도트로 노는 2D 주식·코인 커뮤니티 데모">
-<meta name="theme-color" content="#0f1115">
+<title>시장대전</title>
+<meta name="description" content="시세가 곧 전황이다. 주식·코인·채권·환율 영토에서 상승군과 하락군이 싸우는 전쟁 놀이">
+<meta name="theme-color" content="#0b0f17">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%230b0f17'/><path d='M3 2h1v13H3zM4 3h9l-2 3 2 3H4z' fill='%23f04452'/></svg>">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri@2.39.3/dist/galmuri.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
 <style>
-:root{--bg:#0f1115;--card:#171a20;--card2:#1f232b;--line:#2a2f39;--text:#e9ebef;--muted:#8a93a3;--up:#f04452;--down:#3b82f6;--gold:#ffd84d;--r:14px}
+:root{--bg:#0b0f17;--card:#141a24;--card2:#1b2230;--line:#273042;--text:#e8ebf1;--muted:#8792a6;--up:#f04452;--down:#3b82f6;--gold:#f5c542;--r:14px}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--text);font-family:Pretendard,-apple-system,BlinkMacSystemFont,system-ui,sans-serif;font-size:15px;line-height:1.5;word-break:keep-all;overflow-wrap:anywhere}
 a{color:inherit;text-decoration:none}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
-img.px,canvas.px{image-rendering:pixelated}
+.px{image-rendering:pixelated}
 .wrap{max-width:560px;margin:0 auto;padding:0 16px calc(88px + env(safe-area-inset-bottom))}
 .pix{font-family:'Galmuri11','Galmuri9',monospace;letter-spacing:-.2px}
 .num{font-variant-numeric:tabular-nums}
 .up{color:var(--up)}.down{color:var(--down)}.flat{color:var(--muted)}
 .muted{color:var(--muted)}.s{font-size:12.5px}.b{font-weight:700}
 .row{display:flex;align-items:center;gap:8px}.sb{justify-content:space-between}.wrapf{flex-wrap:wrap}
-.top{position:sticky;top:0;z-index:20;background:rgba(15,17,21,.94);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:center;gap:8px;height:56px;margin:0 -16px;padding:0 16px;border-bottom:1px solid var(--line)}
+.top{position:sticky;top:0;z-index:20;background:rgba(11,15,23,.94);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:center;gap:8px;height:56px;margin:0 -16px;padding:0 16px;border-bottom:1px solid var(--line)}
 .top .ttl{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700}
 .logo{font-size:19px;color:var(--gold);flex:1}
-.back{width:44px;height:44px;margin-left:-12px;display:flex;align-items:center;justify-content:center;font-size:22px}
-.chip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;background:var(--card2);border:1px solid var(--line);font-size:13px;white-space:nowrap}
+.back{width:44px;height:44px;margin-left:-12px;display:flex;align-items:center;justify-content:center;font-size:24px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;background:var(--card2);border:1px solid var(--line);font-size:13px;white-space:nowrap;max-width:150px;overflow:hidden}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin:12px 0}
 .h{font-size:15px;margin:0}
 .sec{font-size:15px;margin:22px 0 4px;display:flex;align-items:baseline;gap:8px}
 .sec .more{margin-left:auto;font-size:13px;color:var(--muted);font-weight:400}
-.tabbar{position:fixed;bottom:0;left:0;right:0;z-index:30;background:#12151a;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+.tabbar{position:fixed;bottom:0;left:0;right:0;z-index:30;background:#0e131c;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
 .tabbar .in{display:flex;max-width:560px;margin:0 auto}
 .tabbar a{flex:1;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;color:var(--muted)}
 .tabbar a.on{color:var(--gold)}
 .tabbar .ic{font-size:20px;line-height:1.25}
 .btn{min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line);background:var(--card2);font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px}
-.btn.pri{background:var(--gold);color:#1a1500;border-color:transparent}
+.btn.pri{background:var(--gold);color:#1d1600;border-color:transparent}
 .btn.bu{background:var(--up);color:#fff;border-color:transparent}
 .btn.bd{background:var(--down);color:#fff;border-color:transparent}
 .btn.full{width:100%}.btn.sm{min-height:36px;padding:0 12px;font-size:13px;border-radius:10px}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 .f{width:100%;min-height:44px;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;outline:none}
 .f:focus{border-color:var(--gold)}
-textarea.f{min-height:120px;resize:vertical}
+textarea.f{min-height:110px;resize:vertical}
 label.l{display:block;font-size:13px;color:var(--muted);margin:14px 0 6px}
 .seg{display:flex;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px}
-.seg button{flex:1;min-height:40px;border:0;background:transparent;border-radius:9px;color:var(--muted);font-weight:600}
+.seg button{flex:1;min-height:40px;border:0;background:transparent;border-radius:9px;color:var(--muted);font-weight:600;font-size:14px}
 .seg button.on{background:var(--card);color:var(--text);box-shadow:0 0 0 1px var(--line)}
-.seg button.on.L{background:var(--up);color:#fff}.seg button.on.S{background:var(--down);color:#fff}
-.gauge{display:flex;height:14px;border-radius:999px;overflow:hidden;background:var(--card2);margin:10px 0 6px}
-.gauge i{display:block;height:100%}
-.gauge .gl{background:var(--up)}.gauge .gs{background:var(--down)}
-.dots{display:grid;grid-template-columns:repeat(15,1fr);gap:4px;margin-top:10px}
-.dots i{aspect-ratio:1;border-radius:3px;background:var(--card2)}
-.dots i.w{background:var(--gold)}
-.big{font-size:30px;line-height:1.1}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
-.tile{display:flex;gap:10px;align-items:center;padding:12px;border-radius:var(--r);border:1px solid var(--line);background:var(--card);min-width:0;transition:background .6s}
-.tile>div{min-width:0}
-.tn{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tp{font-size:13px}
+.seg button.on.U{background:var(--up);color:#fff}.seg button.on.D{background:var(--down);color:#fff}
+.bar{display:flex;height:12px;border-radius:999px;overflow:hidden;background:var(--card2);margin:8px 0 6px}
+.bar i{display:block;height:100%;transition:width .8s}
+.bar .bu{background:var(--up)}.bar .bd{background:var(--down)}
+.empty{color:var(--muted);text-align:center;padding:26px 0;font-size:14px}
+.disc{margin:28px 0 8px;padding:12px;border-radius:12px;background:var(--card);border:1px solid var(--line);color:var(--muted);font-size:12px;text-align:center}
+.toast{position:fixed;left:50%;bottom:calc(80px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;background:#f3f4f6;color:#111;padding:10px 16px;border-radius:12px;font-weight:600;font-size:14px;max-width:calc(100vw - 32px);box-shadow:0 8px 24px rgba(0,0,0,.4);animation:tin .2s}
+@keyframes tin{from{opacity:0;transform:translate(-50%,8px)}}
+.modal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center}
+.modal .sheet{background:var(--card);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom));max-height:90vh;overflow:auto}
+.flag{width:24px;height:24px;border-radius:5px;background:var(--card2);flex:none;vertical-align:middle}
+.flag.lg{width:72px;height:72px;border-radius:12px}
+.tag{font-size:11px;border-radius:6px;padding:1px 6px;background:var(--card2);color:var(--muted);white-space:nowrap}
+.tag.live{color:#4ade80}
+.rank{font-size:11px;border:1px solid #6b5a1e;color:var(--gold);border-radius:6px;padding:0 5px;white-space:nowrap}
+/* world map */
+.mapwrap{margin:12px -16px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:#0d1f37;overflow:hidden}
+.map{position:relative;width:100%;aspect-ratio:100/124}
+#mapc{position:absolute;left:0;top:0;width:100%;height:100%}
+.pin{position:absolute;transform:translate(-50%,0);display:flex;flex-direction:column;align-items:center;padding:2px 6px;min-width:44px;border-radius:7px;background:rgba(8,12,20,.86);border:1px solid rgba(255,255,255,.14);border-top:3px solid #8a8f99;font-size:10.5px;line-height:1.25;white-space:nowrap;z-index:3;box-shadow:0 2px 6px rgba(0,0,0,.5)}
+.pin b{font-weight:700}
+.pin span{font-size:10px}
+.pin.hot{animation:pinpulse .9s ease-in-out infinite alternate}
+@keyframes pinpulse{to{box-shadow:0 0 0 3px rgba(245,197,66,.4)}}
+.sky{position:absolute;z-index:2;transform:translate(-50%,-50%);animation:float 3.2s ease-in-out infinite}
+.sky.b{animation-delay:-1.6s}
+@keyframes float{0%,100%{transform:translate(-50%,-50%)}50%{transform:translate(-50%,calc(-50% - 5px))}}
+.boom{position:absolute;z-index:4;pointer-events:none;font-size:15px;transform:translate(-50%,-50%);animation:boom .9s ease-out forwards}
+@keyframes boom{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}25%{opacity:1}100%{opacity:0;transform:translate(-50%,-90%) scale(1.5)}}
+.maplbl{position:absolute;z-index:1;font-family:'Galmuri11',monospace;font-size:10.5px;color:rgba(255,255,255,.5);letter-spacing:2px;pointer-events:none;transform:translate(-50%,-50%);white-space:nowrap}
+/* fronts */
+.flist a{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+.flist .nm{font-weight:700;min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.flist .pr{text-align:right;font-size:13px}
+.ctl{width:56px;height:8px;border-radius:999px;overflow:hidden;background:var(--down);flex:none}
+.ctl i{display:block;height:100%;background:var(--up);transition:width .8s}
+.band{position:sticky;top:56px;z-index:15;margin:0 -16px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--bg)}
+.bp{font-size:24px;font-weight:800;line-height:1.2}
+.bc{font-size:16px;font-weight:700;text-align:right}
+.field{position:relative;margin:0 -16px}
+#bf{display:block;width:100%;height:170px}
+.fl{position:absolute;top:8px;font-family:'Galmuri11',monospace;font-size:12px;padding:2px 6px;border-radius:6px;background:rgba(0,0,0,.45)}
+.fl.l{left:12px;color:#ffb3bb}.fl.r{right:12px;color:#a9c8ff}
+.state{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);font-family:'Galmuri11',monospace;font-size:13px;padding:3px 10px;border-radius:8px;background:rgba(0,0,0,.6);white-space:nowrap}
+/* flows */
+.flow{display:grid;grid-template-columns:92px 1fr 64px;gap:6px;align-items:center;margin:6px 0;font-size:13px}
+.flow .track{position:relative;height:16px;background:var(--card2);border-radius:4px;overflow:hidden}
+.flow .track:before{content:'';position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--line)}
+.flow .track i{position:absolute;top:2px;bottom:2px;border-radius:3px}
+.flow .v{text-align:right}
+.hours{display:flex;gap:2px;height:64px;margin-top:8px;position:relative}
+.hours:before{content:'';position:absolute;left:0;right:0;top:50%;height:1px;background:var(--line)}
+.hours span{flex:1;position:relative}
+.hours span i{position:absolute;left:0;right:0;border-radius:2px}
+/* posts */
 .post{display:block;padding:14px 0;border-bottom:1px solid var(--line)}
 .post .meta{font-size:12.5px;color:var(--muted);display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px}
 .post .t{font-weight:700;margin:4px 0 6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .post .foot{font-size:12.5px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.rtag{background:var(--card2);border:1px solid var(--line);border-radius:6px;padding:0 6px;font-size:11.5px;color:var(--text)}
-.stamp{font-family:'Galmuri11',monospace;font-size:11px;font-weight:700;border:2px solid;border-radius:6px;padding:0 5px;transform:rotate(-6deg);display:inline-block;line-height:1.5}
-.stamp.LONG{color:var(--up)}.stamp.SHORT{color:var(--down)}
+.ftag{background:var(--card2);border:1px solid var(--line);border-radius:6px;padding:0 6px;font-size:11.5px;color:var(--text)}
+.side{font-family:'Galmuri11',monospace;font-size:11px;font-weight:700;border:2px solid;border-radius:6px;padding:0 5px;display:inline-block;line-height:1.5;transform:rotate(-4deg)}
+.side.UP{color:var(--up)}.side.DOWN{color:var(--down)}
 .res{font-size:12px;padding:1px 7px;border-radius:999px;background:var(--card2);white-space:nowrap}
-.res.HIT{color:#4ade80}.res.MISS{color:#fca5a5}
-.hb{display:inline-flex;gap:3px;align-items:center;font-size:11px;border:1px dashed var(--line);border-radius:6px;padding:0 5px;color:var(--text);white-space:nowrap}
-.av{width:22px;height:22px;border-radius:6px;background:var(--card2);vertical-align:middle;flex:none}
-.av.lg{width:72px;height:72px;border-radius:14px}
-.band{position:sticky;top:56px;z-index:15;margin:0 -16px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--bg);transition:background .6s}
-.bp{font-size:24px;font-weight:800;line-height:1.2}
-.bc{font-size:16px;font-weight:700;text-align:right}
-.tag{font-size:11px;border-radius:6px;padding:1px 6px;background:var(--card2);color:var(--muted);white-space:nowrap}
-.tag.live{color:#4ade80}
-.stage{margin:12px -16px 0;padding:18px 16px 12px;display:flex;align-items:center;gap:14px;transition:background .6s}
-.masc{width:44px;height:44px;flex:none}
-.masc.lg{width:96px;height:96px}
-.masc.dance{animation:dance .5s ease-in-out infinite alternate}
-.masc.cry{animation:cry 1.6s ease-in-out infinite}
-.masc.idle{animation:bob 2.2s ease-in-out infinite}
-@keyframes dance{0%{transform:rotate(-12deg) translateY(0)}100%{transform:rotate(12deg) translateY(-8px)}}
-@keyframes cry{0%,100%{transform:translateX(0) scaleY(1)}10%{transform:translateX(-2px)}20%{transform:translateX(2px)}30%{transform:translateX(0) scaleY(.94)}}
-@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
-.mwrap{position:relative;flex:none}
-.tear{position:absolute;left:30%;top:38%;width:7px;height:10px;background:#7cc4ff;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;opacity:0;animation:tear 1.2s ease-in infinite}
-.tear.r{left:62%;animation-delay:.6s}
-@keyframes tear{0%{opacity:0;transform:translateY(0)}20%{opacity:1}100%{opacity:0;transform:translateY(34px)}}
+.res.WIN{color:#4ade80}.res.LOSE{color:#fca5a5}
 .rxbar{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
 .rx{position:relative;min-height:44px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--card2);display:inline-flex;gap:6px;align-items:center;font-size:14px}
-.rx.on{border-color:var(--gold);background:#2a2511}
+.rx.on{border-color:var(--gold);background:#2a2412}
 .pop{position:absolute;left:50%;top:0;pointer-events:none;font-size:22px;animation:pop .9s ease-out forwards}
 @keyframes pop{0%{transform:translate(-50%,0) scale(.6);opacity:1}100%{transform:translate(-50%,-56px) scale(1.4);opacity:0}}
 .body{white-space:pre-wrap;margin:12px 0}
 .body a{color:#7cc4ff;text-decoration:underline}
 .cm{padding:10px 0;border-bottom:1px solid var(--line)}
 .cm.new{animation:flash 1.5s}
-@keyframes flash{0%{background:#2a2511}100%{background:transparent}}
-.fab{position:fixed;right:max(16px,calc(50% - 264px));bottom:calc(72px + env(safe-area-inset-bottom));z-index:25;height:52px;padding:0 20px;border-radius:999px;background:var(--gold);color:#1a1500;font-weight:800;box-shadow:0 6px 20px rgba(0,0,0,.4);display:flex;align-items:center}
-.sortt{display:flex;gap:6px;margin:16px 0 0}
+@keyframes flash{0%{background:#2a2412}100%{background:transparent}}
+.fab{position:fixed;right:max(16px,calc(50% - 264px));bottom:calc(72px + env(safe-area-inset-bottom));z-index:25;height:52px;padding:0 20px;border-radius:999px;background:var(--gold);color:#1d1600;font-weight:800;box-shadow:0 6px 20px rgba(0,0,0,.45);display:flex;align-items:center}
+.sortt{display:flex;gap:6px;margin:16px 0 0;align-items:center}
 .sortt button{min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:13px}
 .sortt button.on{background:var(--text);color:var(--bg);border-color:var(--text)}
 .pool{display:flex;height:30px;border-radius:10px;overflow:hidden;margin:10px 0 4px;font-size:12px;font-weight:700}
-.pool div{display:flex;align-items:center;padding:0 8px;min-width:0;white-space:nowrap}
+.pool div{display:flex;align-items:center;padding:0 8px;min-width:0;white-space:nowrap;overflow:hidden}
 .pool .pa{background:#3a1d22;color:#ffb3bb}.pool .pb{background:#16233d;color:#a9c8ff;justify-content:flex-end}
 table.t{width:100%;border-collapse:collapse;font-size:13px}
 table.t td,table.t th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}
 table.t .r{text-align:right}
-.toast{position:fixed;left:50%;bottom:calc(80px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;background:#f3f4f6;color:#111;padding:10px 16px;border-radius:12px;font-weight:600;font-size:14px;max-width:calc(100vw - 32px);box-shadow:0 8px 24px rgba(0,0,0,.4);animation:tin .2s}
-@keyframes tin{from{opacity:0;transform:translate(-50%,8px)}}
-.modal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center}
-.modal .sheet{background:var(--card);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom));max-height:90vh;overflow:auto}
-.disc{margin:28px 0 8px;padding:12px;border-radius:12px;background:var(--card);border:1px solid var(--line);color:var(--muted);font-size:12px;text-align:center}
-.empty{color:var(--muted);text-align:center;padding:26px 0;font-size:14px}
 .pal{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin:10px 0}
 .pal button{aspect-ratio:1;min-height:36px;border-radius:8px;border:2px solid transparent}
 .pal button.on{border-color:#fff;box-shadow:0 0 0 2px var(--bg) inset}
 .tools{display:flex;gap:6px;flex-wrap:wrap}
 .tools .btn.on{border-color:var(--gold);color:var(--gold)}
-#pxc{width:100%;max-width:400px;aspect-ratio:1;display:block;margin:10px auto;border-radius:10px;touch-action:none;border:1px solid var(--line)}
-#mmc{width:100%;max-width:400px;aspect-ratio:1;display:block;margin:10px auto;border-radius:10px;border:1px solid var(--line)}
+#pxc,#mmc{width:100%;max-width:400px;aspect-ratio:1;display:block;margin:10px auto;border-radius:10px;border:1px solid var(--line)}
+#pxc{touch-action:none}
 .artg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
 .art{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px;min-width:0}
-.art img{width:100%;aspect-ratio:1;display:block;background:repeating-conic-gradient(#1c2027 0 25%,#232831 0 50%) 0 0/16px 16px;border-radius:8px}
+.art img{width:100%;aspect-ratio:1;display:block;background:repeating-conic-gradient(#1a2130 0 25%,#212a3a 0 50%) 0 0/16px 16px;border-radius:8px}
 .art .an{font-size:12.5px;font-weight:700;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tpls{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
 .tpls button{flex:none;min-height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--card2);font-size:13px}
 .tpls button.on{border-color:var(--gold);color:var(--gold)}
 .memeimg{width:100%;border-radius:12px;margin:8px 0;display:block}
 .pollo{position:relative;display:block;width:100%;text-align:left;min-height:44px;margin:6px 0;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card2);overflow:hidden}
-.pollo .fill{position:absolute;left:0;top:0;bottom:0;background:#2f2a14;z-index:0}
-.pollo span{position:relative;z-index:1}
+.pollo .fill{position:absolute;left:0;top:0;bottom:0;background:#2e2814}
+.pollo span{position:relative}
 .pollo.mine{border-color:var(--gold)}
-.demo{background:#2a2511;border:1px solid #4a3f12;color:#f3df8a;border-radius:10px;padding:8px 10px;font-size:12.5px;margin:10px 0}
+.note{background:#231f10;border:1px solid #4a3f12;color:#f3df8a;border-radius:10px;padding:8px 10px;font-size:12.5px;margin:10px 0}
+.skel{height:80px;border-radius:12px;background:linear-gradient(90deg,var(--card) 0,var(--card2) 50%,var(--card) 100%);background-size:200% 100%;animation:sk 1.2s infinite;margin:12px 0}
+@keyframes sk{to{background-position:-200% 0}}
+.summary{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;margin-top:10px}
+.summary>*{background:var(--card2);border-radius:10px;padding:8px 4px;display:block}
+.summary b{display:block;font-size:22px;font-family:'Galmuri11',monospace}
 </style>
 </head>
 <body>
-<div class="wrap"><main id="app"></main></div>
+<div class="wrap"><main id="app"><div class="skel"></div><div class="skel"></div></main></div>
 <nav class="tabbar"><div class="in">
-  <a href="#/" data-tab="home"><span class="ic">🏠</span>홈</a>
-  <a href="#/rooms" data-tab="rooms"><span class="ic">💬</span>방</a>
-  <a href="#/bets" data-tab="bets"><span class="ic">⚔️</span>대결</a>
-  <a href="#/workshop" data-tab="workshop"><span class="ic">🎨</span>공방</a>
-  <a href="#/me" data-tab="me"><span class="ic">🐜</span>내 정보</a>
+  <a href="#/" data-tab="home"><span class="ic">🗺</span>전황</a>
+  <a href="#/fronts" data-tab="fronts"><span class="ic">🏰</span>영토</a>
+  <a href="#/battles" data-tab="battles"><span class="ic">⚔️</span>결전</a>
+  <a href="#/barracks" data-tab="barracks"><span class="ic">🎨</span>병영</a>
+  <a href="#/me" data-tab="me"><span class="ic">🎖</span>내 정보</a>
 </div></nav>
 <script>
 'use strict';
-/* ===================== constants ===================== */
-const APP = '개미놀이터';
-const KEY = 'antpg-demo-v1';
-const SETTLE_MS = 60 * 1000;          // demo: long/short scored after 1 minute (spec: 24h)
-const RX = [['GAZUA','🚀','가즈아'],['JONBEO','🪨','존버'],['SONJEOL','🔪','손절'],['TODAK','🤝','토닥']];
-const BANNED = ['리딩방','수익보장','원금보장','급등주추천','ㅅㅂ','시발'];
-const BLOCKED_LINKS = ['open.kakao.com','t.me/','telegram.me','telegram.org'];
-const ALLOWED_LINKS = ['news.naver.com','n.news.naver.com','dart.fss.or.kr','kind.krx.co.kr','yna.co.kr','hankyung.com','mk.co.kr','sec.gov','reuters.com','bloomberg.com','coindesk.com'];
+/* ========================================================== setup */
+const CFG = window.MW_CONFIG || {};
+const sb = (CFG.url && !CFG.url.startsWith('__')) ? supabase.createClient(CFG.url, CFG.anonKey, { auth: { persistSession: true, autoRefreshToken: true } }) : null;
 const PAL = ['#000000','#1d2b53','#7e2553','#008751','#ab5236','#5f574f','#c2c3c7','#fff1e8','#ff004d','#ffa300','#ffec27','#00e436','#29adff','#83769c','#ff77a8','#ffccaa'];
-const ROOMS0 = [
-  {slug:'btc',name:'비트코인',short:'비트',symbol:'BTCUSDT',market:'CRYPTO',base:98000,chg:1.2,desc:'24시간 안 자는 방. 새벽 털기 주의.',mascot:'a-gold'},
-  {slug:'eth',name:'이더리움',short:'이더',symbol:'ETHUSDT',market:'CRYPTO',base:3400,chg:-0.6,desc:'가스비와 함께하는 방',mascot:'a-blue'},
-  {slug:'samsung',name:'삼성전자',short:'삼성',symbol:'005930',market:'KR',base:72400,chg:1.1,desc:'국민주 방. 8만 탑승객 환영',mascot:'a-red'},
-  {slug:'hynix',name:'SK하이닉스',short:'하닉',symbol:'000660',market:'KR',base:312000,chg:4.2,desc:'HBM 이야기 하는 곳',mascot:'a-red'},
-  {slug:'nvda',name:'엔비디아',short:'엔비',symbol:'NVDA',market:'US',base:182.4,chg:-0.8,desc:'GPU 신도 모임',mascot:'a-green'},
-  {slug:'tsla',name:'테슬라',short:'테슬라',symbol:'TSLA',market:'US',base:341.2,chg:-3.6,desc:'롤러코스터 탑승장',mascot:'a-blue'},
-];
-const SYM = {}; ROOMS0.forEach(r => SYM[r.symbol] = r);
-const FAKE = {
-  '물타기장인':{hit:23,total:31,hold:[['005930',81000]]},
-  '역지표인간':{hit:8,total:34,hold:[['TSLA',420]]},
-  '떡상기원':{hit:12,total:20,hold:[['BTCUSDT',72000],['000660',180000]]},
-  '존버는승리':{hit:5,total:9,hold:[['ETHUSDT',4100]]},
-  '손절은과학':{hit:17,total:30,hold:[]},
-  '한강뷰예약':{hit:3,total:4,hold:[['NVDA',120]]},
-  '코스피5000':{hit:14,total:25,hold:[['005930',58000]]},
-  '풀매수개미':{hit:9,total:15,hold:[['000660',290000],['NVDA',140]]},
-};
-const FAKE_NAMES = Object.keys(FAKE);
-const CHAT = ['ㅋㅋㅋ 가즈아','저도 탑승했습니다','이거 맞냐','존버만이 살길','손절 각 재는 중','토닥토닥…','차트 보니까 쌍바닥 같은데','뉴스 떴네요','역지표 형님 등판','오늘 저녁은 라면이다','물 더 탈까 고민 중','평단 공개합니다 ㅠ','개미는 오늘도 웁니다','이 방 분위기 좋네'];
+const RX = [['charge','⚔️','돌격'],['shield','🛡','방어'],['flag','🏳️','항복'],['medal','🎖','훈장']];
+const REGION = {KR:'코리아 반도', JP:'환율 해협', CRYPTO:'크립토 공중섬', US:'아메리카 대륙'};
+const ALLOWED_LINKS = ['naver.com','dart.fss.or.kr','kind.krx.co.kr','yna.co.kr','hankyung.com','mk.co.kr','sec.gov','reuters.com','bloomberg.com','coindesk.com','federalreserve.gov','bok.or.kr'];
 
-/* ===================== utils ===================== */
+/* ========================================================== utils */
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const uid = () => Math.random().toString(36).slice(2, 10);
 const now = () => Date.now();
-const pick = a => a[Math.floor(Math.random() * a.length)];
-function rng(seed){ return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-function ago(t){ const s = (now() - t) / 1000; if (s < 60) return '방금'; if (s < 3600) return Math.floor(s/60) + '분 전'; if (s < 86400) return Math.floor(s/3600) + '시간 전'; return Math.floor(s/86400) + '일 전'; }
-function mmss(ms){ if (ms <= 0) return '0:00'; const s = Math.ceil(ms/1000); const m = Math.floor(s/60); return m >= 60 ? Math.floor(m/60) + '시간 ' + (m%60) + '분' : m + ':' + String(s%60).padStart(2,'0'); }
-function fmtPrice(sym, p){ if (p == null) return '-'; if (SYM[sym].market === 'KR') return '₩' + Math.round(p).toLocaleString('ko-KR'); return '$' + p.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); }
-function fmtPct(c){ return (c > 0 ? '+' : '') + c.toFixed(2) + '%'; }
-function dir(c){ return c > 0 ? 'up' : c < 0 ? 'down' : 'flat'; }
-function shortPrice(sym, p){
-  if (SYM[sym].market === 'KR') return p >= 10000 ? (+(p/10000).toFixed(1)) + '만' : Math.round(p) + '원';
-  return p >= 1000 ? '$' + (+(p/1000).toFixed(1)) + 'K' : '$' + (+p.toFixed(1));
-}
-function toast(msg){ const old = $('.toast'); if (old) old.remove(); const d = document.createElement('div'); d.className = 'toast'; d.textContent = msg; document.body.appendChild(d); setTimeout(() => d.remove(), 2600); }
+const T = s => new Date(s).getTime();
+function ago(t){ const s = (now() - T(t)) / 1000; if (s < 60) return '방금'; if (s < 3600) return Math.floor(s/60) + '분 전'; if (s < 86400) return Math.floor(s/3600) + '시간 전'; return Math.floor(s/86400) + '일 전'; }
+function mmss(ms){ if (ms <= 0) return '판정 중'; const s = Math.ceil(ms/1000), m = Math.floor(s/60); if (m >= 60) return Math.floor(m/60) + '시간 ' + (m%60) + '분'; return m + ':' + String(s%60).padStart(2,'0'); }
+function toast(msg){ $('.toast')?.remove(); const d = document.createElement('div'); d.className = 'toast'; d.textContent = msg; document.body.appendChild(d); setTimeout(() => d.remove(), 2800); }
 function isTyping(){ const a = document.activeElement; return a && /INPUT|TEXTAREA|SELECT/.test(a.tagName); }
-function hasBanned(s){ return BANNED.find(w => String(s).includes(w)); }
-function hasBlockedLink(s){ return BLOCKED_LINKS.find(w => String(s).toLowerCase().includes(w)); }
+const errMsg = e => (e && (e.message || e.error_description)) || '잠시 후 다시 시도해 주세요';
+async function rpc(fn, args){ const { data, error } = await sb.rpc(fn, args); if (error) throw error; return data; }
+const empty = m => `<div class="empty">${m}</div>`;
+const disc = () => `<div class="disc">재미로 하는 전쟁 놀이이며 투자 권유가 아닙니다. 포인트·상금 없음.<br>시세는 지연될 수 있어요 · 코인=바이낸스, 주식·지수·환율=Yahoo, 국채·수급=네이버</div>`;
 
-/* ===================== pixel art ===================== */
-const ANT = [
-'................','.....#....#.....','......#..#......','.....######.....','....##o##o##....','....##k##k##....','.....######.....','......####......',
-'...#.######.#...','....########....','...#.######.#...','.....######.....','....########....','...#.######.#...','.....#....#.....','................'];
-function antPx(body){
-  const out = [];
-  for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++){
-    const c = ANT[y>>1][x>>1];
-    out.push(c === '#' ? body.toString(16) : c === 'o' ? '7' : c === 'k' ? '0' : '.');
-  }
-  return out.join('');
+/* ========================================================== territories & prices */
+const A = {};
+let ASSETS = [];
+let FORCES = {};
+const HIST = {};
+function fmtP(a, p){
+  p = p ?? a.price; if (p == null) return '-';
+  const n2 = x => x.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  if (a.kind === 'BOND') return p.toFixed(3) + '%';
+  if (a.kind === 'FX') return n2(p) + '원';
+  if (a.kind === 'INDEX') return n2(p);
+  if (a.unit === 'KRW') return '₩' + Math.round(p).toLocaleString('ko-KR');
+  return '$' + n2(p);
 }
-const pxCache = {};
+function fmtC(a){
+  if (a.kind === 'BOND'){ const bp = (a.change || 0) * 100; return (bp > 0 ? '+' : '') + bp.toFixed(1) + 'bp'; }
+  const c = a.change_pct || 0; return (c > 0 ? '+' : '') + c.toFixed(2) + '%';
+}
+const mv = a => a.kind === 'BOND' ? (a.change || 0) : (a.change_pct || 0);
+const score = a => Math.max(-1, Math.min(1, mv(a) / a.threshold));
+const dir = v => v > 0 ? 'up' : v < 0 ? 'down' : 'flat';
+const control = a => Math.round(50 + 50 * score(a));
+const isOpen = a => a.market_open !== false;
+function stateOf(a){
+  const s = score(a);
+  if (!isOpen(a)) return s > .15 ? '🏳️ 휴전 · 상승군 점령 유지' : s < -.15 ? '🏳️ 휴전 · 하락군 점령 유지' : '🏳️ 휴전 중 (장 마감)';
+  if (s >= .6) return '🔥 상승군 대공세'; if (s >= .15) return '⚔️ 상승군 우세';
+  if (s > -.15) return '🛡 교착 상태'; if (s > -.6) return '⚔️ 하락군 우세'; return '💥 하락군 대공세';
+}
+function colOf(s){ if (Math.abs(s) < .05) return '#8a8f99'; const k = .35 + .65 * Math.abs(s); return s > 0 ? `rgba(240,68,82,${k.toFixed(2)})` : `rgba(59,130,246,${k.toFixed(2)})`; }
+async function loadAssets(){
+  const { data, error } = await sb.from('assets').select('*').order('sort');
+  if (error) throw error;
+  ASSETS = data.map(r => { const o = A[r.symbol] || {}; const live = o.liveWS && now() - o.liveAt < 15000;
+    Object.assign(o, r, {threshold:+r.threshold, lon:+r.lon, lat:+r.lat});
+    if (live){ o.price = o._p; o.change = o._c; o.change_pct = o._cp; } else { o.price = r.price == null ? null : +r.price; o.change = +r.change || 0; o.change_pct = +r.change_pct || 0; }
+    A[r.symbol] = o; return o; });
+}
+async function loadForces(){ try { const d = await rpc('front_forces'); FORCES = {}; d.forEach(x => FORCES[x.symbol] = x); } catch(e){} }
+function onAssetRow(r){
+  const a = A[r.symbol]; if (!a) return;
+  const live = a.liveWS && now() - a.liveAt < 15000;
+  Object.assign(a, r, {threshold:+r.threshold, lon:+r.lon, lat:+r.lat});
+  if (live){ a.price = a._p; a.change = a._c; a.change_pct = a._cp; } else { a.price = +r.price; a.change = +r.change; a.change_pct = +r.change_pct; }
+  if (HIST[r.symbol]) HIST[r.symbol].push(+r.price);
+  scheduleLive(); MAPDIRTY = true;
+}
+let wsTry = 0;
+function connectBinance(){
+  let ws; try { ws = new WebSocket('wss://stream.binance.com:9443/stream?streams=btcusdt@ticker/ethusdt@ticker'); } catch(e){ return retryWS(); }
+  ws.onmessage = ev => { let d; try { d = JSON.parse(ev.data).data; } catch(e){ return; } const a = A[d.s]; if (!a) return;
+    a._p = a.price = +d.c; a._c = a.change = +d.p; a._cp = a.change_pct = +d.P; a.liveWS = true; a.liveAt = now(); wsTry = 0; scheduleLive(); };
+  ws.onclose = () => retryWS();
+}
+function retryWS(){ setTimeout(connectBinance, Math.min(30000, 1000 * 2 ** wsTry++)); }
+let liveQ = false;
+function scheduleLive(){ if (!liveQ){ liveQ = true; requestAnimationFrame(refreshLive); } }
+function refreshLive(){
+  liveQ = false;
+  $$('[data-p]').forEach(el => { const a = A[el.dataset.p]; if (a) el.textContent = fmtP(a); });
+  $$('[data-c]').forEach(el => { const a = A[el.dataset.c]; if (!a) return; el.textContent = fmtC(a); el.classList.remove('up','down','flat'); el.classList.add(dir(mv(a))); });
+  $$('[data-ctl]').forEach(el => { const a = A[el.dataset.ctl]; if (a) el.style.width = control(a) + '%'; });
+  $$('[data-st]').forEach(el => { const a = A[el.dataset.st]; if (a) el.textContent = stateOf(a); });
+  $$('[data-tag]').forEach(el => { const a = A[el.dataset.tag]; if (!a) return; const live = a.liveWS && now() - a.liveAt < 15000;
+    el.textContent = live ? '● 실시간' : !isOpen(a) ? '장 마감' : a.delayed ? '지연 시세' : '● 실시간'; el.classList.toggle('live', live || (isOpen(a) && !a.delayed)); });
+  $$('[data-pin]').forEach(el => { const a = A[el.dataset.pin]; if (!a) return; el.style.borderTopColor = colOf(score(a)); el.classList.toggle('hot', Math.abs(score(a)) > .45 && isOpen(a)); });
+  $$('[data-fl]').forEach(el => { const a = A[el.dataset.fl]; if (!a) return; const c = control(a); el.textContent = el.dataset.side === 'U' ? `상승군 ${c}%` : `${100-c}% 하락군`; });
+}
+
+/* ========================================================== pixel flags */
+const ARTS = {}, pxCache = {}, FLAGIMG = {};
 function pxURL(px){
+  if (!px) return '';
   if (pxCache[px]) return pxCache[px];
   const c = document.createElement('canvas'); c.width = c.height = 32; const g = c.getContext('2d');
   for (let i = 0; i < 1024; i++){ const ch = px[i]; if (ch === '.') continue; g.fillStyle = PAL[parseInt(ch,16)]; g.fillRect(i%32, i>>5, 1, 1); }
   return pxCache[px] = c.toDataURL();
 }
-function art(id){ return S.arts.find(a => a.id === id); }
-function artURL(id){ const a = art(id); return a ? pxURL(a.px) : pxURL(antPx(9)); }
+async function loadArts(){ const { data } = await sb.from('pixel_arts').select('*').order('uses_count', {ascending:false}).limit(300); (data || []).forEach(a => ARTS[a.id] = a); }
+const flagURL = id => pxURL((ARTS[id] || ARTS['f-white'] || {}).px);
+const flagImg = (id, cls) => `<img class="flag px ${cls || ''}" src="${flagURL(id)}" alt="">`;
+function prepFlagImgs(){ ['f-bull','f-bear'].forEach(id => { if (FLAGIMG[id] || !ARTS[id]) return; const im = new Image(); im.src = flagURL(id); FLAGIMG[id] = im; }); }
 
-/* ===================== state ===================== */
-let S = load();
-function load(){ try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.v === 1) return s; } catch(e){} return seed(); }
-function save(){
-  for (const sym in Q) S.lastQ[sym] = {p: Q[sym].price, c: Q[sym].changePct};
-  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){ toast('브라우저 저장 공간이 부족해요. 내 정보 › 데모 초기화를 눌러 주세요'); }
+/* ========================================================== me */
+let ME = null;
+async function loadMe(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if (!session){ ME = null; return; }
+  const { data } = await sb.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
+  ME = data || null;
 }
-function seed(){
-  const t = now(), R = rng(7);
-  const s = {v:1, me:null, ledger:[], rooms:[], posts:[], bets:[], arts:[], memeT:[], lastQ:{}, contra:{}, myReports:{}, rescaled:{}, lastPostAt:0, lastCmtAt:0, lastCheckin:null};
-  s.arts = [
-    {id:'a-gold',author:'떡상기원',title:'황금개미',kind:'MASCOT',px:antPx(9),uses:128,at:t-9e8},
-    {id:'a-red',author:'물타기장인',title:'빨간개미',kind:'MASCOT',px:antPx(8),uses:77,at:t-8e8},
-    {id:'a-blue',author:'존버는승리',title:'파란개미',kind:'MASCOT',px:antPx(12),uses:64,at:t-7e8},
-    {id:'a-green',author:'풀매수개미',title:'초록개미',kind:'AVATAR',px:antPx(11),uses:31,at:t-6e8},
-    {id:'a-pink',author:'한강뷰예약',title:'분홍개미',kind:'AVATAR',px:antPx(14),uses:12,at:t-5e8},
-  ];
-  s.rooms = ROOMS0.map(r => ({slug:r.slug,name:r.name,short:r.short,symbol:r.symbol,market:r.market,desc:r.desc,official:true,owner:null,mascot:r.mascot,at:t-30*864e5}));
-  ROOMS0.forEach(r => { const a = []; for (let i = 0; i < 30; i++){ const maj = R() < .55 ? 'LONG' : 'SHORT'; const wrong = R() < .63; a.push({maj, wrong}); } s.contra[r.slug] = a; });
-  const P = (room, author, title, body, stance, result, mins, rx, cm, poll) => {
-    const b = SYM[ROOMS0.find(r => r.slug === room).symbol].base;
-    const at = t - mins*60000;
-    let sp = null, settleAt = null;
-    if (stance){
-      if (result === 'HIT') sp = b * (stance === 'LONG' ? .985 : 1.015);
-      else if (result === 'MISS') sp = b * (stance === 'LONG' ? 1.015 : .985);
-      else sp = b * (1 + (R() - .5) * .0006);
-      settleAt = result ? at + SETTLE_MS : t + 25000 + R() * 80000;
+function rankOf(st){
+  const t = st.total || 0, r = t ? st.wins / t : 0;
+  if (t < 3) return '훈련병'; if (t < 10) return '이병'; if (t < 20) return '일병'; if (t < 30) return '상병';
+  if (r >= .7) return '⭐ 백전노장'; if (r >= .6) return '대위'; if (r <= .3) return '🕵️ 적군 첩자 의심'; return '병장';
+}
+function need(){ if (!ME){ nickModal(); return false; } return true; }
+function nickModal(){
+  modal(`<div class="pix" style="font-size:20px;color:var(--gold)">⚔️ 시장대전 ${ME ? '개명' : '입대'}</div>
+    <div class="muted s" style="margin-top:6px">${ME ? '새 이름을 정해 주세요.' : '병사 이름만 정하면 바로 참전할 수 있어요. 계정은 이 브라우저에 묶여요.'}</div>
+    <input class="f" id="nk" maxlength="12" placeholder="병사 이름 (2~12자, 한글·영문·숫자)" style="margin-top:14px" autocomplete="off">
+    <button class="btn pri full" style="margin-top:10px" data-act="nick">${ME ? '바꾸기' : '입대하기'}</button>`);
+  setTimeout(() => $('#nk')?.focus(), 50);
+}
+async function doNick(){
+  const n = $('#nk').value.trim(); if (n.length < 2) return toast('이름은 2~12자');
+  const btn = $('[data-act=nick]'); btn.disabled = true;
+  try {
+    const { data:{ session } } = await sb.auth.getSession();
+    if (!session){ const { error } = await sb.auth.signInAnonymously(); if (error) throw error; }
+    const first = !ME; ME = await rpc('set_nickname', {nick:n});
+    closeModal(); render(true); toast(first ? `${ME.nickname} 훈련병, 입대를 환영한다!` : '이름을 바꿨어요');
+  } catch(e){ toast(errMsg(e)); btn.disabled = false; }
+}
+
+/* ========================================================== fantasy world map */
+const MW = 100, MH = 124, CELL = 4;
+const LANDS = [
+  {id:'US', cx:29, cy:37, rx:26, ry:28, s:1.3, syms:['SPX','NVDA','TSLA','US2Y','US10Y']},
+  {id:'KR', cx:68, cy:94, rx:29, ry:23, s:4.1, syms:['KOSPI','005930','000660','KR3Y','KR10Y']},
+  {id:'USD', cx:62, cy:63, rx:8, ry:5, s:2.7, syms:['USDKRW']},
+  {id:'JPY', cx:30, cy:75, rx:7, ry:5, s:5.5, syms:['JPYKRW']},
+];
+const SKY = [{sym:'BTCUSDT', rx:9, ry:5, s:3.3, cls:''}, {sym:'ETHUSDT', rx:7, ry:4, s:6.1, cls:'b'}];
+const LABELS = [['아메리카 대륙',29,4],['코리아 반도',68,122.3],['환율 해협',46,66],['크립토 공중섬',82,4]];
+function blob(L, x, y){ const dx = (x - L.cx) / L.rx, dy = (y - L.cy) / L.ry, th = Math.atan2(dy, dx); return Math.hypot(dx, dy) < 1 + .10*Math.sin(3*th + L.s) + .07*Math.sin(5*th + 2*L.s) + .04*Math.sin(11*th + 3*L.s); }
+let GRID = null, MAPDIRTY = true;
+function buildGrid(){
+  GRID = new Array(MW * MH).fill(null);
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) for (const L of LANDS){
+    if (!blob(L, x + .5, y + .5)) continue;
+    let best = L.id, bd = 1e9;
+    for (const s of L.syms){ const a = A[s]; if (!a) continue; const d = (a.lon - x) ** 2 + (a.lat - y) ** 2; if (d < bd){ bd = d; best = s; } }
+    GRID[y * MW + x] = best; break;
+  }
+}
+function provRGB(sym){
+  const a = A[sym]; if (!a) return [92,104,70];
+  const s = score(a), k = Math.min(1, Math.abs(s) * 1.25) * (isOpen(a) ? 1 : .75);
+  const base = [92,104,70], t = s > 0 ? [214,58,74] : [58,108,214];
+  return base.map((b, i) => Math.round(b + (t[i] - b) * k));
+}
+function drawMapBase(cv){
+  if (!GRID) buildGrid();
+  const g = cv.getContext('2d'), C = CELL, at = (x, y) => (x < 0 || y < 0 || x >= MW || y >= MH) ? null : GRID[y * MW + x];
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++){
+    const p = at(x, y), n4 = [at(x-1,y), at(x+1,y), at(x,y-1), at(x,y+1)];
+    if (!p){
+      const shore = n4.some(Boolean);
+      g.fillStyle = shore ? '#1c3d5e' : ((x * 7 + y * 13) % 29 === 0 ? '#1a3655' : (x + y * 3) % 17 === 0 ? '#11294a' : '#0d1f37');
+    } else if (n4.some(n => !n)){ g.fillStyle = (x + y) % 3 ? '#c4b07a' : '#b09c66'; }
+    else if ([at(x+1,y), at(x,y+1)].some(n => n && n !== p)){ g.fillStyle = '#1b1f14'; }
+    else { const [r, gg, b] = provRGB(p), d = ((x * 3 + y * 5) % 7 === 0) ? 16 : ((x * 5 + y) % 11 === 0 ? -10 : 0); g.fillStyle = `rgb(${r-d},${gg-d},${b-d})`; }
+    g.fillRect(x * C, y * C, C, C);
+  }
+  // castles on every territory
+  for (const L of LANDS) for (const s of L.syms){ const a = A[s]; if (!a) continue; castle(g, a.lon * C, a.lat * C - 16); }
+  MAPDIRTY = false;
+}
+function castle(g, x, y){
+  const P = 3, rows = ['k.k.k', 'kkkkk', 'kwkwk', 'kkkkk', 'kkdkk'];
+  rows.forEach((r, j) => [...r].forEach((ch, i) => { if (ch === '.') return; g.fillStyle = ch === 'k' ? '#d9d2c0' : ch === 'w' ? '#3a3a3a' : '#4a3424'; g.fillRect(x + (i - 2.5) * P, y + j * P, P, P); }));
+}
+function skyCanvas(I){
+  const a = A[I.sym], w = I.rx * 2 + 2, h = I.ry * 2 + 9, c = document.createElement('canvas');
+  c.width = w * CELL; c.height = h * CELL; const g = c.getContext('2d'), [r, gg, b] = provRGB(I.sym);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){
+    const L = {cx:w/2, cy:I.ry + 1, rx:I.rx, ry:I.ry, s:I.s}; let col = null;
+    if (y <= I.ry + 1 && blob(L, x + .5, y + .5)) col = (y > I.ry - 1) ? '#c4b07a' : `rgb(${r},${gg},${b})`;
+    else if (y > I.ry && Math.abs(x + .5 - w/2) < (h - y) * (I.rx / 9)) col = (x + y) % 2 ? '#3d3350' : '#4a3e60';
+    if (col){ g.fillStyle = col; g.fillRect(x * CELL, y * CELL, CELL, CELL); }
+  }
+  castle(g, w / 2 * CELL, (I.ry - 3) * CELL);
+  c.className = 'sky px ' + I.cls; c.dataset.sky = I.sym;
+  c.style.left = (a.lon / MW * 100) + '%'; c.style.top = ((a.lat + 2) / MH * 100) + '%'; c.style.width = (w / MW * 100) + '%';
+  return c;
+}
+function mapHTML(){
+  return `<div class="mapwrap"><div class="map" id="map"><canvas id="mapc" width="${MW*CELL}" height="${MH*CELL}" class="px"></canvas>
+    ${LABELS.map(([t, x, y]) => `<div class="maplbl" style="left:${x/MW*100}%;top:${y/MH*100}%">${t}</div>`).join('')}
+    ${ASSETS.map(a => `<a class="pin" data-pin="${a.symbol}" href="#/f/${a.symbol}" style="left:${a.lon/MW*100}%;top:${(a.lat + 1.5)/MH*100}%"><b>${esc(a.short)}</b><span class="num" data-c="${a.symbol}">${fmtC(a)}</span></a>`).join('')}
+  </div></div><div class="muted s" style="text-align:center;margin-top:6px">빨강 = 상승군 점령 · 파랑 = 하락군 점령 · 영토를 누르면 전투 현장</div>`;
+}
+let boomTimer = null;
+function mapInit(){
+  const cv = $('#mapc'); if (!cv) return;
+  drawMapBase(cv);
+  SKY.forEach(I => A[I.sym] && $('#map').appendChild(skyCanvas(I)));
+  clearInterval(boomTimer);
+  boomTimer = setInterval(() => {
+    const map = $('#map'); if (!map){ clearInterval(boomTimer); return; }
+    if (MAPDIRTY){ drawMapBase($('#mapc')); $$('[data-sky]').forEach(c => c.replaceWith(skyCanvas(SKY.find(I => I.sym === c.dataset.sky)))); }
+    ASSETS.forEach(a => {
+      const s = Math.abs(score(a)); if (!isOpen(a) || Math.random() > .06 + s * .45) return;
+      const b = document.createElement('span'); b.className = 'boom'; b.textContent = s > .5 ? '💥' : '✦';
+      b.style.left = ((a.lon + (Math.random() - .5) * 14) / MW * 100) + '%'; b.style.top = ((a.lat + (Math.random() - .5) * 10) / MH * 100) + '%';
+      b.style.color = score(a) > 0 ? '#ff8a96' : '#8ab6ff'; map.appendChild(b); setTimeout(() => b.remove(), 900);
+    });
+  }, 900);
+}
+
+/* ========================================================== battlefield scene */
+let BFraf = 0;
+const SOLDIER = ['.hh.','hhhh','.ff.','bbbg','bb.g','l.l.'];
+function bfStart(sym){
+  cancelAnimationFrame(BFraf);
+  const cv = $('#bf'), a = A[sym]; if (!cv || !a) return;
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const mk = () => Array.from({length:10}, (_, i) => ({f:(i + Math.random() * .6) / 10, row:i % 3, ph:Math.random() * 6}));
+  const red = mk(), blue = mk(), booms = [];
+  let front = control(a) / 100;
+  function sprite(g, x, y, s, team, flip){
+    const pal = {h: team ? '#7a1424' : '#13306b', f:'#f2c9a0', b: team ? '#f04452' : '#3b82f6', g:'#222', l:'#2a2a2a'};
+    for (let r = 0; r < 6; r++) for (let c = 0; c < 4; c++){ const ch = SOLDIER[r][flip ? 3 - c : c]; if (ch === '.') continue; g.fillStyle = pal[ch]; g.fillRect(Math.round(x + c * s), Math.round(y + r * s), s, s); }
+  }
+  function frame(t){
+    if (!document.body.contains(cv)) return;
+    const w = cv.clientWidth, h = cv.clientHeight;
+    if (cv.width !== Math.round(w * dpr)){ cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const sc = score(a), open = isOpen(a);
+    front += (control(a) / 100 - front) * .03;
+    const fx = Math.max(.12, Math.min(.88, front)) * w, gy = h * .58;
+    const sky = g.createLinearGradient(0, 0, 0, gy); sky.addColorStop(0, '#0b1020'); sky.addColorStop(1, !open ? '#1a1d24' : sc > 0 ? '#3a1820' : sc < 0 ? '#16233f' : '#1c2230');
+    g.fillStyle = sky; g.fillRect(0, 0, w, gy);
+    g.fillStyle = '#3b2025'; g.fillRect(0, gy, fx, h - gy);
+    g.fillStyle = '#1d2a44'; g.fillRect(fx, gy, w - fx, h - gy);
+    g.fillStyle = 'rgba(0,0,0,.18)'; for (let x = 0; x < w; x += 8) for (let y = gy + 4; y < h; y += 10) if (((x / 8) + (y / 10)) % 3 === 0) g.fillRect(x, y, 4, 3);
+    g.fillStyle = open ? `rgba(255,220,120,${.5 + .5 * Math.sin(t / 120)})` : 'rgba(255,255,255,.4)';
+    for (let y = gy - 6; y < h; y += 6) g.fillRect(fx - 1 + Math.sin(y + t / 300) * 2, y, 3, 4);
+    g.imageSmoothingEnabled = false;
+    const fb = FLAGIMG['f-bull'], fd = FLAGIMG['f-bear'];
+    if (fb && fb.complete) g.drawImage(fb, 4, gy - 40, 36, 36); if (fd && fd.complete) g.drawImage(fd, w - 40, gy - 40, 36, 36);
+    const bob = i => open ? Math.sin(t / 160 + i) * 1.5 : 0;
+    red.forEach(u => sprite(g, 18 + u.f * Math.max(10, fx - 46), gy + 6 + u.row * 18 + bob(u.ph), 3, 1, false));
+    blue.forEach(u => sprite(g, fx + 16 + u.f * Math.max(10, w - fx - 46), gy + 6 + u.row * 18 + bob(u.ph), 3, 0, true));
+    if (open && Math.random() < .03 + Math.abs(sc) * .18) booms.push({x: fx + (Math.random() - .5) * 70 + sc * 25, y: gy + Math.random() * (h - gy - 10), k: 0});
+    for (let i = booms.length - 1; i >= 0; i--){
+      const b = booms[i]; b.k++; const r = b.k * 1.4;
+      g.fillStyle = b.k < 6 ? '#fff3b0' : b.k < 14 ? '#ffa300' : 'rgba(120,120,120,.5)';
+      for (let k = 0; k < 8; k++){ const an = k / 8 * Math.PI * 2; g.fillRect(Math.round(b.x + Math.cos(an) * r), Math.round(b.y + Math.sin(an) * r * .6), 3, 3); }
+      if (b.k > 22) booms.splice(i, 1);
     }
-    s.posts.push({id:uid(),room,author,title,body,stance,sp,settleAt,result:result||null,at,
-      rx:{GAZUA:rx[0],JONBEO:rx[1],SONJEOL:rx[2],TODAK:rx[3]},my:[],
-      comments:cm.map((c,i) => ({id:uid(),author:c[0],body:c[1],at:at+(i+1)*90000})),
-      poll:poll ? {opts:poll.map(o => ({t:o[0],n:o[1]})),my:null} : null, meme:null, reports:0, hidden:false, seed:true});
-  };
-  P('btc','떡상기원','10만 달러 지지선 오늘도 버텨줄까','어제 새벽에 한 번 찍고 올라왔는데\n오늘도 버텨주면 **롱 유지**합니다.','LONG','HIT',300,[24,6,2,3],[['존버는승리','버텨라 제발'],['역지표인간','저는 숏 쳤습니다 (그러니 오릅니다)']]);
-  P('btc','역지표인간','새벽에 또 털고 가겠지 ㅋㅋ','제가 숏 치면 오르는 거 아시죠?\n오늘도 기부합니다.','SHORT',null,6,[31,2,9,14],[['떡상기원','형님 감사합니다 🙏'],['풀매수개미','역지표 등판 = 매수 신호']]);
-  P('btc','존버는승리','존버 3년차 후기','평단 7.2만 달러.\n물은 탈 만큼 탔고 이제 기도만 남았다.\n\n다들 다음 주 어떻게 보세요?',null,null,140,[40,52,1,30],[['손절은과학','존버는 승리한다'],['코스피5000','멘탈 존경합니다']],[['오른다',41],['내린다',18],['옆으로 긴다',27]]);
-  P('eth','존버는승리','이더 언제 일어나냐 진짜','비트만 가고 이더는 자고 있음.\n깨워줄 사람?',null,null,45,[8,19,4,11],[['물타기장인','알람 맞춰놨습니다']]);
-  P('eth','손절은과학','숏 한번 쳐봄','차트상 저항선 같아서 짧게 숏.\n틀리면 바로 자릅니다.','SHORT','MISS',400,[3,1,12,4],[['떡상기원','손절 각 나왔네요 ㅋㅋ']]);
-  P('samsung','물타기장인','삼성 8만 탑승객 손 들어보세요','저 8.1만에 탔습니다 🙋\n같이 버팁시다.',null,null,200,[12,61,8,47],[['코스피5000','5.8만 탑승 (미안)'],['풀매수개미','8.3만 계십니다…']],[['8만 이상',52],['7만대',38],['6만 이하',21],['안 탔음',9]]);
-  P('samsung','코스피5000','실적 발표 전에 들어간다','잠정실적 발표 전에 미리 자리 잡음.\n참고 공시: https://dart.fss.or.kr','LONG','HIT',900,[19,4,1,6],[['물타기장인','고수 냄새']]);
-  P('hynix','풀매수개미','하닉 오늘 왜 이래 🚀🚀','오늘 +4% 넘었다. 마스코트 춤추는 거 봤음?','LONG',null,3,[55,3,1,4],[['떡상기원','춤추는 개미 귀엽네요'],['한강뷰예약','더 가자']]);
-  P('hynix','한강뷰예약','HBM 뉴스 정리','오늘 나온 기사 모음\nhttps://news.naver.com\n(허용 도메인만 링크가 눌려요. https://example.com 은 글자로만 보임)',null,null,90,[14,3,0,2],[]);
-  P('nvda','한강뷰예약','엔비 실적 시즌 다가온다','기대감 매수 들어갑니다.','LONG','MISS',1500,[7,9,6,3],[['역지표인간','저도 롱이었는데 같이 틀렸네요']]);
-  P('tsla','역지표인간','테슬라 오늘 -3%대… 줍줍?','방 마스코트가 울고 있습니다 😢',null,null,25,[4,11,7,33],[['손절은과학','토닥토닥'],['존버는승리','줍줍은 나눠서']]);
-  P('tsla','손절은과학','로보택시 발표 기다리는 중','발표 전 기대감은 이미 반영된 듯.\n짧게 숏.','SHORT','HIT',700,[6,2,3,2],[]);
-  // bets
-  const mkE = arr => arr.map(([u,o,a]) => ({user:u,option:o,amount:a,at:t-R()*600000}));
-  const btcB = SYM.BTCUSDT.base;
-  s.bets.push({id:uid(),creator:'한강뷰예약',room:'btc',question:'8분 뒤 비트코인, 지금보다 0.05% 위에 있을까?',a:'위에 있다',b:'아니다',
-    rule:{type:'PRICE_ABOVE',symbol:'BTCUSDT',value:btcB*1.0005},closesAt:t+6*60000,resolvesAt:t+8*60000,status:'OPEN',seedRel:1.0005,
-    entries:mkE([['떡상기원','A',300],['풀매수개미','A',120],['존버는승리','A',50],['역지표인간','B',200],['손절은과학','B',80]])});
-  s.bets.push({id:uid(),creator:'코스피5000',room:'samsung',question:'삼성전자, 마감 후 3분 동안 오를까?',a:'오른다',b:'안 오른다',
-    rule:{type:'CHANGE_UP',symbol:'005930'},closesAt:t+9*60000,resolvesAt:t+12*60000,status:'OPEN',
-    entries:mkE([['물타기장인','A',500],['코스피5000x','A',0],['한강뷰예약','B',150],['손절은과학','B',70]]).filter(e => e.amount > 0)});
-  s.bets.push({id:uid(),creator:'역지표인간',room:'tsla',question:'테슬라, 4분 동안 반등할까? (아직 반대편 0명)',a:'반등',b:'계속 하락',
-    rule:{type:'CHANGE_UP',symbol:'TSLA'},closesAt:t+4*60000,resolvesAt:t+7*60000,status:'OPEN',
-    entries:mkE([['존버는승리','A',100],['풀매수개미','A',40]])});
-  const done = {id:uid(),creator:'떡상기원',room:'eth',question:'어제 이더리움, 마감 대비 오를까?',a:'오른다',b:'안 오른다',
-    rule:{type:'CHANGE_UP',symbol:'ETHUSDT'},closesAt:t-26*3600e3,resolvesAt:t-24*3600e3,status:'RESOLVED',winning:'A',closePrice:3381.2,resolvePrice:3402.9,
-    entries:mkE([['존버는승리','A',333],['물타기장인','A',100],['한강뷰예약','A',17],['역지표인간','B',250],['손절은과학','B',61],['코스피5000','B',10]])};
-  done.payouts = payout(done.entries, 'A');
-  s.bets.push(done);
-  return s;
-}
-
-/* ===================== settlement (pure) ===================== */
-// Parimutuel: winners split the whole pool pro-rata, floored; leftover points go 1 by 1 to the largest winning stakes.
-function payout(entries, win){
-  const pool = entries.reduce((a,e) => a + e.amount, 0);
-  const winners = entries.filter(e => e.option === win);
-  const winSum = winners.reduce((a,e) => a + e.amount, 0);
-  if (!winners.length) return [];
-  const out = winners.map(e => ({user:e.user, amount:e.amount, pay:Math.floor(e.amount * pool / winSum)}));
-  let rem = pool - out.reduce((a,e) => a + e.pay, 0);
-  const order = out.slice().sort((x,y) => y.amount - x.amount || (x.user < y.user ? -1 : 1));
-  for (let i = 0; rem > 0; i = (i + 1) % order.length, rem--) order[i].pay++;
-  return out;
-}
-function scoreStance(stance, p0, p1){ if (p1 === p0) return 'MISS'; return (stance === 'LONG') === (p1 > p0) ? 'HIT' : 'MISS'; }
-
-/* ===================== prices ===================== */
-const Q = {}, H = {}, OPEN = {};
-function initPrices(){
-  for (const sym in SYM){
-    const r = SYM[sym], last = S.lastQ[sym];
-    const p = last ? last.p : r.base, c = last ? last.c : r.chg;
-    Q[sym] = {symbol:sym, market:r.market, price:p, changePct:c, live:false, updatedAt:now()};
-    OPEN[sym] = p / (1 + c/100);
-    H[sym] = genHist(sym, p, c);
+    if (!open){ g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(0, 0, w, h); }
+    BFraf = requestAnimationFrame(frame);
   }
+  BFraf = requestAnimationFrame(frame);
 }
-function genHist(sym, p, c){
-  const R = rng(sym.length * 97 + 3); const arr = []; let x = p; const drift = (c/100) / 90;
-  for (let i = 0; i < 90; i++){ arr.push(x); x = x / (1 + drift + (R() - .5) * .006); }
-  return arr.reverse();
-}
-function mockTick(){
-  for (const sym in Q){
-    const q = Q[sym]; if (q.live) continue;
-    const pull = ((SYM[sym].chg) - q.changePct) * .0002;
-    q.price *= 1 + (Math.random() - .5) * .0016 + pull/100 * 50;
-    q.changePct = (q.price / OPEN[sym] - 1) * 100;
-    q.updatedAt = now();
-  }
-  scheduleLive();
-}
-let wsTry = 0;
-function connectBinance(){
-  let ws;
-  try { ws = new WebSocket('wss://stream.binance.com:9443/stream?streams=btcusdt@ticker/ethusdt@ticker'); }
-  catch(e){ return retryWS(); }
-  ws.onmessage = ev => {
-    let d; try { d = JSON.parse(ev.data).data; } catch(e){ return; }
-    const q = Q[d.s]; if (!q) return;
-    const p = +d.c;
-    if (!q.live && !S.rescaled[d.s]) rescaleSeed(d.s, p / q.price);
-    if (!q.live) H[d.s] = genHist(d.s, p, +d.P);
-    q.price = p; q.changePct = +d.P; q.live = true; q.updatedAt = now(); wsTry = 0;
-    scheduleLive();
-  };
-  ws.onclose = () => { for (const s of ['BTCUSDT','ETHUSDT']) Q[s].live = false; retryWS(); };
-}
-function retryWS(){ const d = Math.min(30000, 1000 * 2 ** wsTry++); setTimeout(connectBinance, d); }
-function rescaleSeed(sym, ratio){
-  S.rescaled[sym] = true;
-  const rooms = S.rooms.filter(r => r.symbol === sym).map(r => r.slug);
-  S.posts.forEach(p => { if (p.seed && p.sp && rooms.includes(p.room)) p.sp *= ratio; });
-  S.bets.forEach(b => { if (b.seedRel && b.status === 'OPEN' && b.rule.symbol === sym) b.rule.value = Q[sym].price * ratio * b.seedRel; });
-  save();
-}
-setInterval(() => { for (const s in Q){ H[s].push(Q[s].price); if (H[s].length > 120) H[s].shift(); } $$('canvas[data-spark]').forEach(drawSpark); }, 5000);
 
-let liveQueued = false;
-function scheduleLive(){ if (!liveQueued){ liveQueued = true; requestAnimationFrame(refreshLive); } }
-function moodBg(c, strong){ const a = Math.min(Math.abs(c) / 5, 1) * (strong ? .30 : .18); if (!c) return 'var(--bg)'; return c > 0 ? `rgba(240,68,82,${a.toFixed(3)})` : `rgba(59,130,246,${a.toFixed(3)})`; }
-function moodClass(c){ return c >= 3 ? 'dance' : c <= -3 ? 'cry' : 'idle'; }
-function refreshLive(){
-  liveQueued = false;
-  $$('[data-p]').forEach(el => el.textContent = fmtPrice(el.dataset.p, Q[el.dataset.p].price));
-  $$('[data-c]').forEach(el => { const c = Q[el.dataset.c].changePct; el.textContent = fmtPct(c); el.className = el.className.replace(/\b(up|down|flat)\b/g,'').trim() + ' ' + dir(c); });
-  $$('[data-tag]').forEach(el => { const q = Q[el.dataset.tag]; el.textContent = q.live ? '● 실시간' : '모의 시세'; el.classList.toggle('live', q.live); });
-  $$('[data-mood]').forEach(el => { const c = Q[el.dataset.mood].changePct; el.style.background = el.classList.contains('tile') ? `linear-gradient(135deg, ${moodBg(c,true)}, var(--card) 70%)` : `linear-gradient(180deg, ${moodBg(c,true)}, var(--bg))`; });
-  $$('[data-masc]').forEach(el => { const c = Q[el.dataset.masc].changePct; const m = moodClass(c); ['dance','cry','idle'].forEach(k => el.classList.toggle(k, k === m)); const w = el.parentElement; if (w && w.classList.contains('mwrap')) w.querySelectorAll('.tear').forEach(t => t.style.display = m === 'cry' ? '' : 'none'); });
-  $$('[data-mcap]').forEach(el => { const m = moodClass(Q[el.dataset.mcap].changePct); el.textContent = m === 'dance' ? '+3% 넘었다! 춤추는 중' : m === 'cry' ? '-3% 아래… 우는 중' : '±3% 안쪽이라 대기 중'; });
-  $$('[data-hold]').forEach(el => { const [sym, avg] = el.dataset.hold.split('|'); const r = (Q[sym].price / +avg - 1) * 100; el.textContent = fmtPct(r); el.className = dir(r); });
+/* ========================================================== shared bits */
+function topbar(title, back){
+  const me = ME ? `<a class="chip" href="#/me">${flagImg(ME.flag_art)}<b>${esc(ME.nickname)}</b></a>` : `<button class="chip" data-act="enlist" style="padding:6px 12px">입대하기</button>`;
+  if (!title) return `<header class="top"><a class="logo pix" href="#/">⚔️ 시장대전</a>${me}</header>`;
+  return `<header class="top"><a class="back" href="${back || '#/'}" aria-label="뒤로">‹</a><div class="ttl">${esc(title)}</div>${me}</header>`;
 }
+function forceBar(up, down){
+  const t = up + down, p = t ? Math.round(up / t * 100) : 50;
+  return `<div class="bar"><i class="bu" style="width:${p}%"></i><i class="bd" style="width:${100-p}%"></i></div>
+   <div class="row sb s num"><span class="up b">상승군 ${up}명</span><span class="muted">${t ? '최근 24시간 참전' : '아직 참전자 없음'}</span><span class="down b">하락군 ${down}명</span></div>`;
+}
+const SIDE = {UP:'상승군', DOWN:'하락군'};
+const WIN_LBL = {10:'10분', 60:'1시간', 1440:'24시간'};
+function resBadge(p){
+  if (!p.side) return '';
+  if (p.result === 'WIN') return '<span class="res WIN">🎖 승전</span>';
+  if (p.result === 'LOSE') return '<span class="res LOSE">💀 패전</span>';
+  return `<span class="res">판정까지 <b class="num" data-cd="${T(p.settle_at)}">${mmss(T(p.settle_at) - now())}</b></span>`;
+}
+function postCard(p, showFront){
+  const a = A[p.symbol] || {}, au = p.author || {};
+  const rxn = p.rx_charge + p.rx_shield + p.rx_flag + p.rx_medal;
+  return `<a class="post" href="#/p/${p.id}">
+    <div class="meta">${showFront ? `<span class="ftag">${esc(a.name)}</span>` : ''}${flagImg(au.flag_art)}<b style="color:var(--text)">${esc(au.nickname || '탈영병')}</b><span>· ${ago(p.created_at)}</span></div>
+    <div class="t">${p.side ? `<span class="side ${p.side}">${SIDE[p.side]}</span>` : ''}${esc(p.title)}${p.meme_url ? ' 🖼' : ''}${p.poll ? ' 📊' : ''}</div>
+    <div class="foot"><span>⚔️ ${p.rx_charge}</span><span>반응 ${rxn}</span><span>💬 ${p.comment_count}</span>${resBadge(p)}</div></a>`;
+}
+function hot(posts){ const sc = p => (p.rx_charge + p.rx_shield + p.rx_flag + p.rx_medal + p.comment_count * 2 + 1) / (1 + (now() - T(p.created_at)) / 864e5); return posts.slice().sort((a,b) => sc(b) - sc(a)); }
+function renderBody(s){
+  const h = esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+  return h.replace(/https?:\/\/[^\s<]+/g, u => { let host = ''; try { host = new URL(u.replace(/&amp;/g,'&')).hostname; } catch(e){}
+    return ALLOWED_LINKS.some(d => host === d || host.endsWith('.' + d)) ? `<a href="${u}" target="_blank" rel="noopener nofollow ugc">${u}</a>` : `<span class="muted" title="허용되지 않은 링크라 누를 수 없어요">${u}</span>`; });
+}
+const POSTSEL = 'id,symbol,title,side,window_min,settle_at,result,created_at,rx_charge,rx_shield,rx_flag,rx_medal,comment_count,poll,meme_url,author:profiles!posts_author_id_fkey(nickname,flag_art)';
+function battleCard(b){
+  const a = A[b.symbol] || {}, e = b.entries || [];
+  const na = e.filter(x => x.option === 'A').length, nb = e.length - na, t = e.length;
+  const st = b.status === 'OPEN' ? `마감까지 <b class="num" data-cd="${T(b.closes_at)}">${mmss(T(b.closes_at) - now())}</b>`
+    : b.status === 'CLOSED' ? `판정까지 <b class="num" data-cd="${T(b.resolves_at)}">${mmss(T(b.resolves_at) - now())}</b>`
+    : b.status === 'VOID' ? '무효 (한쪽만 참전)' : `종전 · ${b.winning_option === 'A' ? esc(b.option_a) : esc(b.option_b)} 승`;
+  return `<a class="card" style="display:block" href="#/battles/${b.id}"><div class="row sb s muted"><span class="ftag">${esc(a.name)}</span><span>${st}</span></div>
+    <div class="b" style="margin:8px 0 2px">${b.is_system ? '📯 ' : ''}${esc(b.question)}</div>
+    <div class="pool"><div class="pa" style="width:${t ? Math.max(na/t*100,20) : 50}%">A ${esc(b.option_a)} · ${na}</div><div class="pb" style="width:${t ? Math.max(nb/t*100,20) : 50}%">${nb} · ${esc(b.option_b)} B</div></div>
+    <div class="muted s">참전 ${t}명 · ${b.creator ? '선포 ' + esc(b.creator.nickname) : '사령부 선포'}</div></a>`;
+}
+function bars(vals, title){
+  const mx = Math.max(1, ...vals.map(v => Math.abs(v.v)));
+  return `<div class="hours">${vals.map(v => { const hgt = Math.max(2, Math.abs(v.v) / mx * 50); return `<span title="${esc(title(v))}"><i style="${v.v >= 0 ? 'bottom' : 'top'}:50%;height:${hgt}%;background:${v.v >= 0 ? 'var(--up)' : 'var(--down)'}"></i></span>`; }).join('')}</div>`;
+}
+function flowCard(a){
+  const f = a.flows; if (!f || !f.now) return '';
+  const k = v => (v > 0 ? '+' : v < 0 ? '−' : '') + (Math.abs(v) >= 1e4 ? (Math.abs(v)/1e4).toFixed(1) + '조' : Math.round(Math.abs(v)).toLocaleString('ko-KR') + '억');
+  const usd = v => '$' + (v >= 1e9 ? (v/1e9).toFixed(2) + 'B' : (v/1e6).toFixed(0) + 'M');
+  if (f.kind === 'investor'){
+    const g = [['foreign','🪖 외국인 용병단'],['inst','🏛 기관 정규군'],['retail','🐜 개인 의병대']];
+    const mx = Math.max(1, ...g.map(([key]) => Math.abs(f.now[key] || 0)));
+    const bar = v => { const w = Math.abs(v) / mx * 50; return `<i style="${v >= 0 ? `left:50%;width:${w}%;background:var(--up)` : `right:50%;width:${w}%;background:var(--down)`}"></i>`; };
+    const d = String(f.asof || ''), asof = d.length === 8 ? `${+d.slice(4,6)}/${+d.slice(6)}` : '';
+    return `<section class="card"><div class="row sb"><h2 class="h pix">병력 이동 (순매수)</h2><span class="muted s">${f.live ? '오늘 장중 누적' : asof + ' 하루'}</span></div>
+      ${g.map(([key, n]) => `<div class="flow"><span>${n}</span><div class="track">${bar(f.now[key] || 0)}</div><b class="v num ${dir(f.now[key])}">${k(f.now[key] || 0)}</b></div>`).join('')}
+      ${f.days && f.days.length > 1 ? `<div class="muted s" style="margin-top:10px">외국인 용병단 최근 ${f.days.length}거래일 (오른쪽이 최근)</div>${bars(f.days.map(x => ({v:x.foreign, d:x.d})), x => `${x.d}: ${k(x.v)}`)}` : ''}
+      <div class="muted s" style="margin-top:6px">빨강 = 사들이며 상승군 지원 · 파랑 = 팔며 하락군 지원</div></section>`;
+  }
+  if (f.kind === 'taker'){
+    const t = f.now.buy + f.now.sell, bp = t ? Math.round(f.now.buy / t * 100) : 50;
+    return `<section class="card"><div class="row sb"><h2 class="h pix">병력 이동 (공격 주문)</h2><span class="muted s">최근 24시간 · 바이낸스</span></div>
+      <div class="bar" style="height:16px"><i class="bu" style="width:${bp}%"></i><i class="bd" style="width:${100-bp}%"></i></div>
+      <div class="row sb s num"><span class="up b">🚀 공격 매수 ${usd(f.now.buy)} · ${bp}%</span><span class="down b">${100-bp}% · ${usd(f.now.sell)} 공격 매도</span></div>
+      <div class="muted s" style="margin-top:10px">시간대별 순공격 (오른쪽이 최근)</div>
+      ${bars((f.hours || []).map(h => ({v:h.buy - h.sell, t:h.t})), x => `${new Date(x.t).getHours()}시: ${x.v >= 0 ? '매수' : '매도'} 우위 ${usd(Math.abs(x.v))}`)}
+      <div class="muted s" style="margin-top:6px">시장가로 사는 쪽(공격 매수)과 파는 쪽(공격 매도)의 체결 금액</div></section>`;
+  }
+  return '';
+}
+
+/* ========================================================== views */
+const UI = {sort:'new', btab:'open', side:null, win:60, pollOn:false, tool:'pen', color:8, mtpl:'chart', msym:'BTCUSDT'};
+async function vHome(){
+  await loadForces();
+  const [{ data:posts }, { data:bts }, { data:fd }] = await Promise.all([
+    sb.from('posts').select(POSTSEL).gte('created_at', new Date(now() - 3 * 864e5).toISOString()).order('created_at', {ascending:false}).limit(80),
+    sb.from('battles').select('*,entries:battle_entries(option),creator:profiles!battles_creator_id_fkey(nickname)').in('status', ['OPEN','CLOSED']).order('closes_at').limit(3),
+    sb.from('front_daily').select('defeated').gte('day', new Date(now() - 30 * 864e5).toISOString().slice(0,10)),
+  ]);
+  const up = ASSETS.filter(a => score(a) >= .15).length, down = ASSETS.filter(a => score(a) <= -.15).length;
+  const tu = Object.values(FORCES).reduce((s,x) => s + x.up, 0), td = Object.values(FORCES).reduce((s,x) => s + x.down, 0);
+  const hotFronts = ASSETS.slice().sort((a,b) => Math.abs(score(b)) - Math.abs(score(a))).slice(0, 3);
+  const defeat = fd && fd.length >= 5 ? Math.round(fd.filter(x => x.defeated).length / fd.length * 100) : null;
+  return topbar() + mapHTML() + `
+  <section class="card"><div class="row sb"><h2 class="h pix">오늘의 전황</h2><span class="muted s">영토 ${ASSETS.length}곳</span></div>
+    <div class="summary"><div><b class="up">${up}</b><span class="s">상승군 우세</span></div><div><b class="muted">${ASSETS.length - up - down}</b><span class="s">교착</span></div><div><b class="down">${down}</b><span class="s">하락군 우세</span></div></div></section>
+  <h3 class="sec">🔥 최대 격전지</h3>
+  <div class="flist">${hotFronts.map(frontRow).join('')}</div>
+  <section class="card"><h2 class="h pix">병사들의 참전 현황</h2>${forceBar(tu, td)}
+    <div class="muted s" style="margin-top:8px">다수 진영 패배율 ${defeat == null ? '<b>집계 중</b> (참전 기록이 5일 이상 쌓이면 계산돼요)' : `<b class="pix" style="color:var(--gold);font-size:16px">${defeat}%</b> · 최근 30일, 병사 다수가 고른 진영이 다음 날 진 비율`}</div></section>
+  <h3 class="sec">📯 진행 중인 결전 <a class="more" href="#/battles">전체 ›</a></h3>
+  ${(bts || []).map(battleCard).join('') || empty('진행 중인 결전이 없어요')}
+  <h3 class="sec">📜 화제의 전황 보고</h3>
+  ${hot(posts || []).slice(0, 6).map(p => postCard(p, true)).join('') || empty('아직 보고가 없어요. 영토에 들어가 첫 보고를 올려 보세요')}
+  ${disc()}`;
+}
+function frontRow(a){
+  return `<a href="#/f/${a.symbol}"><div class="ctl"><i data-ctl="${a.symbol}" style="width:${control(a)}%"></i></div><div class="nm">${esc(a.name)}<div class="muted s" data-st="${a.symbol}">${stateOf(a)}</div></div><div class="pr num"><div data-p="${a.symbol}">${fmtP(a)}</div><b data-c="${a.symbol}" class="${dir(mv(a))}">${fmtC(a)}</b></div></a>`;
+}
+async function vFronts(){
+  return topbar('영토 목록') + ['KR','JP','CRYPTO','US'].map(r => `<h3 class="sec">${REGION[r]}</h3><div class="flist">${ASSETS.filter(a => a.region === r || (r === 'JP' && a.kind === 'FX')).filter(a => r === 'JP' || a.kind !== 'FX').map(frontRow).join('')}</div>`).join('')
+    + `<div class="muted s" style="margin-top:12px">막대 = 상승군 점령률. 하루 등락이 기준만큼 움직이면 한쪽이 완전히 점령해요 (주식 5~7%, 지수 2.5~3%, 환율 1%, 국채 10bp).</div>${disc()}`;
+}
+async function vFront(sym){
+  const a = A[sym]; if (!a) return v404();
+  await loadForces();
+  const [{ data:posts }, { data:hist }, { data:fd }] = await Promise.all([
+    sb.from('posts').select(POSTSEL).eq('symbol', sym).order('created_at', {ascending:false}).limit(60),
+    sb.from('quote_history').select('price,ts').eq('symbol', sym).gte('ts', new Date(now() - 864e5).toISOString()).order('ts').limit(1500),
+    sb.from('front_daily').select('defeated').eq('symbol', sym).order('day', {ascending:false}).limit(30)]);
+  HIST[sym] = (hist || []).map(h => +h.price);
+  const list = UI.sort === 'hot' ? hot(posts || []) : (posts || []);
+  const f = FORCES[sym] || {up:0, down:0};
+  const defeat = fd && fd.length >= 5 ? Math.round(fd.filter(x => x.defeated).length / fd.length * 100) + '%' : '집계 중';
+  return topbar(a.name, '#/fronts') + `
+  <div class="band"><div class="row sb">
+    <div style="min-width:0"><div class="pix s">${esc(REGION[a.kind === 'FX' ? 'JP' : a.region])} · ${esc(a.name)}</div><div class="num bp" data-p="${sym}">${fmtP(a)}</div></div>
+    <div><div class="num bc ${dir(mv(a))}" data-c="${sym}">${fmtC(a)}</div><div style="text-align:right"><span class="tag" data-tag="${sym}"></span></div></div></div>
+    <canvas data-spark="${sym}" style="width:100%;height:34px;display:block;margin-top:6px"></canvas></div>
+  <div class="field"><canvas id="bf"></canvas><span class="fl l" data-fl="${sym}" data-side="U"></span><span class="fl r" data-fl="${sym}" data-side="D"></span><span class="state" data-st="${sym}">${stateOf(a)}</span></div>
+  <p class="muted s" style="margin:10px 0 0">${esc(a.description)}</p>
+  ${flowCard(a)}
+  <section class="card"><h2 class="h pix">이 영토의 병사들</h2>${forceBar(f.up, f.down)}<div class="muted s" style="margin-top:6px">다수 진영 패배율 ${defeat}</div></section>
+  <div class="sortt"><button class="${UI.sort==='new'?'on':''}" data-act="sort" data-v="new">최신순</button><button class="${UI.sort==='hot'?'on':''}" data-act="sort" data-v="hot">인기순</button></div>
+  ${list.map(p => postCard(p)).join('') || empty('첫 전황 보고를 올려 보세요')}
+  ${disc()}
+  <a class="fab" href="#/f/${sym}/new">⚔️ 참전하기</a>`;
+}
+async function vNew(sym){
+  const a = A[sym]; if (!a) return v404();
+  return topbar(a.name + ' · 참전', '#/f/' + sym) + `
+  <label class="l">어느 편에 설까요? (선택)</label>
+  <div class="seg"><button data-act="side" data-v="" class="${!UI.side?'on':''}">보고만</button><button data-act="side" data-v="UP" class="U ${UI.side==='UP'?'on':''}">🔴 상승군</button><button data-act="side" data-v="DOWN" class="D ${UI.side==='DOWN'?'on':''}">🔵 하락군</button></div>
+  ${UI.side ? `<label class="l">판정 시점</label><div class="seg">${[10,60,1440].map(m => `<button data-act="win" data-v="${m}" class="${UI.win===m?'on':''}">${WIN_LBL[m]} 뒤</button>`).join('')}</div>
+    <div class="note">지금 <b class="num" data-p="${sym}">${fmtP(a)}</b> 에서 참전. ${WIN_LBL[UI.win]} 뒤 서버가 실제 시세로 판정해요. ${UI.side==='UP'?'오르면':'내리면'} 승전, 그대로면 패전.${!isOpen(a) ? '<br>⚠️ 지금은 장이 닫혀 있어서 짧은 판정은 가격이 안 움직일 수 있어요.' : ''}</div>` : ''}
+  <label class="l">제목</label><input class="f" id="pt" maxlength="60" placeholder="예: 오늘 밤 반격 간다">
+  <label class="l">전황 보고 <span class="muted">· **굵게**, 허용된 뉴스 링크만 눌려요</span></label><textarea class="f" id="pb" maxlength="2000" placeholder="오픈채팅·텔레그램 링크는 올릴 수 없어요"></textarea>
+  <label class="l">투표 (선택)</label>
+  ${UI.pollOn ? `<div>${[0,1,2,3,4].map(i => `<input class="f" style="margin-bottom:6px" data-po maxlength="20" placeholder="선택지 ${i+1}${i<2?' (필수)':''}">`).join('')}</div><button class="btn sm" data-act="poll">투표 빼기</button>` : `<button class="btn sm" data-act="poll">📊 투표 붙이기</button>`}
+  <label class="l">선전 포스터</label>
+  ${UI.draft ? `<img class="memeimg" src="${UI.draft.url}" alt="첨부한 포스터"><button class="btn sm" data-act="undraft">포스터 빼기</button>` : `<a class="btn sm" href="#/barracks/poster?f=${sym}">🖼 포스터 만들러 가기</a>`}
+  <button class="btn pri full" style="margin-top:20px" data-act="post" data-sym="${sym}">${UI.side ? '참전 선언' : '보고 올리기'}</button>${disc()}`;
+}
+let CURPOST = null;
+async function vPost(id){
+  const { data:p } = await sb.from('posts').select('*,author:profiles!posts_author_id_fkey(id,nickname,flag_art)').eq('id', id).maybeSingle();
+  if (!p) return v404();
+  const a = A[p.symbol];
+  const [{ data:cms }, mine, vote, st] = await Promise.all([
+    sb.from('comments').select('*,author:profiles!comments_author_id_fkey(nickname,flag_art)').eq('post_id', id).order('created_at').limit(300),
+    ME ? sb.from('reactions').select('kind').eq('post_id', id).eq('user_id', ME.id) : {data:[]},
+    ME && p.poll ? sb.from('poll_votes').select('option_index').eq('post_id', id).eq('user_id', ME.id).maybeSingle() : {data:null},
+    rpc('soldier_stats', {p_user:p.author_id}).catch(() => ({wins:0,total:0})),
+  ]);
+  const my = new Set((mine.data || []).map(x => x.kind));
+  const myVote = vote.data ? vote.data.option_index : null;
+  const showPoll = p.poll && (myVote != null || UI.peek === id);
+  const tv = p.poll ? p.poll_counts.reduce((s,x) => s + x, 0) : 0;
+  CURPOST = id;
+  return topbar(a.name, '#/f/' + p.symbol) + `
+  <div class="row s" style="margin-top:14px">${flagImg(p.author?.flag_art)}<a class="b" href="#/u/${encodeURIComponent(p.author?.nickname || '')}">${esc(p.author?.nickname || '탈영병')}</a><span class="rank">${rankOf(st)}</span><span class="muted">${ago(p.created_at)}</span></div>
+  <h1 style="font-size:20px;margin:12px 0 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap">${p.side ? `<span class="side ${p.side}" style="font-size:13px">${SIDE[p.side]}</span>` : ''}${esc(p.title)}</h1>
+  ${p.side ? `<div class="card s"><div class="row sb wrapf"><span>참전 시세 <b class="num">${fmtP(a, +p.entry_price)}</b> · ${WIN_LBL[p.window_min]} 판정</span>${resBadge(p)}</div>
+    <div class="muted" style="margin-top:4px">${p.result ? `판정 시세 <span class="num">${fmtP(a, +p.settled_price)}</span>` : `지금 <b class="num" data-p="${p.symbol}">${fmtP(a)}</b>`} · ${p.side === 'UP' ? '오르면' : '내리면'} 승전, 그대로면 패전</div></div>` : ''}
+  <div class="body">${renderBody(p.body)}</div>
+  ${p.meme_url ? `<img class="memeimg" src="${esc(p.meme_url)}" alt="선전 포스터" loading="lazy">` : ''}
+  ${p.poll ? `<div class="card"><div class="b s">📊 투표 · ${tv}표</div>${p.poll.map((o,i) => { const pc = tv ? Math.round(p.poll_counts[i] / tv * 100) : 0; return `<button class="pollo ${myVote===i?'mine':''}" data-act="vote" data-id="${id}" data-i="${i}" ${myVote!=null?'disabled':''}>${showPoll ? `<i class="fill" style="width:${pc}%"></i>` : ''}<span>${esc(o)}</span>${showPoll ? `<span class="num" style="float:right">${pc}%</span>` : ''}</button>`; }).join('')}
+    ${!showPoll ? `<button class="btn sm" data-act="peek" data-id="${id}">결과 먼저 보기</button>` : ''}</div>` : ''}
+  <div class="rxbar">${RX.map(([k,e,n]) => `<button class="rx ${my.has(k)?'on':''}" data-act="rx" data-id="${id}" data-k="${k}">${e} <span class="s">${n}</span> <b class="num">${p['rx_' + k]}</b></button>`).join('')}</div>
+  <div class="row sb"><h3 class="h">댓글 <span id="ccount">${p.comment_count}</span> <span class="muted s">· 실시간</span></h3><button class="btn sm" data-act="report" data-t="post" data-id="${id}">🚩 신고${p.reports ? ' ' + p.reports + '/3' : ''}</button></div>
+  <div id="cmts">${(cms || []).map(c => cmtHTML(c)).join('') || empty('첫 댓글을 남겨 보세요')}</div>
+  <div class="row" style="margin-top:10px"><input class="f" id="ci" maxlength="200" placeholder="댓글 달기"><button class="btn pri" data-act="cmt" data-id="${id}">등록</button></div>${disc()}`;
+}
+function cmtHTML(c, fresh){ const au = c.author || {}; return `<div class="cm${fresh ? ' new' : ''}" data-cid="${c.id}"><div class="row s">${flagImg(au.flag_art)}<a class="b" href="#/u/${encodeURIComponent(au.nickname || '')}">${esc(au.nickname || '탈영병')}</a><span class="muted">${ago(c.created_at)}</span></div><div style="margin:4px 0 0 32px">${renderBody(c.body)}</div></div>`; }
+async function vBattles(){
+  const open = UI.btab === 'open';
+  const { data } = await sb.from('battles').select('*,entries:battle_entries(option),creator:profiles!battles_creator_id_fkey(nickname)')
+    .in('status', open ? ['OPEN','CLOSED'] : ['RESOLVED','VOID']).order(open ? 'closes_at' : 'resolves_at', {ascending:open}).limit(40);
+  return topbar('결전') + `
+  <div class="note">누구나 결전을 선포할 수 있어요. A·B 중 한쪽에 참전하면 판정 시각의 실제 시세로 서버가 승패를 가려요. 한쪽에만 병사가 있으면 무효.</div>
+  <div class="sortt"><button class="${open?'on':''}" data-act="btab" data-v="open">진행 중</button><button class="${!open?'on':''}" data-act="btab" data-v="done">종전</button><a class="btn sm pri" style="margin-left:auto" href="#/battles/new">📯 결전 선포</a></div>
+  ${(data || []).map(battleCard).join('') || empty('결전이 없어요')}${disc()}`;
+}
+function ruleText(b){
+  const a = A[b.symbol];
+  if (b.rule.type === 'PRICE_ABOVE') return `판정 시각에 ${esc(a.name)} 시세가 <b class="num">${fmtP(a, +b.rule.value)}</b> 이상이면 A, 아니면 B`;
+  return `마감 때보다 판정 때 ${esc(a.name)} 시세가 오르면 A, 같거나 내리면 B`;
+}
+async function vBattle(id){
+  const { data:b } = await sb.from('battles').select('*,creator:profiles!battles_creator_id_fkey(nickname),entries:battle_entries(option,created_at,user_id,soldier:profiles!battle_entries_user_id_fkey(nickname,flag_art))').eq('id', id).maybeSingle();
+  if (!b) return v404();
+  const a = A[b.symbol], e = b.entries || [];
+  const na = e.filter(x => x.option === 'A').length, nb = e.length - na, t = e.length;
+  const mine = ME && e.find(x => x.user_id === ME.id), isCreator = ME && b.creator_id === ME.id;
+  let action = '';
+  if (b.status === 'OPEN'){
+    if (isCreator) action = `<div class="note">내가 선포한 결전엔 참전할 수 없어요 (조작 방지).</div>`;
+    else if (mine) action = `<div class="note">${mine.option === 'A' ? 'A ' + esc(b.option_a) : 'B ' + esc(b.option_b)} 쪽으로 참전했어요.</div>`;
+    else action = `<div class="row" style="margin-top:12px"><button class="btn bu" style="flex:1" data-act="enter" data-id="${id}" data-o="A">A ${esc(b.option_a)}</button><button class="btn bd" style="flex:1" data-act="enter" data-id="${id}" data-o="B">B ${esc(b.option_b)}</button></div>`;
+  }
+  const result = b.status === 'RESOLVED' ? `<section class="card"><div class="b">종전 · ${b.winning_option === 'A' ? 'A ' + esc(b.option_a) : 'B ' + esc(b.option_b)} 승리</div>
+      <div class="muted s">${b.close_price != null ? '마감 ' + fmtP(a, +b.close_price) + ' → ' : ''}판정 ${fmtP(a, +b.resolve_price)}</div>
+      ${mine ? `<div style="margin-top:6px" class="b ${mine.option === b.winning_option ? 'up' : 'down'}">${mine.option === b.winning_option ? '🎖 승리한 쪽에 섰어요!' : '💀 패배한 쪽이었어요'}</div>` : ''}</section>`
+    : b.status === 'VOID' ? `<section class="card"><div class="b">무효</div><div class="muted s">한쪽에만 병사가 있어서 무효 처리됐어요.</div></section>` : '';
+  return topbar('결전', '#/battles') + `
+  <div class="row s muted" style="margin-top:14px"><a class="ftag" href="#/f/${b.symbol}">${esc(a.name)}</a><span>선포 ${b.creator ? esc(b.creator.nickname) : '사령부'}</span></div>
+  <h1 style="font-size:19px;margin:8px 0">${esc(b.question)}</h1>
+  <div class="card s"><div class="muted">판정 규칙 (자동)</div><div style="margin-top:4px">${ruleText(b)}</div>
+    <div class="row sb" style="margin-top:8px"><span class="muted">지금</span><b class="num" data-p="${b.symbol}">${fmtP(a)}</b></div>
+    ${b.close_price != null && b.status === 'CLOSED' ? `<div class="row sb"><span class="muted">마감 시세</span><b class="num">${fmtP(a, +b.close_price)}</b></div>` : ''}
+    <div class="row sb"><span class="muted">${b.status === 'OPEN' ? '마감까지' : b.status === 'CLOSED' ? '판정까지' : '상태'}</span><b class="num">${b.status === 'OPEN' ? `<span data-cd="${T(b.closes_at)}">${mmss(T(b.closes_at)-now())}</span>` : b.status === 'CLOSED' ? `<span data-cd="${T(b.resolves_at)}">${mmss(T(b.resolves_at)-now())}</span>` : b.status === 'VOID' ? '무효' : '종전'}</b></div></div>
+  <div class="pool"><div class="pa" style="width:${t ? Math.max(na/t*100,20) : 50}%">A · ${na}명</div><div class="pb" style="width:${t ? Math.max(nb/t*100,20) : 50}%">${nb}명 · B</div></div>
+  ${action}${result}
+  <h3 class="sec">참전 병사 ${t}명</h3>
+  <table class="t">${e.map(x => `<tr><td>${flagImg(x.soldier?.flag_art)} ${esc(x.soldier?.nickname || '')}${ME && x.user_id === ME.id ? ' (나)' : ''}</td><td class="${x.option==='A'?'up':'down'}">${x.option} ${x.option==='A'?esc(b.option_a):esc(b.option_b)}</td><td class="r muted s">${ago(x.created_at)}</td></tr>`).join('') || '<tr><td class="muted">아직 없음</td></tr>'}</table>${disc()}`;
+}
+async function vBattleNew(){
+  const sym = UI.bsym || 'BTCUSDT', a = A[sym];
+  return topbar('결전 선포', '#/battles') + `
+  <div class="note">판정은 자동으로 가능한 두 형식만 돼요. 내가 선포한 결전엔 참전할 수 없어요.</div>
+  <label class="l">영토</label><select class="f" id="bs">${ASSETS.map(x => `<option value="${x.symbol}" ${x.symbol===sym?'selected':''}>${esc(x.name)}</option>`).join('')}</select>
+  <label class="l">판정 규칙</label><select class="f" id="bt"><option value="CHANGE_UP">마감 대비 판정 시각에 오르면 A</option><option value="PRICE_ABOVE">판정 시각 시세가 기준 이상이면 A</option></select>
+  <label class="l">기준값 (기준 규칙일 때) · 지금 <span class="num" data-p="${sym}">${fmtP(a)}</span></label><input class="f num" id="bv" type="number" step="any" value="${a.price ? +a.price.toFixed(a.kind === 'BOND' ? 3 : 2) : ''}">
+  <label class="l">질문</label><input class="f" id="bq" maxlength="60" placeholder="예: 오늘 밤 원/달러, 1,400원 넘을까?">
+  <div class="row"><div style="flex:1"><label class="l">A 진영</label><input class="f" id="bA" maxlength="12" value="오른다"></div><div style="flex:1"><label class="l">B 진영</label><input class="f" id="bB" maxlength="12" value="안 오른다"></div></div>
+  <div class="row"><div style="flex:1"><label class="l">마감</label><select class="f" id="bc"><option value="5">5분 뒤</option><option value="30">30분 뒤</option><option value="60" selected>1시간 뒤</option><option value="360">6시간 뒤</option><option value="1440">하루 뒤</option></select></div>
+    <div style="flex:1"><label class="l">판정</label><select class="f" id="br"><option value="5">마감 5분 후</option><option value="60" selected>마감 1시간 후</option><option value="1440">마감 하루 후</option></select></div></div>
+  <button class="btn pri full" style="margin-top:18px" data-act="mkbattle">📯 선포하기</button>${disc()}`;
+}
+async function vBarracks(){
+  await loadArts();
+  const arts = Object.values(ARTS).filter(a => !a.is_hidden).sort((a,b) => (UI.wsort === 'new' ? T(b.created_at) - T(a.created_at) : b.uses_count - a.uses_count));
+  return topbar('병영') + `
+  <div class="summary" style="grid-template-columns:1fr 1fr"><a class="card" style="margin:0;text-align:left;padding:12px" href="#/barracks/flag"><div style="font-size:26px">🚩</div><div class="b">군기 공방</div><div class="muted s">32×32 도트 깃발</div></a>
+  <a class="card" style="margin:0;text-align:left;padding:12px" href="#/barracks/poster"><div style="font-size:26px">📢</div><div class="b">선전 포스터</div><div class="muted s">차트·문구로 짤 만들기</div></a></div>
+  <h3 class="sec">군기 보관소 <span class="muted s">들면 내 깃발이 돼요</span></h3>
+  <div class="sortt"><button class="${UI.wsort!=='new'?'on':''}" data-act="wsort" data-v="hot">인기순</button><button class="${UI.wsort==='new'?'on':''}" data-act="wsort" data-v="new">최신순</button></div>
+  <div class="artg">${arts.map(a => `<div class="art"><img class="px" src="${pxURL(a.px)}" alt="${esc(a.title)}"><div class="an">${esc(a.title)}</div><div class="muted s" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(a.author_name)} · ${a.uses_count}명</div>
+    <button class="btn sm full" style="margin-top:6px" data-act="useflag" data-id="${a.id}" ${ME && ME.flag_art === a.id ? 'disabled' : ''}>${ME && ME.flag_art === a.id ? '들고 있음' : '이 깃발 들기'}</button></div>`).join('')}</div>${disc()}`;
+}
+async function vFlag(){
+  return topbar('군기 공방', '#/barracks') + `
+  <div class="tools" style="margin-top:12px">${[['pen','✏️ 펜'],['eraser','🧽 지우개'],['fill','🪣 채우기']].map(([t,n]) => `<button class="btn sm ${UI.tool===t?'on':''}" data-act="tool" data-v="${t}">${n}</button>`).join('')}<button class="btn sm" data-act="undo">↩ 되돌리기</button><button class="btn sm" data-act="pxbase">🚩 깃발 밑그림</button><button class="btn sm" data-act="pxclear">새로</button></div>
+  <div class="pal">${PAL.map((c,i) => `<button style="background:${c}" class="${UI.color===i?'on':''}" data-act="color" data-v="${i}" aria-label="색 ${i}"></button>`).join('')}</div>
+  <canvas id="pxc" class="px" width="352" height="352"></canvas>
+  <label class="l">깃발 이름</label><input class="f" id="ptitle" maxlength="12" placeholder="예: 존버 결사대">
+  <button class="btn pri full" style="margin-top:14px" data-act="pxsave">보관소에 올리고 들기</button>${disc()}`;
+}
+async function vPoster(){
+  const tpls = [['chart','📈 영토 차트'],['bull','🔴 상승군 선전'],['bear','🔵 하락군 선전'],['own','🖼 내 이미지']];
+  if (UI.mtpl === 'chart' && !HIST[UI.msym]){ const { data } = await sb.from('quote_history').select('price').eq('symbol', UI.msym).gte('ts', new Date(now() - 864e5).toISOString()).order('ts').limit(1500); HIST[UI.msym] = (data || []).map(x => +x.price); }
+  return topbar('선전 포스터', '#/barracks') + `
+  <div class="tpls" style="margin-top:12px">${tpls.map(([id,n]) => `<button class="${UI.mtpl===id?'on':''}" data-act="mtpl" data-v="${id}">${n}</button>`).join('')}</div>
+  ${UI.mtpl === 'chart' ? `<select class="f" id="msym" style="margin-top:8px">${ASSETS.map(r => `<option value="${r.symbol}" ${UI.msym===r.symbol?'selected':''}>${esc(r.name)}</option>`).join('')}</select>` : ''}
+  ${UI.mtpl === 'own' ? `<input type="file" id="mup" accept="image/png,image/jpeg,image/webp" class="f" style="margin-top:8px"><div class="muted s">png·jpg·webp, 2MB 이하</div>` : ''}
+  <canvas id="mmc" width="600" height="600"></canvas>
+  <input class="f" id="mt1" maxlength="30" placeholder="윗줄 문구" value="${esc(UI.mt1 ?? '전군, 진격하라')}">
+  <input class="f" id="mt2" maxlength="30" style="margin-top:6px" placeholder="아랫줄 문구" value="${esc(UI.mt2 ?? '후퇴는 없다')}">
+  <div class="row" style="margin-top:12px"><button class="btn pri" style="flex:1" data-act="mattach">보고에 첨부</button><button class="btn" data-act="mdown">💾 저장</button></div>${disc()}`;
+}
+async function vProfile(nick){
+  const { data:p } = await sb.from('profiles').select('*').eq('nickname', nick).maybeSingle();
+  if (!p) return topbar('병사') + empty('없는 병사예요');
+  const isMe = ME && p.id === ME.id;
+  const [st, { data:posts }] = await Promise.all([rpc('soldier_stats', {p_user:p.id}), sb.from('posts').select(POSTSEL).eq('author_id', p.id).order('created_at', {ascending:false}).limit(30)]);
+  const rate = st.total ? Math.round(st.wins / st.total * 100) + '%' : '-';
+  return topbar(isMe ? '내 정보' : p.nickname, '#/') + `
+  <div class="row" style="margin-top:16px;gap:14px">${flagImg(p.flag_art, 'lg')}<div style="min-width:0"><div class="pix" style="font-size:18px">${esc(p.nickname)}</div><span class="rank">${rankOf(st)}</span>
+    <div class="s muted" style="margin-top:4px">입대 ${new Date(p.created_at).toLocaleDateString('ko-KR')}</div></div></div>
+  <div class="summary"><div><b>${st.wins}/${st.total}</b><span class="s">참전 승패</span></div><div><b>${rate}</b><span class="s">승률</span></div><div><b>${st.b_wins}/${st.b_total}</b><span class="s">결전 승</span></div></div>
+  ${st.pending ? `<div class="muted s" style="margin-top:8px">판정 대기 중인 참전 ${st.pending}건</div>` : ''}
+  ${isMe ? `<div class="row wrapf" style="margin-top:14px"><a class="btn sm" href="#/barracks">🚩 깃발 바꾸기</a><button class="btn sm" data-act="rename">✏️ 이름 바꾸기</button>${ME.is_admin ? '<a class="btn sm" href="#/admin">⚖️ 군사재판</a>' : ''}</div>
+    <div class="note">계급: 훈련병 → 이병(3전) → 일병(10전) → 상병(20전) → 30전부터 승률로 병장·대위·⭐백전노장, 승률 30% 이하는 🕵️ 적군 첩자 의심</div>` : ''}
+  <h3 class="sec">전황 보고 ${(posts || []).length}</h3>${(posts || []).map(x => postCard(x, true)).join('') || empty('아직 보고가 없어요')}${disc()}`;
+}
+async function vAdmin(){
+  if (!ME || !ME.is_admin) return topbar('군사재판') + empty('관리자만 볼 수 있어요');
+  const [{ data:ps }, { data:cs }] = await Promise.all([
+    sb.from('posts').select('id,title,reports,is_hidden,author:profiles!posts_author_id_fkey(id,nickname)').or('reports.gt.0,is_hidden.eq.true').order('created_at', {ascending:false}).limit(50),
+    sb.from('comments').select('id,body,reports,is_hidden,author:profiles!comments_author_id_fkey(id,nickname)').or('reports.gt.0,is_hidden.eq.true').order('created_at', {ascending:false}).limit(50)]);
+  const item = (t, x, label) => `<div class="card"><div class="row sb"><b style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(label)}</b><span class="tag">${x.is_hidden ? '숨김' : '노출'} · 신고 ${x.reports}</span></div><div class="muted s">${esc(x.author?.nickname)}</div>
+    <div class="row wrapf" style="margin-top:8px"><button class="btn sm" data-act="mod" data-t="${t}" data-id="${x.id}" data-v="${x.is_hidden ? 'show' : 'hide'}">${x.is_hidden ? '복구' : '숨기기'}</button><button class="btn sm" data-act="mod" data-t="${t}" data-id="${x.id}" data-v="clear">신고 기각</button><button class="btn sm" data-act="ban" data-id="${x.author?.id}">영창 24시간</button></div></div>`;
+  return topbar('군사재판', '#/me') + `<div class="note">신고 3건이 쌓이면 자동으로 숨겨지고 여기서 검토해요.</div>
+  <h3 class="sec">보고</h3>${(ps || []).map(x => item('post', x, x.title)).join('') || empty('없음')}
+  <h3 class="sec">댓글</h3>${(cs || []).map(x => item('comment', x, x.body)).join('') || empty('없음')}${disc()}`;
+}
+const v404 = () => topbar('없는 곳') + empty('찾는 곳이 없어요');
+
+/* ========================================================== router */
+let cmtChan = null, RENDER_ID = 0;
+function parse(){ const h = location.hash.slice(1) || '/'; const [path, qs] = h.split('?'); return {parts:path.split('/').filter(Boolean), qs:new URLSearchParams(qs || '')}; }
+async function render(keep){
+  const id = ++RENDER_ID, y = window.scrollY;
+  const {parts, qs} = parse(); const [a, b, c] = parts; let tab = 'home', fn;
+  if (!a) fn = vHome;
+  else if (a === 'fronts'){ fn = vFronts; tab = 'fronts'; }
+  else if (a === 'f' && c === 'new'){ fn = () => vNew(b); tab = 'fronts'; }
+  else if (a === 'f'){ fn = () => vFront(b); tab = 'fronts'; }
+  else if (a === 'p'){ fn = () => vPost(b); tab = 'fronts'; }
+  else if (a === 'battles' && b === 'new'){ fn = vBattleNew; tab = 'battles'; }
+  else if (a === 'battles' && b){ fn = () => vBattle(b); tab = 'battles'; }
+  else if (a === 'battles'){ fn = vBattles; tab = 'battles'; }
+  else if (a === 'barracks' && b === 'flag'){ fn = vFlag; tab = 'barracks'; }
+  else if (a === 'barracks' && b === 'poster'){ if (qs.get('f')) UI.backFront = qs.get('f'); fn = vPoster; tab = 'barracks'; }
+  else if (a === 'barracks'){ fn = vBarracks; tab = 'barracks'; }
+  else if (a === 'me'){ tab = 'me'; if (!ME){ fn = vHome; setTimeout(nickModal, 0); } else fn = () => vProfile(ME.nickname); }
+  else if (a === 'u'){ fn = () => vProfile(decodeURIComponent(b)); tab = 'me'; }
+  else if (a === 'admin'){ fn = vAdmin; tab = 'me'; }
+  else fn = async () => v404();
+  $$('.tabbar a').forEach(x => x.classList.toggle('on', x.dataset.tab === tab));
+  if (a !== 'p') CURPOST = null;
+  let html;
+  try { html = await fn(); } catch(e){ console.error(e); html = topbar('오류') + empty('불러오지 못했어요: ' + esc(errMsg(e)) + '<br><button class="btn sm" style="margin-top:12px" onclick="render()">다시 시도</button>'); }
+  if (id !== RENDER_ID) return;
+  $('#app').innerHTML = html;
+  refreshLive();
+  $$('canvas[data-spark]').forEach(drawSpark);
+  if (!a) mapInit();
+  if (a === 'f' && b && !c){ prepFlagImgs(); bfStart(b); } else cancelAnimationFrame(BFraf);
+  if (a === 'barracks' && b === 'flag') pxInit();
+  if (a === 'barracks' && b === 'poster'){ prepFlagImgs(); memeDraw(); }
+  subscribeComments();
+  window.scrollTo(0, keep ? y : 0);
+}
+function softRender(){ if (isTyping() || /\/new|barracks\/(flag|poster)/.test(location.hash) || $('.modal')) return; render(true); }
+window.addEventListener('hashchange', () => { if (!/\/new/.test(location.hash)){ UI.side = null; UI.pollOn = false; } render(); });
 function drawSpark(cv){
-  const sym = cv.dataset.spark, a = H[sym]; if (!a) return;
+  const a = HIST[cv.dataset.spark]; if (!a || a.length < 2) return;
   const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight; if (!w) return;
   cv.width = w * dpr; cv.height = h * dpr; const g = cv.getContext('2d'); g.scale(dpr, dpr);
   const mn = Math.min(...a), mx = Math.max(...a), rg = mx - mn || 1;
   g.strokeStyle = a[a.length-1] >= a[0] ? '#f04452' : '#3b82f6'; g.lineWidth = 1.6; g.beginPath();
   a.forEach((v,i) => { const x = i / (a.length - 1) * w, y = h - 2 - (v - mn) / rg * (h - 4); i ? g.lineTo(x,y) : g.moveTo(x,y); }); g.stroke();
 }
-
-/* ===================== points ===================== */
-function addPoints(delta, reason){
-  if (!S.me) return;
-  S.me.points += delta; S.ledger.unshift({delta, reason, at:now()}); S.ledger = S.ledger.slice(0, 200);
-  save(); const el = $('#pts'); if (el) el.textContent = S.me.points.toLocaleString();
-}
-function titleOf(hit, total){
-  if (total >= 30 && hit/total >= .7) return '족집게 개미';
-  if (total >= 30 && hit/total <= .3) return '인간 역지표';
-  if (total >= 10) return '수련 개미';
-  return '새내기 개미';
-}
-function userStats(nick){
-  const mine = S.posts.filter(p => p.author === nick && p.result && !p.seed);
-  const base = FAKE[nick] || {hit:0,total:0};
-  const hit = base.hit + mine.filter(p => p.result === 'HIT').length, total = base.total + mine.length;
-  return {hit, total, title:titleOf(hit,total)};
-}
-function holdingsOf(nick){ if (S.me && nick === S.me.nick) return S.me.holdings.map(h => [h.sym, h.avg]); return FAKE[nick] ? FAKE[nick].hold : []; }
-function avatarOf(nick){ if (S.me && nick === S.me.nick && S.me.avatar) return artURL(S.me.avatar); const i = FAKE_NAMES.indexOf(nick); return artURL(['a-gold','a-red','a-blue','a-green','a-pink'][(i < 0 ? 0 : i) % 5]); }
-function badges(nick, max){
-  return holdingsOf(nick).slice(0, max ?? 3).map(([sym, avg]) => {
-    const r = (Q[sym].price / avg - 1) * 100;
-    return `<span class="hb" title="본인 주장 · 실제 보유 증명 아님">${esc(SYM[sym].short)} ${shortPrice(sym, avg)} 탑승 · <b data-hold="${sym}|${avg}" class="${dir(r)}">${fmtPct(r)}</b></span>`;
-  }).join('');
+function subscribeComments(){
+  if (cmtChan && cmtChan.__post === CURPOST) return;
+  if (cmtChan){ sb.removeChannel(cmtChan); cmtChan = null; }
+  if (!CURPOST) return;
+  const pid = CURPOST;
+  cmtChan = sb.channel('cm-' + pid).on('postgres_changes', {event:'INSERT', schema:'public', table:'comments', filter:`post_id=eq.${pid}`}, async payload => {
+    if (CURPOST !== pid || $(`[data-cid="${payload.new.id}"]`)) return;
+    const { data:au } = await sb.from('profiles').select('nickname,flag_art').eq('id', payload.new.author_id).maybeSingle();
+    const box = $('#cmts'); if (!box || $(`[data-cid="${payload.new.id}"]`)) return; box.querySelector('.empty')?.remove();
+    box.insertAdjacentHTML('beforeend', cmtHTML({...payload.new, author:au}, true));
+    const cc = $('#ccount'); if (cc) cc.textContent = +cc.textContent + 1;
+  }).subscribe();
+  cmtChan.__post = pid;
 }
 
-/* ===================== settle loop ===================== */
-function settleTick(){
-  let changed = false;
-  for (const p of S.posts){
-    if (p.stance && !p.result && now() >= p.settleAt){
-      const sym = room(p.room).symbol;
-      p.result = scoreStance(p.stance, p.sp, Q[sym].price); p.settledPrice = Q[sym].price; changed = true;
-      if (S.me && p.author === S.me.nick){
-        if (p.result === 'HIT'){ addPoints(20, `롱/숏 적중 · ${p.title}`); toast('🎯 적중! +20P'); } else toast('❌ 빗나갔어요. 다음엔 맞히자');
+/* ========================================================== actions */
+function modal(html){ closeModal(); const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<div class="sheet">${html}</div>`; m.addEventListener('click', ev => { if (ev.target === m) closeModal(); }); document.body.appendChild(m); }
+function closeModal(){ $$('.modal').forEach(m => m.remove()); }
+function keepForm(fn){ const t = $('#pt')?.value, b = $('#pb')?.value, po = $$('[data-po]').map(i => i.value); fn().then(() => { if ($('#pt')) $('#pt').value = t ?? ''; if ($('#pb')) $('#pb').value = b ?? ''; $$('[data-po]').forEach((i,k) => i.value = po[k] ?? ''); }); }
+const ACT = {
+  nick: doNick,
+  enlist(){ nickModal(); },
+  rename(){ nickModal(); },
+  close(){ closeModal(); },
+  sort(el){ UI.sort = el.dataset.v; render(true); },
+  btab(el){ UI.btab = el.dataset.v; render(true); },
+  wsort(el){ UI.wsort = el.dataset.v; render(true); },
+  side(el){ UI.side = el.dataset.v || null; keepForm(() => render(true)); },
+  win(el){ UI.win = +el.dataset.v; keepForm(() => render(true)); },
+  poll(){ UI.pollOn = !UI.pollOn; keepForm(() => render(true)); },
+  undraft(){ UI.draft = null; keepForm(() => render(true)); },
+  peek(el){ UI.peek = el.dataset.id; render(true); },
+  async post(el){
+    if (!need()) return; el.disabled = true;
+    try {
+      let memeUrl = null;
+      if (UI.draft){
+        const path = `${ME.id}/${Date.now()}.jpg`;
+        const { error } = await sb.storage.from('posters').upload(path, UI.draft.blob, {contentType:'image/jpeg'});
+        if (error) throw error;
+        memeUrl = sb.storage.from('posters').getPublicUrl(path).data.publicUrl;
       }
-    }
-  }
-  for (const b of S.bets){
-    const q = Q[b.rule.symbol];
-    if (b.status === 'OPEN' && now() >= b.closesAt){ b.status = 'CLOSED'; b.closePrice = q.price; changed = true; }
-    if (b.status === 'CLOSED' && now() >= b.resolvesAt){
-      b.resolvePrice = q.price; changed = true;
-      const hasA = b.entries.some(e => e.option === 'A'), hasB = b.entries.some(e => e.option === 'B');
-      if (!hasA || !hasB){
-        b.status = 'VOID';
-        const me = S.me && b.entries.find(e => e.user === S.me.nick);
-        if (me){ addPoints(me.amount, `대결 무효 환불 · ${b.question}`); toast('한쪽만 참여해서 대결이 무효 처리됐어요. 전액 환불!'); }
-      } else {
-        b.winning = b.rule.type === 'PRICE_ABOVE' ? (q.price >= b.rule.value ? 'A' : 'B') : (q.price > b.closePrice ? 'A' : 'B');
-        b.status = 'RESOLVED'; b.payouts = payout(b.entries, b.winning);
-        const mine = S.me && b.payouts.find(x => x.user === S.me.nick);
-        if (mine){ addPoints(mine.pay, `대결 승리 · ${b.question}`); toast(`⚔️ 대결 승리! +${mine.pay}P`); }
-        else if (S.me && b.entries.some(e => e.user === S.me.nick)) toast('⚔️ 대결에서 졌어요');
-      }
-    }
-  }
-  if (changed){ save(); softRender(); }
-}
-function fakeActivity(){
-  const open = S.bets.filter(b => b.status === 'OPEN' && b.closesAt - now() > 30000);
-  if (open.length && Math.random() < .5){
-    const b = pick(open); const u = pick(FAKE_NAMES);
-    if (u !== b.creator && !b.entries.some(e => e.user === u) && !b.question.includes('반대편 0명')){
-      b.entries.push({user:u, option:Math.random() < .5 ? 'A' : 'B', amount:10 + Math.floor(Math.random()*30)*10, at:now()});
-    }
-  }
-  const p = pick(S.posts); const k = pick(RX)[0]; p.rx[k]++;
-  const cur = location.hash.match(/^#\/p\/(\w+)/);
-  if (cur && Math.random() < .45){
-    const post = S.posts.find(x => x.id === cur[1]);
-    if (post){ const c = {id:uid(), author:pick(FAKE_NAMES), body:pick(CHAT), at:now()}; post.comments.push(c); const box = $('#cmts'); if (box){ box.querySelector('.empty')?.remove(); box.insertAdjacentHTML('beforeend', cmtHTML(c, true)); $('#ccount').textContent = post.comments.length; } }
-  }
-  save();
-  if (/^#\/bets/.test(location.hash) || location.hash === '' || location.hash === '#/') softRender();
-}
-
-/* ===================== components ===================== */
-function room(slug){ return S.rooms.find(r => r.slug === slug); }
-function topbar(title, back){
-  const pts = S.me ? `<a class="chip num" href="#/me">🪙 <b id="pts">${S.me.points.toLocaleString()}</b></a>` : '';
-  if (!title) return `<header class="top"><a class="logo pix" href="#/">🐜 ${APP}</a>${pts}</header>`;
-  return `<header class="top"><a class="back" href="${back || '#/'}" aria-label="뒤로">‹</a><div class="ttl">${esc(title)}</div>${pts}</header>`;
-}
-function gauge(posts){
-  const t = posts.filter(p => p.stance && now() - p.at < 864e5 && !p.hidden);
-  const L = t.filter(p => p.stance === 'LONG').length, Sh = t.length - L;
-  const lp = t.length ? Math.round(L / t.length * 100) : 50;
-  return `<div class="gauge"><i class="gl" style="width:${lp}%"></i><i class="gs" style="width:${100-lp}%"></i></div>
-    <div class="row sb s num"><span class="up b">LONG ${lp}% (${L})</span><span class="muted">${t.length ? '최근 24시간 도장 ' + t.length + '개' : '아직 도장 없음'}</span><span class="down b">(${Sh}) ${100-lp}% SHORT</span></div>`;
-}
-function contraCard(slug){
-  const arr = slug ? S.contra[slug] || [] : Object.values(S.contra).flat().slice(-30);
-  const pool = slug ? arr : Object.values(S.contra).flat();
-  const rate = pool.length ? Math.round(pool.filter(x => x.wrong).length / pool.length * 100) : 0;
-  return `<section class="card"><div class="row sb"><h2 class="h pix">개미 역지표 지수</h2><span class="muted s">최근 30일</span></div>
-    <div class="row" style="margin-top:6px;align-items:baseline"><span class="muted">개미가 틀릴 확률</span><b class="big num pix" style="color:var(--gold)">${rate}%</b></div>
-    <div class="dots">${arr.slice(-30).map(x => `<i class="${x.wrong ? 'w' : ''}" title="다수 의견 ${x.maj}${x.wrong ? ' → 틀림' : ' → 맞음'}"></i>`).join('')}</div>
-    <div class="muted s" style="margin-top:6px">노란 칸 = 그날 다수 의견(롱/숏)이 다음 날 등락과 반대였던 날</div></section>`;
-}
-function roomTile(r){
-  return `<a class="tile" href="#/r/${r.slug}" data-mood="${r.symbol}"><img class="masc px idle" data-masc="${r.symbol}" src="${artURL(r.mascot)}" alt=""><div><div class="tn">${esc(r.name)}</div><div class="num tp" data-p="${r.symbol}">${fmtPrice(r.symbol, Q[r.symbol].price)}</div><div class="num s b" data-c="${r.symbol}">${fmtPct(Q[r.symbol].changePct)}</div></div></a>`;
-}
-function resBadge(p){
-  if (!p.stance) return '';
-  if (p.result === 'HIT') return '<span class="res HIT">적중 ✅</span>';
-  if (p.result === 'MISS') return '<span class="res MISS">빗나감 ❌</span>';
-  return `<span class="res">채점까지 <b class="num" data-cd="${p.settleAt}">${mmss(p.settleAt - now())}</b></span>`;
-}
-function postCard(p, showRoom){
-  const r = room(p.room); const rxn = Object.values(p.rx).reduce((a,b) => a + b, 0);
-  return `<a class="post" href="#/p/${p.id}">
-    <div class="meta">${showRoom ? `<span class="rtag">${esc(r.name)}</span>` : ''}<img class="av px" src="${avatarOf(p.author)}" alt=""><b style="color:var(--text)">${esc(p.author)}</b>${badges(p.author, 1)}<span>· ${ago(p.at)}</span></div>
-    <div class="t">${p.stance ? `<span class="stamp ${p.stance}">${p.stance}</span>` : ''}${esc(p.title)}${p.meme ? ' 🖼' : ''}${p.poll ? ' 📊' : ''}</div>
-    <div class="foot"><span>🚀 ${p.rx.GAZUA}</span><span>반응 ${rxn}</span><span>💬 ${p.comments.length}</span>${resBadge(p)}</div></a>`;
-}
-function hot(posts){ const sc = p => (Object.values(p.rx).reduce((a,b) => a + b, 0) + p.comments.length * 2) / (1 + (now() - p.at) / 864e5); return posts.slice().sort((a,b) => sc(b) - sc(a)); }
-function renderBody(s){
-  let h = esc(s);
-  h = h.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
-  h = h.replace(/https?:\/\/[^\s<]+/g, u => { let host = ''; try { host = new URL(u.replace(/&amp;/g,'&')).hostname; } catch(e){} const ok = ALLOWED_LINKS.some(d => host === d || host.endsWith('.' + d)); return ok ? `<a href="${u}" target="_blank" rel="noopener nofollow">${u}</a>` : `<span class="muted" title="허용되지 않은 링크라 클릭할 수 없어요">${u}</span>`; });
-  return h;
-}
-function betCard(b){
-  const r = room(b.room); const A = b.entries.filter(e => e.option === 'A').reduce((s,e) => s + e.amount, 0), B = b.entries.filter(e => e.option === 'B').reduce((s,e) => s + e.amount, 0);
-  const tot = A + B || 1;
-  const st = b.status === 'OPEN' ? `마감까지 <b class="num" data-cd="${b.closesAt}">${mmss(b.closesAt - now())}</b>` : b.status === 'CLOSED' ? `판정까지 <b class="num" data-cd="${b.resolvesAt}">${mmss(b.resolvesAt - now())}</b>` : b.status === 'VOID' ? '무효 · 환불됨' : `종료 · ${b.winning === 'A' ? esc(b.a) : esc(b.b)} 승`;
-  return `<a class="card" style="display:block" href="#/bets/${b.id}"><div class="row sb s muted"><span class="rtag">${esc(r.name)}</span><span>${st}</span></div>
-    <div class="b" style="margin:8px 0 2px">${esc(b.question)}</div>
-    <div class="pool"><div class="pa" style="width:${Math.max(A/tot*100,18)}%">A ${esc(b.a)} · ${A}</div><div class="pb" style="width:${Math.max(B/tot*100,18)}%">${B} · ${esc(b.b)} B</div></div>
-    <div class="muted s">참여 ${b.entries.length}명 · 판돈 ${A+B}P</div></a>`;
-}
-function cmtHTML(c, fresh){ return `<div class="cm${fresh ? ' new' : ''}"><div class="row s"><img class="av px" src="${avatarOf(c.author)}" alt=""><a class="b" href="#/u/${encodeURIComponent(c.author)}">${esc(c.author)}</a>${badges(c.author,1)}<span class="muted">${ago(c.at)}</span></div><div style="margin:4px 0 0 30px">${renderBody(c.body)}</div></div>`; }
-const empty = m => `<div class="empty">${m}</div>`;
-const disc = () => `<div class="disc">재미용 커뮤니티이며 투자 권유가 아닙니다. 포인트는 현금 가치가 없습니다.<br>데모 · 모든 데이터는 이 브라우저에만 저장돼요.</div>`;
-
-/* ===================== views ===================== */
-const UI = {sort:'new', betTab:'open', stance:null, pollOn:false, tool:'pen', color:8, mtpl:'chart', msym:'BTCUSDT'};
-function vHome(){
-  const active = S.bets.filter(b => b.status === 'OPEN' || b.status === 'CLOSED');
-  return topbar() + `
-  <section class="card"><div class="row sb"><h2 class="h pix">오늘의 개미 분위기</h2><span class="s muted">전체 방</span></div>${gauge(S.posts)}</section>
-  ${contraCard(null)}
-  <h3 class="sec">종목방 <a class="more" href="#/rooms">전체 ›</a></h3>
-  <div class="grid2">${S.rooms.filter(r => r.official).map(roomTile).join('')}</div>
-  <h3 class="sec">인기 글 <span class="muted s">반응·댓글 · 24시간 가중</span></h3>
-  ${hot(S.posts.filter(p => !p.hidden)).slice(0, 5).map(p => postCard(p, true)).join('')}
-  <h3 class="sec">진행 중 예측 대결 <a class="more" href="#/bets">전체 ›</a></h3>
-  ${active.slice(0, 2).map(betCard).join('') || empty('진행 중인 대결이 없어요')}
-  ${disc()}`;
-}
-function vRooms(){
-  return topbar('종목방') + `
-  <div class="grid2">${S.rooms.map(roomTile).join('')}</div>
-  <section class="card"><h2 class="h">방 만들기 <span class="muted s">500P</span></h2>
-    <div class="muted s" style="margin-top:4px">원래는 가입 7일 이상 · 하루 1개만 가능. 데모에서는 바로 열 수 있어요.</div>
-    <label class="l">방 이름</label><input class="f" id="rn" maxlength="20" placeholder="예: 비트 새벽반">
-    <label class="l">연결 종목</label><select class="f" id="rs">${ROOMS0.map(r => `<option value="${r.symbol}">${r.name} (${r.symbol})</option>`).join('')}</select>
-    <label class="l">소개 · 규칙</label><input class="f" id="rd" maxlength="60" placeholder="예: 새벽 3시 이후 롱 금지 ㅋㅋ">
-    <label class="l">대표 도트</label><select class="f" id="rm">${S.arts.filter(a => a.kind === 'MASCOT' || a.author === S.me?.nick).map(a => `<option value="${a.id}">${esc(a.title)} · ${esc(a.author)}</option>`).join('')}</select>
-    <button class="btn pri full" style="margin-top:14px" data-act="mkroom">500P 내고 방 열기</button></section>${disc()}`;
-}
-function vRoom(slug){
-  const r = room(slug); if (!r) return v404();
-  const posts = S.posts.filter(p => p.room === slug && !p.hidden);
-  const list = UI.sort === 'hot' ? hot(posts) : posts.slice().sort((a,b) => b.at - a.at);
-  const q = Q[r.symbol];
-  return topbar(r.name, '#/rooms') + `
-  <div class="band" data-mood="${r.symbol}"><div class="row sb">
-    <div style="min-width:0"><div class="pix s">${esc(r.name)} <span class="muted">${r.symbol}</span></div><div class="num bp" data-p="${r.symbol}">${fmtPrice(r.symbol,q.price)}</div></div>
-    <div><div class="num bc" data-c="${r.symbol}">${fmtPct(q.changePct)}</div><div style="text-align:right"><span class="tag" data-tag="${r.symbol}"></span></div></div></div>
-    <canvas data-spark="${r.symbol}" style="width:100%;height:34px;display:block;margin-top:6px"></canvas></div>
-  <div class="stage" data-mood="${r.symbol}">
-    <div class="mwrap"><img class="masc lg px idle" data-masc="${r.symbol}" src="${artURL(r.mascot)}" alt="방 마스코트"><i class="tear"></i><i class="tear r"></i></div>
-    <div><div class="b pix" data-mcap="${r.symbol}"></div><div class="muted s" style="margin-top:4px">${esc(r.desc)}</div>
-    <div class="muted s">마스코트: ${esc(art(r.mascot)?.title || '')} · ${esc(art(r.mascot)?.author || '')} · <a href="#/workshop" style="text-decoration:underline">바꾸기</a></div></div></div>
-  <section class="card"><div class="row sb"><h2 class="h pix">이 방 분위기</h2></div>${gauge(posts)}</section>
-  <div class="sortt"><button class="${UI.sort==='new'?'on':''}" data-act="sort" data-v="new">최신순</button><button class="${UI.sort==='hot'?'on':''}" data-act="sort" data-v="hot">인기순</button></div>
-  ${list.map(p => postCard(p)).join('') || empty('첫 글을 써 보세요')}
-  ${contraCard(slug)}
-  ${disc()}
-  <a class="fab" href="#/r/${slug}/new">✏️ 글쓰기</a>`;
-}
-function vNew(slug){
-  const r = room(slug); if (!r) return v404();
-  const q = Q[r.symbol];
-  return topbar(r.name + ' · 글쓰기', '#/r/' + slug) + `
-  <label class="l">제목</label><input class="f" id="pt" maxlength="60" placeholder="제목">
-  <label class="l">본문 <span class="muted">· **굵게**, 줄바꿈, 링크(허용 도메인만 클릭)</span></label><textarea class="f" id="pb" maxlength="2000" placeholder="오픈채팅·텔레그램 링크는 올릴 수 없어요"></textarea>
-  <label class="l">롱/숏 도장 (선택)</label>
-  <div class="seg"><button data-act="stance" data-v="" class="${!UI.stance?'on':''}">없음</button><button data-act="stance" data-v="LONG" class="L ${UI.stance==='LONG'?'on':''}">🔴 LONG</button><button data-act="stance" data-v="SHORT" class="S ${UI.stance==='SHORT'?'on':''}">🔵 SHORT</button></div>
-  ${UI.stance ? `<div class="demo">현재가 <b class="num" data-p="${r.symbol}">${fmtPrice(r.symbol,q.price)}</b> 이 기록돼요. 원래는 24시간 뒤, <b>데모는 1분 뒤</b>에 자동 채점(적중 +20P).</div>` : ''}
-  <label class="l">투표 (선택)</label>
-  ${UI.pollOn ? `<div id="pollopts">${[0,1,2,3,4].map(i => `<input class="f" style="margin-bottom:6px" data-po maxlength="20" placeholder="선택지 ${i+1}${i<2?' (필수)':''}">`).join('')}</div><button class="btn sm" data-act="poll">투표 빼기</button>` : `<button class="btn sm" data-act="poll">📊 투표 붙이기</button>`}
-  <label class="l">짤</label>
-  ${S.draftMeme ? `<img class="memeimg" src="${S.draftMeme}" alt="첨부한 짤"><button class="btn sm" data-act="unmeme">짤 빼기</button>` : `<a class="btn sm" href="#/workshop/meme?room=${slug}">🖼 짤 만들러 가기</a>`}
-  <button class="btn pri full" style="margin-top:20px" data-act="post" data-room="${slug}">올리기</button>${disc()}`;
-}
-function vPost(id){
-  const p = S.posts.find(x => x.id === id); if (!p) return v404();
-  const r = room(p.room); const st = userStats(p.author);
-  const totalVotes = p.poll ? p.poll.opts.reduce((a,o) => a + o.n, 0) : 0;
-  const showPoll = p.poll && (p.poll.my != null || UI.peek === p.id);
-  return topbar(r.name, '#/r/' + r.slug) + `
-  <div class="row s" style="margin-top:14px"><img class="av px" src="${avatarOf(p.author)}" alt=""><a class="b" href="#/u/${encodeURIComponent(p.author)}">${esc(p.author)}</a><span class="rtag">${st.title}</span><span class="muted">${ago(p.at)}</span></div>
-  <div class="row wrapf" style="margin-top:6px;gap:4px">${badges(p.author)}</div>
-  <h1 style="font-size:20px;margin:12px 0 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap">${p.stance ? `<span class="stamp ${p.stance}" style="font-size:13px">${p.stance}</span>` : ''}${esc(p.title)}</h1>
-  ${p.stance ? `<div class="card s"><div class="row sb wrapf"><span>도장 찍은 가격 <b class="num">${fmtPrice(r.symbol, p.sp)}</b></span>${resBadge(p)}</div>
-    <div class="muted" style="margin-top:4px">${p.result ? `채점 가격 <span class="num">${p.settledPrice ? fmtPrice(r.symbol, p.settledPrice) : '-'}</span> · ${p.stance === 'LONG' ? '올라야' : '내려야'} 적중, 보합은 빗나감` : `지금 <b class="num" data-p="${r.symbol}">${fmtPrice(r.symbol, Q[r.symbol].price)}</b> · ${p.stance === 'LONG' ? '올라야' : '내려야'} 적중`}</div></div>` : ''}
-  <div class="body">${renderBody(p.body)}</div>
-  ${p.meme ? `<img class="memeimg" src="${p.meme}" alt="짤">` : ''}
-  ${p.poll ? `<div class="card"><div class="b s">📊 투표 · ${totalVotes}표</div>${p.poll.opts.map((o,i) => { const pc = totalVotes ? Math.round(o.n/totalVotes*100) : 0; return `<button class="pollo ${p.poll.my===i?'mine':''}" data-act="vote" data-id="${p.id}" data-i="${i}" ${p.poll.my!=null?'disabled':''}>${showPoll ? `<i class="fill" style="width:${pc}%"></i>` : ''}<span>${esc(o.t)}</span>${showPoll ? `<span class="num" style="float:right">${pc}%</span>` : ''}</button>`; }).join('')}
-    ${!showPoll ? `<button class="btn sm" data-act="peek" data-id="${p.id}">결과 먼저 보기</button>` : ''}</div>` : ''}
-  <div class="rxbar">${RX.map(([k,e,n]) => `<button class="rx ${p.my.includes(k)?'on':''}" data-act="rx" data-id="${p.id}" data-k="${k}" aria-label="${n}">${e} <span class="s">${n}</span> <b class="num">${p.rx[k]}</b></button>`).join('')}</div>
-  <div class="row sb"><h3 class="h">댓글 <span id="ccount">${p.comments.length}</span> <span class="muted s">· 실시간</span></h3><button class="btn sm" data-act="report" data-t="post" data-id="${p.id}">🚩 신고${p.reports ? ' ' + p.reports + '/3' : ''}</button></div>
-  <div id="cmts">${p.comments.map(c => cmtHTML(c)).join('') || empty('첫 댓글을 남겨 보세요')}</div>
-  <div class="row" style="margin-top:10px"><input class="f" id="ci" maxlength="200" placeholder="댓글 달기"><button class="btn pri" data-act="cmt" data-id="${p.id}">등록</button></div>${disc()}`;
-}
-function vBets(){
-  const open = S.bets.filter(b => b.status === 'OPEN' || b.status === 'CLOSED'), done = S.bets.filter(b => b.status === 'RESOLVED' || b.status === 'VOID');
-  const list = (UI.betTab === 'open' ? open : done).slice().sort((a,b) => UI.betTab === 'open' ? a.closesAt - b.closesAt : b.resolvesAt - a.resolvesAt);
-  return topbar('예측 대결') + `
-  <div class="demo">무료 포인트만 걸 수 있어요. 이긴 쪽이 판돈 전체를 건 비율대로 나눠 가지고, 한쪽에만 사람이 있으면 무효·전액 환불. 데모라 마감·판정이 분 단위예요.</div>
-  <div class="sortt"><button class="${UI.betTab==='open'?'on':''}" data-act="bettab" data-v="open">진행 중 ${open.length}</button><button class="${UI.betTab==='done'?'on':''}" data-act="bettab" data-v="done">종료 ${done.length}</button><a class="btn sm pri" style="margin-left:auto" href="#/bets/new">＋ 대결 만들기</a></div>
-  ${list.map(betCard).join('') || empty('대결이 없어요')}${disc()}`;
-}
-function ruleText(b){
-  const n = SYM[b.rule.symbol].name;
-  if (b.rule.type === 'PRICE_ABOVE') return `판정 시각에 ${n} 가격이 <b class="num">${fmtPrice(b.rule.symbol, b.rule.value)}</b> 이상이면 A, 아니면 B`;
-  return `마감 때 가격보다 판정 때 ${n} 가격이 오르면 A, 같거나 내리면 B`;
-}
-function vBet(id){
-  const b = S.bets.find(x => x.id === id); if (!b) return v404();
-  const r = room(b.room);
-  const sum = o => b.entries.filter(e => e.option === o).reduce((s,e) => s + e.amount, 0);
-  const A = sum('A'), B = sum('B'), tot = A + B;
-  const mine = S.me && b.entries.find(e => e.user === S.me.nick);
-  const isCreator = S.me && b.creator === S.me.nick;
-  const odds = (x) => x ? (tot / x).toFixed(2) : '-';
-  let action = '';
-  if (b.status === 'OPEN'){
-    if (isCreator) action = `<div class="demo">내가 만든 대결은 참여할 수 없어요 (조작 방지).</div>`;
-    else if (mine) action = `<div class="demo">${mine.option === 'A' ? esc(b.a) : esc(b.b)} 쪽에 <b>${mine.amount}P</b> 걸었어요.</div>`;
-    else action = `<section class="card"><div class="b">참여하기 <span class="muted s">10~500P · 보유 ${S.me ? S.me.points : 0}P</span></div>
-      <input class="f num" id="ba" type="number" inputmode="numeric" min="10" max="500" step="10" value="100" style="margin-top:10px">
-      <div class="row" style="margin-top:10px"><button class="btn bu" style="flex:1" data-act="enter" data-id="${b.id}" data-o="A">A ${esc(b.a)}</button><button class="btn bd" style="flex:1" data-act="enter" data-id="${b.id}" data-o="B">B ${esc(b.b)}</button></div></section>`;
-  }
-  let result = '';
-  if (b.status === 'RESOLVED'){
-    const paid = b.payouts.reduce((s,x) => s + x.pay, 0);
-    result = `<section class="card"><div class="b">정산 결과 · ${b.winning === 'A' ? 'A ' + esc(b.a) : 'B ' + esc(b.b)} 승</div>
-      <div class="muted s">마감가 ${b.closePrice != null ? fmtPrice(b.rule.symbol, b.closePrice) : '-'} → 판정가 ${fmtPrice(b.rule.symbol, b.resolvePrice)}</div>
-      <table class="t num" style="margin-top:8px"><tr><th>개미</th><th class="r">건 돈</th><th class="r">받은 돈</th></tr>${b.payouts.map(x => `<tr><td>${esc(x.user)}</td><td class="r">${x.amount}</td><td class="r up">${x.pay}</td></tr>`).join('')}</table>
-      <div class="s" style="margin-top:8px;color:#4ade80">판돈 합계 ${tot}P = 지급 합계 ${paid}P · 포인트 보존 ✔ (나머지 몫은 큰 판돈 순으로 1P씩)</div></section>`;
-  } else if (b.status === 'VOID'){
-    result = `<section class="card"><div class="b">무효 처리</div><div class="muted s">한쪽에만 참여자가 있어서 전원 환불했어요.</div></section>`;
-  }
-  return topbar('예측 대결', '#/bets') + `
-  <div class="row s muted" style="margin-top:14px"><a class="rtag" href="#/r/${r.slug}">${esc(r.name)}</a><span>만든 개미 ${esc(b.creator)}</span></div>
-  <h1 style="font-size:19px;margin:8px 0">${esc(b.question)}</h1>
-  <div class="card s"><div class="muted">판정 규칙 (자동)</div><div style="margin-top:4px">${ruleText(b)}</div>
-    <div class="row sb" style="margin-top:8px"><span class="muted">지금</span><b class="num" data-p="${b.rule.symbol}">${fmtPrice(b.rule.symbol, Q[b.rule.symbol].price)}</b></div>
-    ${b.closePrice != null && b.status !== 'RESOLVED' ? `<div class="row sb"><span class="muted">마감가</span><b class="num">${fmtPrice(b.rule.symbol, b.closePrice)}</b></div>` : ''}
-    <div class="row sb"><span class="muted">${b.status === 'OPEN' ? '마감까지' : b.status === 'CLOSED' ? '판정까지' : '상태'}</span><b class="num">${b.status === 'OPEN' ? `<span data-cd="${b.closesAt}">${mmss(b.closesAt-now())}</span>` : b.status === 'CLOSED' ? `<span data-cd="${b.resolvesAt}">${mmss(b.resolvesAt-now())}</span>` : b.status === 'VOID' ? '무효' : '종료'}</b></div></div>
-  <div class="pool"><div class="pa" style="width:${tot ? Math.max(A/tot*100,18) : 50}%">A · ${A}P</div><div class="pb" style="width:${tot ? Math.max(B/tot*100,18) : 50}%">${B}P · B</div></div>
-  <div class="row sb s muted"><span>A ${esc(b.a)} · 1P당 ${odds(A)}배</span><span>B ${esc(b.b)} · 1P당 ${odds(B)}배</span></div>
-  ${action}${result}
-  <h3 class="sec">참여자 ${b.entries.length}명</h3>
-  <table class="t num">${b.entries.map(e => `<tr><td>${esc(e.user)}${S.me && e.user === S.me.nick ? ' (나)' : ''}</td><td class="${e.option==='A'?'up':'down'}">${e.option} ${e.option==='A'?esc(b.a):esc(b.b)}</td><td class="r">${e.amount}P</td></tr>`).join('') || '<tr><td class="muted">아직 없음</td></tr>'}</table>${disc()}`;
-}
-function vBetNew(){
-  const sym = UI.bsym || 'BTCUSDT';
-  return topbar('대결 만들기', '#/bets') + `
-  <div class="demo">생성 비용 50P. 판정 규칙은 자동 판정 가능한 두 형식만 돼요. 내가 만든 대결엔 참여할 수 없어요.</div>
-  <label class="l">종목</label><select class="f" id="bs" data-act-change="bsym">${ROOMS0.map(r => `<option value="${r.symbol}" ${r.symbol===sym?'selected':''}>${r.name}</option>`).join('')}</select>
-  <label class="l">판정 규칙</label><select class="f" id="bt"><option value="CHANGE_UP">마감 대비 판정 시각에 오르면 A</option><option value="PRICE_ABOVE">판정 시각 가격이 기준 이상이면 A</option></select>
-  <label class="l">기준 가격 (가격 기준 규칙일 때) · 지금 <span class="num" data-p="${sym}">${fmtPrice(sym, Q[sym].price)}</span></label><input class="f num" id="bv" type="number" step="any" value="${+Q[sym].price.toFixed(2)}">
-  <label class="l">질문</label><input class="f" id="bq" maxlength="60" placeholder="예: 비트코인, 5분 뒤 지금보다 위일까?">
-  <div class="row"><div style="flex:1"><label class="l">선택지 A</label><input class="f" id="bA" maxlength="12" value="오른다"></div><div style="flex:1"><label class="l">선택지 B</label><input class="f" id="bB" maxlength="12" value="안 오른다"></div></div>
-  <div class="row"><div style="flex:1"><label class="l">마감 (분 뒤)</label><select class="f" id="bc"><option>2</option><option selected>3</option><option>5</option><option>10</option></select></div><div style="flex:1"><label class="l">판정 (마감 후 분)</label><select class="f" id="br"><option>1</option><option selected>2</option><option>5</option></select></div></div>
-  <button class="btn pri full" style="margin-top:18px" data-act="mkbet">50P 내고 만들기</button>${disc()}`;
-}
-function vWorkshop(){
-  const kind = UI.wkind || 'ALL', sort = UI.wsort || 'hot';
-  let arts = S.arts.filter(a => kind === 'ALL' || a.kind === kind);
-  arts = arts.sort((a,b) => sort === 'hot' ? b.uses - a.uses : b.at - a.at);
-  return topbar('공방') + `
-  <div class="grid2"><a class="card" style="margin:0" href="#/workshop/pixel"><div style="font-size:26px">🎨</div><div class="b">도트 에디터</div><div class="muted s">32×32 · 아바타·마스코트</div></a>
-  <a class="card" style="margin:0" href="#/workshop/meme"><div style="font-size:26px">🖼</div><div class="b">짤 생성기</div><div class="muted s">차트 짤 · 템플릿 ${S.memeT.length}개</div></a></div>
-  <h3 class="sec">공개 도트 <span class="muted s">사용될 때마다 만든 개미 +2P (하루 100P까지)</span></h3>
-  <div class="sortt"><button class="${sort==='hot'?'on':''}" data-act="wsort" data-v="hot">인기순</button><button class="${sort==='new'?'on':''}" data-act="wsort" data-v="new">최신순</button>
-    <select class="f" style="width:auto;min-height:36px;padding:4px 8px;margin-left:auto" id="wk">${[['ALL','전체'],['AVATAR','아바타'],['MASCOT','마스코트']].map(([v,n]) => `<option value="${v}" ${kind===v?'selected':''}>${n}</option>`).join('')}</select></div>
-  <div class="artg">${arts.map(a => `<div class="art"><img class="px" src="${pxURL(a.px)}" alt="${esc(a.title)}"><div class="an">${esc(a.title)}</div><div class="muted s" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(a.author)} · ${a.uses}회</div><button class="btn sm full" style="margin-top:6px" data-act="useart" data-id="${a.id}">쓰기</button></div>`).join('')}</div>${disc()}`;
-}
-function vPixel(){
-  return topbar('도트 에디터', '#/workshop') + `
-  <div class="tools" style="margin-top:12px">${[['pen','✏️ 펜'],['eraser','🧽 지우개'],['fill','🪣 채우기']].map(([t,n]) => `<button class="btn sm ${UI.tool===t?'on':''}" data-act="tool" data-v="${t}">${n}</button>`).join('')}<button class="btn sm" data-act="undo">↩ 되돌리기</button><button class="btn sm" data-act="pxant">🐜 개미 밑그림</button><button class="btn sm" data-act="pxclear">새로</button></div>
-  <div class="pal">${PAL.map((c,i) => `<button style="background:${c}" class="${UI.color===i?'on':''}" data-act="color" data-v="${i}" aria-label="색 ${i}"></button>`).join('')}</div>
-  <canvas id="pxc" class="px" width="352" height="352"></canvas>
-  <label class="l">이름</label><input class="f" id="ptitle" maxlength="12" placeholder="예: 존버개미">
-  <label class="l">종류</label><div class="seg"><button data-act="pkind" data-v="AVATAR" class="${(UI.pkind||'AVATAR')==='AVATAR'?'on':''}">아바타</button><button data-act="pkind" data-v="MASCOT" class="${UI.pkind==='MASCOT'?'on':''}">방 마스코트</button></div>
-  <button class="btn pri full" style="margin-top:14px" data-act="pxsave">공방에 공개 저장</button>
-  <div class="muted s" style="margin-top:8px">마스코트는 방 등락률에 따라 춤(+3%↑)·울기(−3%↓)·대기 애니메이션이 붙어요.</div>${disc()}`;
-}
-function vMeme(){
-  const tpls = [['chart','📈 종목 차트'],['red','🔴 떡상 빨강'],['blue','🔵 떡락 파랑'],['black','⬛ 심연']].concat(S.memeT.map(t => [t.id, '👤 ' + t.title]));
-  return topbar('짤 생성기', '#/workshop') + `
-  <div class="tpls" style="margin-top:12px">${tpls.map(([id,n]) => `<button class="${UI.mtpl===id?'on':''}" data-act="mtpl" data-v="${id}">${esc(n)}</button>`).join('')}</div>
-  ${UI.mtpl === 'chart' ? `<select class="f" id="msym" style="margin-top:8px">${ROOMS0.map(r => `<option value="${r.symbol}" ${UI.msym===r.symbol?'selected':''}>${r.name}</option>`).join('')}</select>` : ''}
-  <canvas id="mmc" width="600" height="600"></canvas>
-  <input class="f" id="mt1" maxlength="30" placeholder="윗줄 문구" value="${esc(UI.mt1 ?? '평단은 생각하지 않는다')}">
-  <input class="f" id="mt2" maxlength="30" style="margin-top:6px" placeholder="아랫줄 문구" value="${esc(UI.mt2 ?? '그저 존버할 뿐')}">
-  <div class="row" style="margin-top:12px"><button class="btn pri" style="flex:1" data-act="mattach">글에 첨부</button><button class="btn" data-act="mdown">💾 저장</button></div>
-  <section class="card"><div class="b">내 이미지로 템플릿 만들기</div><div class="muted s">png·jpg·webp, 2MB 이하. 공개하면 다른 개미가 쓸 때마다 +2P.</div>
-    <input type="file" id="mup" accept="image/png,image/jpeg,image/webp" class="f" style="margin-top:8px">
-    ${UI.upImg ? `<input class="f" id="mtn" maxlength="12" placeholder="템플릿 이름" style="margin-top:6px"><button class="btn sm full" style="margin-top:6px" data-act="mpub">템플릿 공개</button>` : ''}</section>${disc()}`;
-}
-function vProfile(nick){
-  const isMe = S.me && nick === S.me.nick;
-  const st = userStats(nick);
-  const posts = S.posts.filter(p => p.author === nick).sort((a,b) => b.at - a.at);
-  const rate = st.total >= 10 ? Math.round(st.hit / st.total * 100) + '%' : `${st.total}/10건 · 10건부터 공개`;
-  const today = new Date().toDateString();
-  return topbar(isMe ? '내 정보' : nick, '#/') + `
-  <div class="row" style="margin-top:16px;gap:14px"><img class="av lg px" src="${avatarOf(nick)}" alt=""><div style="min-width:0"><div class="pix" style="font-size:18px">${esc(nick)}</div><span class="rtag">${st.title}</span>
-    <div class="s muted" style="margin-top:4px">롱/숏 적중률 <b style="color:var(--text)">${rate}</b>${st.total ? ` · ${st.hit}/${st.total}` : ''}</div></div></div>
-  <div class="row wrapf" style="margin-top:10px;gap:4px">${badges(nick) || (isMe ? '' : '<span class="muted s">평단가 뱃지 없음</span>')}</div>
-  ${isMe ? `
-  <section class="card"><div class="row sb"><div><div class="muted s">포인트</div><div class="big num pix" style="color:var(--gold)">🪙 ${S.me.points.toLocaleString()}</div></div>
-    <button class="btn ${S.lastCheckin===today?'':'pri'}" data-act="checkin" ${S.lastCheckin===today?'disabled':''}>${S.lastCheckin===today?'출석 완료':'출석 +10P'}</button></div>
-    <div class="muted s" style="margin-top:6px">현금 충전·환전·양도는 없어요. 포인트는 현금 가치가 없습니다.</div></section>
-  <section class="card"><div class="b">평단가 뱃지 <span class="muted s">최대 3개 · 본인 주장(보유 증명 안 함)</span></div>
-    ${S.me.holdings.map((h,i) => `<div class="row sb" style="margin-top:8px"><span>${esc(SYM[h.sym].name)} · 평단 ${fmtPrice(h.sym,h.avg)} · <b data-hold="${h.sym}|${h.avg}">${fmtPct((Q[h.sym].price/h.avg-1)*100)}</b></span><button class="btn sm" data-act="unhold" data-i="${i}">삭제</button></div>`).join('')}
-    ${S.me.holdings.length < 3 ? `<div class="row" style="margin-top:10px"><select class="f" id="hs" style="flex:1">${ROOMS0.map(r => `<option value="${r.symbol}">${r.name}</option>`).join('')}</select><input class="f num" id="ha" type="number" step="any" placeholder="평단가" style="flex:1"></div><button class="btn sm full" style="margin-top:6px" data-act="hold">뱃지 추가</button>` : ''}</section>
-  <section class="card"><div class="b">포인트 내역</div><table class="t num" style="margin-top:6px">${S.ledger.slice(0,15).map(l => `<tr><td class="s">${esc(l.reason)}<div class="muted">${ago(l.at)}</div></td><td class="r ${l.delta>0?'up':'down'}">${l.delta>0?'+':''}${l.delta}</td></tr>`).join('')}</table></section>` : ''}
-  <h3 class="sec">쓴 글 ${posts.length}</h3>${posts.map(p => postCard(p, true)).join('') || empty('아직 글이 없어요')}
-  ${isMe ? `<div class="row" style="margin-top:20px"><a class="btn sm" href="#/admin">🛡 관리자 화면 (데모)</a><button class="btn sm" data-act="reset">데모 초기화</button></div>` : ''}${disc()}`;
-}
-function vAdmin(){
-  const items = S.posts.filter(p => p.reports > 0 || p.hidden);
-  return topbar('관리자 · 신고 처리', '#/me') + `
-  <div class="demo">데모라 누구나 볼 수 있어요. 실제 서비스는 관리자만. 신고 3건이 쌓이면 자동으로 숨겨지고 여기서 검토해요.</div>
-  ${items.map(p => `<div class="card"><div class="row sb"><b>${esc(p.title)}</b><span class="tag">${p.hidden ? '숨김' : '노출'} · 신고 ${p.reports}</span></div><div class="muted s">${esc(p.author)} · ${esc(room(p.room).name)}</div>
-    <div class="row" style="margin-top:8px"><button class="btn sm" data-act="mod" data-id="${p.id}" data-v="${p.hidden ? 'show' : 'hide'}">${p.hidden ? '복구' : '숨기기'}</button><button class="btn sm" data-act="mod" data-id="${p.id}" data-v="clear">신고 기각</button></div></div>`).join('') || empty('신고된 글이 없어요. 아무 글에서 🚩 신고를 눌러 보세요.')}${disc()}`;
-}
-const v404 = () => topbar('없는 페이지') + empty('찾는 페이지가 없어요');
-
-/* ===================== router ===================== */
-function parse(){ const h = location.hash.slice(1) || '/'; const [path, qs] = h.split('?'); return {parts:path.split('/').filter(Boolean), qs:new URLSearchParams(qs || '')}; }
-function render(keepScroll){
-  const y = window.scrollY;
-  const {parts, qs} = parse(); let html, tab = 'home';
-  const [a, b, c] = parts;
-  if (!a) html = vHome();
-  else if (a === 'rooms'){ html = vRooms(); tab = 'rooms'; }
-  else if (a === 'r' && c === 'new'){ html = vNew(b); tab = 'rooms'; }
-  else if (a === 'r'){ html = vRoom(b); tab = 'rooms'; }
-  else if (a === 'p'){ html = vPost(b); tab = 'rooms'; }
-  else if (a === 'bets' && b === 'new'){ html = vBetNew(); tab = 'bets'; }
-  else if (a === 'bets' && b){ html = vBet(b); tab = 'bets'; }
-  else if (a === 'bets'){ html = vBets(); tab = 'bets'; }
-  else if (a === 'workshop' && b === 'pixel'){ html = vPixel(); tab = 'workshop'; }
-  else if (a === 'workshop' && b === 'meme'){ if (qs.get('room')) UI.backRoom = qs.get('room'); html = vMeme(); tab = 'workshop'; }
-  else if (a === 'workshop'){ html = vWorkshop(); tab = 'workshop'; }
-  else if (a === 'me'){ html = S.me ? vProfile(S.me.nick) : vHome(); tab = 'me'; }
-  else if (a === 'u'){ html = vProfile(decodeURIComponent(b)); tab = 'me'; }
-  else if (a === 'admin'){ html = vAdmin(); tab = 'me'; }
-  else html = v404();
-  $('#app').innerHTML = html;
-  $$('.tabbar a').forEach(x => x.classList.toggle('on', x.dataset.tab === tab));
-  refreshLive();
-  $$('canvas[data-spark]').forEach(drawSpark);
-  if (a === 'workshop' && b === 'pixel') pxInit();
-  if (a === 'workshop' && b === 'meme') memeInit();
-  window.scrollTo(0, keepScroll ? y : 0);
-}
-function softRender(){ if (!isTyping() && !/workshop\/(pixel|meme)/.test(location.hash) && !/\/new/.test(location.hash)) render(true); }
-window.addEventListener('hashchange', () => { if (!/\/new/.test(location.hash)) UI.stance = null, UI.pollOn = false; render(); });
-
-/* ===================== actions ===================== */
-function need(){ if (!S.me){ nickModal(); return false; } return true; }
-document.addEventListener('click', e => {
-  const el = e.target.closest('[data-act]'); if (!el) return;
-  const act = el.dataset.act, id = el.dataset.id, v = el.dataset.v;
-  const A = {
-    sort(){ UI.sort = v; render(true); },
-    bettab(){ UI.betTab = v; render(true); },
-    wsort(){ UI.wsort = v; render(true); },
-    stance(){ UI.stance = v || null; keepForm(() => render(true)); },
-    poll(){ UI.pollOn = !UI.pollOn; keepForm(() => render(true)); },
-    unmeme(){ S.draftMeme = null; save(); keepForm(() => render(true)); },
-    rx(){
-      if (!need()) return;
-      const p = S.posts.find(x => x.id === id), k = el.dataset.k;
-      const on = p.my.includes(k);
-      p.my = on ? p.my.filter(x => x !== k) : p.my.concat(k); p.rx[k] += on ? -1 : 1; save();
-      el.classList.toggle('on', !on); el.querySelector('b').textContent = p.rx[k];
-      if (!on){ const s = document.createElement('span'); s.className = 'pop'; s.textContent = RX.find(r => r[0] === k)[1]; el.appendChild(s); setTimeout(() => s.remove(), 900); }
-    },
-    post(){
-      if (!need()) return;
-      const t = $('#pt').value.trim(), body = $('#pb').value.trim(), slug = el.dataset.room;
-      if (!t) return toast('제목을 써 주세요');
-      const bad = hasBanned(t + ' ' + body); if (bad) return toast(`금칙어가 있어요: "${bad}"`);
-      if (hasBlockedLink(body)) return toast('오픈채팅·텔레그램 링크는 올릴 수 없어요 (리딩방 차단)');
-      if (now() - S.lastPostAt < 10000) return toast('도배 방지: 글은 10초에 1개만 (실서비스 1분)');
-      let poll = null;
-      if (UI.pollOn){ const opts = $$('[data-po]').map(i => i.value.trim()).filter(Boolean); if (opts.length < 2) return toast('투표 선택지는 2개 이상'); poll = {opts:opts.map(o => ({t:o, n:0})), my:null}; }
-      const sym = room(slug).symbol;
-      const p = {id:uid(), room:slug, author:S.me.nick, title:t, body, stance:UI.stance, sp:UI.stance ? Q[sym].price : null, settleAt:UI.stance ? now() + SETTLE_MS : null, result:null, at:now(),
-        rx:{GAZUA:0,JONBEO:0,SONJEOL:0,TODAK:0}, my:[], comments:[], poll, meme:S.draftMeme || null, reports:0, hidden:false};
-      S.posts.push(p); S.lastPostAt = now(); S.draftMeme = null; UI.stance = null; UI.pollOn = false; save();
-      if (p.stance) toast(`${p.stance} 도장 쾅! 1분 뒤 채점돼요`);
-      location.hash = '#/p/' + p.id;
-    },
-    cmt(){
-      if (!need()) return;
-      const inp = $('#ci'), body = inp.value.trim(); if (!body) return;
-      const bad = hasBanned(body); if (bad) return toast(`금칙어가 있어요: "${bad}"`);
-      if (hasBlockedLink(body)) return toast('오픈채팅·텔레그램 링크는 올릴 수 없어요');
-      if (now() - S.lastCmtAt < 10000) return toast('도배 방지: 댓글은 10초에 1개');
-      const p = S.posts.find(x => x.id === id); const c = {id:uid(), author:S.me.nick, body, at:now()};
-      p.comments.push(c); S.lastCmtAt = now(); save(); inp.value = '';
-      const box = $('#cmts'); box.querySelector('.empty')?.remove(); box.insertAdjacentHTML('beforeend', cmtHTML(c, true)); $('#ccount').textContent = p.comments.length;
-    },
-    vote(){ if (!need()) return; const p = S.posts.find(x => x.id === id); if (p.poll.my != null) return; const i = +el.dataset.i; p.poll.my = i; p.poll.opts[i].n++; save(); render(true); },
-    peek(){ UI.peek = id; render(true); },
-    report(){
-      if (!need()) return;
-      const k = 'post:' + id; if (S.myReports[k]) return toast('이미 신고했어요');
-      modal(`<div class="b" style="font-size:17px">신고 사유</div>${['욕설·비하','리딩방·홍보','도배','허위 정보'].map(r => `<button class="btn full" style="margin-top:8px" data-act="doreport" data-id="${id}" data-v="${r}">${r}</button>`).join('')}<button class="btn full" style="margin-top:14px;background:transparent" data-act="close">취소</button>`);
-    },
-    doreport(){
-      const p = S.posts.find(x => x.id === id); S.myReports['post:' + id] = v;
-      p.reports += 1 + (p.seed ? 2 : 0); // demo: pretend two other ants already reported seeded posts
-      if (p.reports >= 3) p.hidden = true; save(); closeModal();
-      toast(p.hidden ? '신고 3건 누적 → 자동 숨김. 관리자 화면에서 복구할 수 있어요' : `신고 접수 (${p.reports}/3)`);
-      if (p.hidden) location.hash = '#/r/' + p.room; else render(true);
-    },
-    close(){ closeModal(); },
-    mod(){ const p = S.posts.find(x => x.id === id); if (v === 'hide') p.hidden = true; if (v === 'show') p.hidden = false; if (v === 'clear'){ p.reports = 0; p.hidden = false; } save(); render(true); },
-    enter(){
-      if (!need()) return;
-      const b = S.bets.find(x => x.id === id), amt = Math.round(+$('#ba').value);
-      if (!(amt >= 10 && amt <= 500)) return toast('10~500P 사이로 걸 수 있어요');
-      if (amt > S.me.points) return toast('포인트가 모자라요');
-      if (b.status !== 'OPEN') return toast('이미 마감됐어요');
-      b.entries.push({user:S.me.nick, option:el.dataset.o, amount:amt, at:now()}); addPoints(-amt, `대결 참여 · ${b.question}`); render(true); toast(`${amt}P 걸었어요!`);
-    },
-    mkbet(){
-      if (!need()) return;
-      const sym = $('#bs').value, type = $('#bt').value, q = $('#bq').value.trim(), a = $('#bA').value.trim(), bb = $('#bB').value.trim();
-      if (!q || !a || !bb) return toast('질문과 선택지를 채워 주세요');
-      if (hasBanned(q + a + bb)) return toast('금칙어가 있어요');
-      if (S.me.points < 50) return toast('포인트가 모자라요');
-      const val = +$('#bv').value; if (type === 'PRICE_ABOVE' && !(val > 0)) return toast('기준 가격을 넣어 주세요');
-      const cl = now() + +$('#bc').value * 60000, rs = cl + +$('#br').value * 60000;
-      const slug = S.rooms.find(r => r.symbol === sym && r.official).slug;
-      const b = {id:uid(), creator:S.me.nick, room:slug, question:q, a, b:bb, rule:type === 'PRICE_ABOVE' ? {type, symbol:sym, value:val} : {type, symbol:sym}, closesAt:cl, resolvesAt:rs, status:'OPEN', entries:[]};
-      S.bets.push(b); addPoints(-50, `대결 생성 · ${q}`); location.hash = '#/bets/' + b.id; toast('대결을 열었어요. 다른 개미들이 곧 들어와요');
-    },
-    mkroom(){
-      if (!need()) return;
-      const n = $('#rn').value.trim(); if (n.length < 2) return toast('방 이름은 2자 이상');
-      if (hasBanned(n + $('#rd').value)) return toast('금칙어가 있어요');
-      if (S.me.points < 500) return toast('포인트가 모자라요 (500P)');
-      const sym = $('#rs').value; const slug = 'u' + uid().slice(0, 5);
-      S.rooms.push({slug, name:n, short:SYM[sym].short, symbol:sym, market:SYM[sym].market, desc:$('#rd').value.trim() || '개미가 만든 방', official:false, owner:S.me.nick, mascot:$('#rm').value, at:now()});
-      S.contra[slug] = []; addPoints(-500, `방 개설 · ${n}`); location.hash = '#/r/' + slug;
-    },
-    checkin(){ if (!need()) return; const d = new Date().toDateString(); if (S.lastCheckin === d) return; S.lastCheckin = d; addPoints(10, '출석'); render(true); toast('출석 +10P'); },
-    hold(){ const a = +$('#ha').value; if (!(a > 0)) return toast('평단가를 넣어 주세요'); S.me.holdings.push({sym:$('#hs').value, avg:a}); save(); render(true); },
-    unhold(){ S.me.holdings.splice(+el.dataset.i, 1); save(); render(true); },
-    reset(){ modal(`<div class="b" style="font-size:17px">데모를 처음 상태로 돌릴까요?</div><div class="muted s" style="margin-top:6px">닉네임·글·포인트가 모두 지워져요.</div><button class="btn bu full" style="margin-top:14px" data-act="doreset">초기화</button><button class="btn full" style="margin-top:8px" data-act="close">취소</button>`); },
-    doreset(){ try { localStorage.removeItem(KEY); } catch(e){} location.hash = '#/'; location.reload(); },
-    useart(){
-      if (!need()) return;
-      const a = art(id);
-      modal(`<div class="b" style="font-size:17px">"${esc(a.title)}" 어디에 쓸까요?</div><button class="btn full" style="margin-top:12px" data-act="setav" data-id="${id}">내 아바타로</button>
-        <div class="muted s" style="margin:14px 0 6px">방 마스코트로 (내가 연 방 또는 데모라 공식 방도 가능)</div>${S.rooms.map(r => `<button class="btn full" style="margin-top:6px" data-act="setmasc" data-id="${id}" data-v="${r.slug}">${esc(r.name)}</button>`).join('')}
-        <button class="btn full" style="margin-top:12px;background:transparent" data-act="close">취소</button>`);
-    },
-    setav(){ S.me.avatar = id; useArt(id); closeModal(); render(true); toast('아바타를 바꿨어요'); },
-    setmasc(){ room(v).mascot = id; useArt(id); closeModal(); location.hash = '#/r/' + v; toast('방 마스코트를 바꿨어요'); },
-    tool(){ UI.tool = v; $$('[data-act=tool]').forEach(b => b.classList.toggle('on', b.dataset.v === v)); },
-    color(){ UI.color = +v; if (UI.tool === 'eraser') UI.tool = 'pen'; $$('[data-act=color]').forEach(b => b.classList.toggle('on', b === el)); $$('[data-act=tool]').forEach(b => b.classList.toggle('on', b.dataset.v === UI.tool)); },
-    undo(){ if (PX.undo.length){ PX.data = PX.undo.pop(); pxDraw(); } },
-    pxant(){ PX.undo.push(PX.data.slice()); PX.data = Array.from(antPx(UI.color)).map(ch => ch === '.' ? -1 : parseInt(ch,16)); pxDraw(); },
-    pxclear(){ PX.undo.push(PX.data.slice()); PX.data = new Array(1024).fill(-1); pxDraw(); },
-    pkind(){ UI.pkind = v; $$('[data-act=pkind]').forEach(b => b.classList.toggle('on', b.dataset.v === v)); },
-    pxsave(){
-      if (!need()) return;
-      if (PX.data.every(x => x < 0)) return toast('뭔가 그려 주세요');
-      const title = $('#ptitle').value.trim() || '이름 없는 개미'; if (hasBanned(title)) return toast('금칙어가 있어요');
-      const a = {id:'u' + uid(), author:S.me.nick, title, kind:UI.pkind || 'AVATAR', px:PX.data.map(x => x < 0 ? '.' : x.toString(16)).join(''), uses:0, at:now()};
-      S.arts.push(a); save(); PX.data = new Array(1024).fill(-1); PX.undo = [];
-      UI.wsort = 'new'; location.hash = '#/workshop'; toast('공방에 올렸어요. "쓰기"로 아바타·마스코트에 지정해 보세요');
-    },
-    mtpl(){ UI.mtpl = v; keepMeme(); render(true); },
-    mdown(){ const a = document.createElement('a'); a.download = 'antpg-meme.png'; a.href = $('#mmc').toDataURL('image/png'); a.click(); },
-    mattach(){
-      if (!need()) return;
-      S.draftMeme = $('#mmc').toDataURL('image/jpeg', .8); const t = S.memeT.find(x => x.id === UI.mtpl); if (t && t.author !== S.me.nick) t.uses++;
-      save(); const slug = UI.backRoom || (S.rooms.find(r => r.symbol === UI.msym) || S.rooms[0]).slug; location.hash = '#/r/' + slug + '/new'; toast('짤을 붙였어요');
-    },
-    mpub(){
-      if (!need()) return;
-      const n = ($('#mtn').value || '').trim() || '내 템플릿'; if (hasBanned(n)) return toast('금칙어가 있어요');
-      const t = {id:'m' + uid(), author:S.me.nick, title:n, img:UI.upImg, uses:0, at:now()}; S.memeT = S.memeT.filter(x => !x.temp); S.memeT.push(t); UI.mtpl = t.id; UI.upImg = null; save(); keepMeme(); render(true); toast('템플릿을 공개했어요');
-    },
-  };
-  if (A[act]){ e.preventDefault(); A[act](); }
-});
-document.addEventListener('change', e => {
-  if (e.target.id === 'wk'){ UI.wkind = e.target.value; render(true); }
-  if (e.target.id === 'bs'){ UI.bsym = e.target.value; const v = Q[UI.bsym].price; render(true); $('#bv').value = +v.toFixed(2); }
-  if (e.target.id === 'msym'){ UI.msym = e.target.value; memeDraw(); }
+      const poll = UI.pollOn ? $$('[data-po]').map(i => i.value.trim()).filter(Boolean) : null;
+      const side = UI.side, win = UI.win;
+      const id = await rpc('create_post', {p_symbol:el.dataset.sym, p_title:$('#pt').value, p_body:$('#pb').value, p_side:side, p_window:side ? win : null, p_poll:poll, p_meme_url:memeUrl});
+      UI.draft = null; UI.side = null; UI.pollOn = false;
+      if (side) toast(`${SIDE[side]}으로 참전! ${WIN_LBL[win]} 뒤 판정`);
+      location.hash = '#/p/' + id;
+    } catch(e){ toast(errMsg(e)); el.disabled = false; }
+  },
+  async cmt(el){
+    if (!need()) return; const inp = $('#ci'), body = inp.value.trim(); if (!body) return;
+    try { const id = await rpc('add_comment', {p_post:el.dataset.id, p_body:body});
+      if (!$(`[data-cid="${id}"]`)){ const box = $('#cmts'); box.querySelector('.empty')?.remove(); box.insertAdjacentHTML('beforeend', cmtHTML({id, body, created_at:new Date().toISOString(), author:ME}, true)); $('#ccount').textContent = +$('#ccount').textContent + 1; }
+      inp.value = '';
+    } catch(e){ toast(errMsg(e)); }
+  },
+  async rx(el){
+    if (!need()) return;
+    try { const r = await rpc('toggle_reaction', {p_post:el.dataset.id, p_kind:el.dataset.k});
+      el.classList.toggle('on', r.on); el.querySelector('b').textContent = r.count;
+      if (r.on){ const s = document.createElement('span'); s.className = 'pop'; s.textContent = RX.find(x => x[0] === el.dataset.k)[1]; el.appendChild(s); setTimeout(() => s.remove(), 900); }
+    } catch(e){ toast(errMsg(e)); }
+  },
+  async vote(el){ if (!need()) return; try { await rpc('vote', {p_post:el.dataset.id, p_index:+el.dataset.i}); render(true); } catch(e){ toast(errMsg(e)); } },
+  report(el){
+    if (!need()) return;
+    modal(`<div class="b" style="font-size:17px">신고 사유</div>${['욕설·비하','리딩방·홍보','도배','허위 정보'].map(r => `<button class="btn full" style="margin-top:8px" data-act="doreport" data-t="${el.dataset.t}" data-id="${el.dataset.id}" data-v="${r}">${r}</button>`).join('')}<button class="btn full" style="margin-top:14px;background:transparent" data-act="close">취소</button>`);
+  },
+  async doreport(el){
+    try { const n = await rpc('report', {p_type:el.dataset.t, p_id:el.dataset.id, p_reason:el.dataset.v}); closeModal();
+      toast(n >= 3 ? '신고 3건 누적 → 자동으로 숨겨졌어요' : `신고 접수 (${n}/3)`); render(true);
+    } catch(e){ closeModal(); toast(errMsg(e)); }
+  },
+  async mod(el){ try { await rpc('admin_moderate', {p_type:el.dataset.t, p_id:el.dataset.id, p_action:el.dataset.v}); render(true); } catch(e){ toast(errMsg(e)); } },
+  async ban(el){ try { await rpc('admin_ban', {p_user:el.dataset.id, p_hours:24}); toast('영창 24시간'); } catch(e){ toast(errMsg(e)); } },
+  async enter(el){
+    if (!need()) return;
+    try { await rpc('join_battle', {p_battle:el.dataset.id, p_option:el.dataset.o}); toast('참전 완료!'); render(true); } catch(e){ toast(errMsg(e)); }
+  },
+  async mkbattle(el){
+    if (!need()) return; el.disabled = true;
+    try { const id = await rpc('create_battle', {p_symbol:$('#bs').value, p_question:$('#bq').value, p_a:$('#bA').value, p_b:$('#bB').value, p_type:$('#bt').value, p_value:+$('#bv').value || null, p_close_min:+$('#bc').value, p_resolve_min:+$('#br').value});
+      location.hash = '#/battles/' + id; toast('결전을 선포했어요!');
+    } catch(e){ toast(errMsg(e)); el.disabled = false; }
+  },
+  async useflag(el){
+    if (!need()) return;
+    try { await rpc('use_flag', {p_art:el.dataset.id}); ME.flag_art = el.dataset.id; toast('새 깃발을 들었어요'); render(true); } catch(e){ toast(errMsg(e)); }
+  },
+  tool(el){ UI.tool = el.dataset.v; $$('[data-act=tool]').forEach(b => b.classList.toggle('on', b.dataset.v === UI.tool)); },
+  color(el){ UI.color = +el.dataset.v; if (UI.tool === 'eraser') UI.tool = 'pen'; $$('[data-act=color]').forEach(b => b.classList.toggle('on', b === el)); $$('[data-act=tool]').forEach(b => b.classList.toggle('on', b.dataset.v === UI.tool)); },
+  undo(){ if (PX.undo.length){ PX.data = PX.undo.pop(); pxDraw(); } },
+  pxbase(){ PX.undo.push(PX.data.slice()); const base = (ARTS['f-white'] || {}).px; if (base) PX.data = Array.from(base).map(ch => ch === '.' ? -1 : parseInt(ch,16)); pxDraw(); },
+  pxclear(){ PX.undo.push(PX.data.slice()); PX.data = new Array(1024).fill(-1); pxDraw(); },
+  async pxsave(el){
+    if (!need()) return; el.disabled = true;
+    try { const id = await rpc('save_flag', {p_title:$('#ptitle').value, p_px:PX.data.map(x => x < 0 ? '.' : x.toString(16)).join('')});
+      await rpc('use_flag', {p_art:id}); ME.flag_art = id; PX.data = new Array(1024).fill(-1); PX.undo = [];
+      UI.wsort = 'new'; location.hash = '#/barracks'; toast('새 깃발을 들었어요!');
+    } catch(e){ toast(errMsg(e)); el.disabled = false; }
+  },
+  mtpl(el){ keepMeme(); UI.mtpl = el.dataset.v; render(true); },
+  mdown(){ const a = document.createElement('a'); a.download = 'market-wars-poster.png'; a.href = $('#mmc').toDataURL('image/png'); a.click(); },
+  mattach(){
+    if (!need()) return;
+    $('#mmc').toBlob(blob => { UI.draft = {blob, url:URL.createObjectURL(blob)}; location.hash = '#/f/' + (UI.backFront || UI.msym) + '/new'; toast('포스터를 붙였어요'); }, 'image/jpeg', .82);
+  },
+};
+document.addEventListener('click', e => { const el = e.target.closest('[data-act]'); if (!el || !ACT[el.dataset.act]) return; e.preventDefault(); ACT[el.dataset.act](el); });
+document.addEventListener('change', async e => {
+  if (e.target.id === 'bs'){ UI.bsym = e.target.value; render(true); }
+  if (e.target.id === 'msym'){ UI.msym = e.target.value; keepMeme(); render(true); }
   if (e.target.id === 'mup') onUpload(e.target.files[0]);
 });
 document.addEventListener('input', e => { if (e.target.id === 'mt1' || e.target.id === 'mt2'){ keepMeme(); memeDraw(); } });
-function keepForm(fn){ const t = $('#pt')?.value, b = $('#pb')?.value, po = $$('[data-po]').map(i => i.value); fn(); if ($('#pt')) $('#pt').value = t ?? ''; if ($('#pb')) $('#pb').value = b ?? ''; $$('[data-po]').forEach((i,k) => i.value = po[k] ?? ''); }
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'nk') doNick(); if (e.key === 'Enter' && e.target.id === 'ci') $('[data-act=cmt]')?.click(); });
 function keepMeme(){ if ($('#mt1')) UI.mt1 = $('#mt1').value; if ($('#mt2')) UI.mt2 = $('#mt2').value; }
-function useArt(id){ const a = art(id); a.uses++; save(); }
-function modal(html){ closeModal(); const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<div class="sheet">${html}</div>`; m.addEventListener('click', ev => { if (ev.target === m) closeModal(); }); document.body.appendChild(m); }
-function closeModal(){ $$('.modal').forEach(m => m.remove()); }
-function nickModal(){
-  modal(`<div class="pix" style="font-size:20px;color:var(--gold)">🐜 ${APP}에 오신 걸 환영해요</div>
-    <div class="muted s" style="margin-top:6px">데모라 로그인 대신 닉네임만 정해요. 가입 보너스 1,000P를 드려요.</div>
-    <input class="f" id="nk" maxlength="12" placeholder="닉네임 (2~12자)" style="margin-top:14px" autocomplete="off">
-    <button class="btn pri full" style="margin-top:10px" data-act="nick">시작하기</button>
-    <div class="muted s" style="margin-top:10px">실서비스: 카카오·구글 로그인. 현금 충전·환전은 없어요.</div>`);
-  setTimeout(() => $('#nk')?.focus(), 50);
-}
-document.addEventListener('click', e => {
-  if (!e.target.closest('[data-act=nick]')) return;
-  const n = $('#nk').value.trim();
-  if (n.length < 2 || n.length > 12) return toast('닉네임은 2~12자');
-  if (hasBanned(n)) return toast('쓸 수 없는 닉네임이에요');
-  if (FAKE[n]) return toast('이미 있는 닉네임이에요');
-  S.me = {nick:n, points:0, avatar:null, holdings:[], joined:now()};
-  addPoints(1000, '가입 보너스'); closeModal(); render(true); toast('가입 보너스 +1,000P');
-});
-document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'nk') $('[data-act=nick]').click(); if (e.key === 'Enter' && e.target.id === 'ci') $('[data-act=cmt]').click(); });
 
-/* ===================== pixel editor ===================== */
+/* ========================================================== flag editor */
 const PX = {data:new Array(1024).fill(-1), undo:[], down:false};
 function pxInit(){
   const cv = $('#pxc'); pxDraw();
@@ -944,71 +921,78 @@ function fill(i, c){
 }
 function pxDraw(){
   const cv = $('#pxc'); if (!cv) return; const g = cv.getContext('2d'), s = 11;
-  for (let i = 0; i < 1024; i++){ const x = (i % 32) * s, y = (i >> 5) * s; const c = PX.data[i]; g.fillStyle = c < 0 ? (((i % 32) + (i >> 5)) % 2 ? '#1c2027' : '#232831') : PAL[c]; g.fillRect(x, y, s, s); }
-  g.strokeStyle = 'rgba(255,255,255,.05)'; g.lineWidth = 1; g.beginPath();
+  for (let i = 0; i < 1024; i++){ const x = (i % 32) * s, y = (i >> 5) * s, c = PX.data[i]; g.fillStyle = c < 0 ? (((i % 32) + (i >> 5)) % 2 ? '#1a2130' : '#212a3a') : PAL[c]; g.fillRect(x, y, s, s); }
+  g.strokeStyle = 'rgba(255,255,255,.05)'; g.beginPath();
   for (let k = 0; k <= 32; k++){ g.moveTo(k*s + .5, 0); g.lineTo(k*s + .5, 352); g.moveTo(0, k*s + .5); g.lineTo(352, k*s + .5); } g.stroke();
 }
 
-/* ===================== meme ===================== */
-const imgCache = {};
-function memeInit(){ memeDraw(); }
-function loadImg(src){ return imgCache[src] || (imgCache[src] = new Promise(res => { const i = new Image(); i.onload = () => res(i); i.src = src; })); }
-async function memeDraw(){
-  const cv = $('#mmc'); if (!cv) return; const g = cv.getContext('2d'); const W = 600;
-  const t = UI.mtpl;
+/* ========================================================== poster */
+let OWNIMG = null;
+function memeDraw(){
+  const cv = $('#mmc'); if (!cv) return; const g = cv.getContext('2d'), W = 600, t = UI.mtpl;
+  const rays = (c1, c2) => { g.fillStyle = c1; g.fillRect(0, 0, W, W); g.fillStyle = c2; for (let k = 0; k < 18; k++){ const a0 = k / 18 * Math.PI * 2, a1 = a0 + Math.PI / 18; g.beginPath(); g.moveTo(W/2, W/2 + 40); g.lineTo(W/2 + Math.cos(a0) * 900, W/2 + 40 + Math.sin(a0) * 900); g.lineTo(W/2 + Math.cos(a1) * 900, W/2 + 40 + Math.sin(a1) * 900); g.fill(); } };
   if (t === 'chart'){
-    const sym = UI.msym, a = H[sym], q = Q[sym];
-    g.fillStyle = '#0f1115'; g.fillRect(0, 0, W, W);
-    g.strokeStyle = 'rgba(255,255,255,.06)'; for (let k = 1; k < 6; k++){ g.beginPath(); g.moveTo(0, k*100); g.lineTo(W, k*100); g.stroke(); }
-    const mn = Math.min(...a), mx = Math.max(...a), rg = mx - mn || 1, col = q.changePct >= 0 ? '#f04452' : '#3b82f6';
-    g.strokeStyle = col; g.lineWidth = 6; g.lineJoin = 'round'; g.beginPath();
-    a.forEach((v,i) => { const x = 20 + i / (a.length - 1) * (W - 40), y = 480 - (v - mn) / rg * 290; i ? g.lineTo(x,y) : g.moveTo(x,y); }); g.stroke();
-    g.fillStyle = '#e9ebef'; g.font = 'bold 24px Pretendard, sans-serif'; g.textAlign = 'left'; g.fillText(SYM[sym].name + '  ' + fmtPrice(sym, q.price), 24, 150);
-    g.fillStyle = col; g.textAlign = 'right'; g.fillText(fmtPct(q.changePct), W - 24, 150);
-  } else if (t === 'red' || t === 'blue' || t === 'black'){
-    g.fillStyle = {red:'#c81e3a', blue:'#1d4fd8', black:'#050608'}[t]; g.fillRect(0, 0, W, W);
-    g.font = '200px serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(t === 'red' ? '🚀' : t === 'blue' ? '😭' : '🕳', W/2, W/2 + 10); g.textBaseline = 'alphabetic';
+    const a = A[UI.msym], h = HIST[UI.msym] && HIST[UI.msym].length > 1 ? HIST[UI.msym] : null;
+    g.fillStyle = '#0b0f17'; g.fillRect(0, 0, W, W);
+    g.strokeStyle = 'rgba(255,255,255,.06)'; g.lineWidth = 1; for (let k = 1; k < 6; k++){ g.beginPath(); g.moveTo(0, k*100); g.lineTo(W, k*100); g.stroke(); }
+    const col = mv(a) >= 0 ? '#f04452' : '#3b82f6';
+    if (h){ const mn = Math.min(...h), mx = Math.max(...h), rg = mx - mn || 1; g.strokeStyle = col; g.lineWidth = 6; g.lineJoin = 'round'; g.beginPath();
+      h.forEach((v,i) => { const x = 20 + i / (h.length - 1) * (W - 40), y = 480 - (v - mn) / rg * 290; i ? g.lineTo(x,y) : g.moveTo(x,y); }); g.stroke(); }
+    else { g.font = '160px serif'; g.textAlign = 'center'; g.fillText(mv(a) >= 0 ? '📈' : '📉', W/2, 400); }
+    g.fillStyle = '#e8ebf1'; g.font = 'bold 24px Pretendard, sans-serif'; g.textAlign = 'left'; g.fillText(a.name + '  ' + fmtP(a), 24, 150);
+    g.fillStyle = col; g.textAlign = 'right'; g.fillText(fmtC(a), W - 24, 150);
+  } else if (t === 'bull' || t === 'bear'){
+    rays(t === 'bull' ? '#b3122b' : '#123a8f', t === 'bull' ? '#d22a43' : '#1d4fd8');
+    const im = FLAGIMG[t === 'bull' ? 'f-bull' : 'f-bear'];
+    if (im && im.complete){ g.imageSmoothingEnabled = false; g.drawImage(im, W/2 - 140, W/2 - 120, 280, 280); } else if (im) im.onload = memeDraw;
   } else {
-    const tp = S.memeT.find(x => x.id === t); if (tp){ const im = await loadImg(tp.img); g.drawImage(im, 0, 0, W, W); }
+    g.fillStyle = '#1b2230'; g.fillRect(0, 0, W, W);
+    if (OWNIMG) g.drawImage(OWNIMG, 0, 0, W, W); else { g.fillStyle = '#8792a6'; g.font = '24px Pretendard, sans-serif'; g.textAlign = 'center'; g.fillText('위에서 이미지를 골라 주세요', W/2, W/2); }
   }
-  const t1 = $('#mt1')?.value || '', t2 = $('#mt2')?.value || '';
-  memeText(g, t1, 70, false); memeText(g, t2, W - 40, true);
+  memeText(g, $('#mt1')?.value || '', 70, false); memeText(g, $('#mt2')?.value || '', W - 40, true);
 }
 function memeText(g, text, y, bottom){
   if (!text) return; const W = 600; g.textAlign = 'center'; g.lineJoin = 'round';
-  let size = 54; g.font = `900 ${size}px Pretendard, sans-serif`;
-  while (g.measureText(text).width > W - 40 && size > 26){ size -= 2; g.font = `900 ${size}px Pretendard, sans-serif`; }
+  let size = 56; g.font = `900 ${size}px Pretendard, sans-serif`;
+  while (g.measureText(text).width > W - 40 && size > 28){ size -= 2; g.font = `900 ${size}px Pretendard, sans-serif`; }
   const lines = []; let cur = '';
   for (const ch of text){ if (g.measureText(cur + ch).width > W - 40){ lines.push(cur); cur = ch; } else cur += ch; } lines.push(cur);
-  const lh = size * 1.15; let y0 = bottom ? y - (lines.length - 1) * lh : y;
-  lines.forEach((l, i) => { g.strokeStyle = '#000'; g.lineWidth = size / 6; g.strokeText(l, W/2, y0 + i*lh); g.fillStyle = '#fff'; g.fillText(l, W/2, y0 + i*lh); });
+  const lh = size * 1.15, y0 = bottom ? y - (lines.length - 1) * lh : y;
+  lines.forEach((l, i) => { g.strokeStyle = '#000'; g.lineWidth = size / 5; g.strokeText(l, W/2, y0 + i*lh); g.fillStyle = '#fff'; g.fillText(l, W/2, y0 + i*lh); });
 }
 function onUpload(f){
   if (!f) return;
   if (!/^image\/(png|jpeg|webp)$/.test(f.type)) return toast('png·jpg·webp만 올릴 수 있어요');
   if (f.size > 2 * 1024 * 1024) return toast('2MB 이하만 올릴 수 있어요');
-  const rd = new FileReader();
-  rd.onload = () => { const im = new Image(); im.onload = () => {
+  const im = new Image(); im.onload = () => {
     const c = document.createElement('canvas'); c.width = c.height = 600; const g = c.getContext('2d');
-    const s = Math.max(600 / im.width, 600 / im.height); const w = im.width * s, h = im.height * s; g.drawImage(im, (600 - w)/2, (600 - h)/2, w, h);
-    UI.upImg = c.toDataURL('image/jpeg', .82); const id = 'tmp'; imgCache[UI.upImg] = Promise.resolve(c);
-    S.memeT = S.memeT.filter(x => x.id !== id); S.memeT.push({id, author:S.me?.nick || '나', title:'방금 올린 이미지', img:UI.upImg, uses:0, at:now(), temp:true});
-    UI.mtpl = id; keepMeme(); render(true);
-  }; im.src = rd.result; };
-  rd.readAsDataURL(f);
+    const s = Math.max(600 / im.width, 600 / im.height), w = im.width * s, h = im.height * s; g.drawImage(im, (600 - w)/2, (600 - h)/2, w, h);
+    OWNIMG = c; memeDraw();
+  }; im.src = URL.createObjectURL(f);
 }
 
-/* ===================== boot ===================== */
-S.memeT = S.memeT.filter(x => !x.temp);
-initPrices();
-connectBinance();
-setInterval(mockTick, 1500);
-setInterval(() => { $$('[data-cd]').forEach(el => el.textContent = mmss(+el.dataset.cd - now())); }, 1000);
-setInterval(settleTick, 3000);
-setInterval(fakeActivity, 12000);
-setInterval(save, 15000);
-render();
-if (!S.me) setTimeout(nickModal, 400);
+/* ========================================================== results watcher */
+const SEEN_KEY = 'mw-seen-results';
+async function watchResults(){
+  if (!ME) return;
+  const { data } = await sb.from('posts').select('id,title,result,symbol').eq('author_id', ME.id).not('result', 'is', null).gte('settle_at', new Date(now() - 15 * 60000).toISOString());
+  let seen = []; try { seen = JSON.parse(localStorage.getItem(SEEN_KEY) || '[]'); } catch(e){}
+  for (const p of data || []){ if (seen.includes(p.id)) continue; seen.push(p.id); toast(p.result === 'WIN' ? `🎖 승전! ${A[p.symbol]?.name} — ${p.title}` : `💀 패전… ${A[p.symbol]?.name} — ${p.title}`); }
+  try { localStorage.setItem(SEEN_KEY, JSON.stringify(seen.slice(-100))); } catch(e){}
+}
+
+/* ========================================================== boot */
+(async function boot(){
+  if (!sb){ $('#app').innerHTML = empty('서버 설정이 아직 없어요 (config.js)'); return; }
+  try { await Promise.all([loadAssets(), loadArts(), loadMe()]); }
+  catch(e){ $('#app').innerHTML = topbar() + empty('서버에 연결하지 못했어요: ' + esc(errMsg(e)) + '<br><button class="btn sm" style="margin-top:12px" onclick="location.reload()">다시 시도</button>'); return; }
+  sb.channel('assets').on('postgres_changes', {event:'UPDATE', schema:'public', table:'assets'}, p => onAssetRow(p.new)).subscribe();
+  connectBinance();
+  setInterval(() => $$('[data-cd]').forEach(el => el.textContent = mmss(+el.dataset.cd - now())), 1000);
+  setInterval(() => { softRender(); watchResults(); }, 30000);
+  setInterval(async () => { try { await loadAssets(); scheduleLive(); MAPDIRTY = true; } catch(e){} }, 120000);
+  render();
+})();
 </script>
 </body>
 </html>

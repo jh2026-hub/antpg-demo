@@ -1,14 +1,17 @@
-# 개미놀이터 demo
+# 시장대전 (Market Wars)
 
-Static, single-file demo of the "개미놀이터" 2D stock & crypto community spec.
-No server: everything runs in the browser and is saved to `localStorage`.
+A fun-only war game on top of real market data. Price moves are armies: when a market rises the
+**상승군 (red)** pushes the front, when it falls the **하락군 (blue)** does. No points, no money.
 
-- Live BTC/ETH prices from the Binance public WebSocket; KR/US stocks use a mock random walk
-- Rooms with mood colors and pixel mascots that dance (+3%) or cry (−3%)
-- Long/short stamps auto-scored after **1 minute** (spec: 24h), +20P on a hit
-- User-made prediction bets (parimutuel, VOID refund when one side is empty, points conserved)
-- Polls, meme reactions, average-price badges, sentiment gauge, contrarian index
-- 32×32 pixel editor and canvas meme generator (workshop)
-- Report → auto-hide at 3, link/banned-word filters, simple admin view
+- Fantasy world map: 아메리카 대륙, 코리아 반도, 환율 해협, 크립토 공중섬 — every asset is a territory
+  colored by who controls it today
+- 14 fronts: KOSPI, Samsung, SK hynix, S&P 500, NVIDIA, Tesla, BTC, ETH, KR 3Y/10Y, US 2Y/10Y, USD/KRW, JPY/KRW
+- Battle scene per territory, investor flows (foreign / institution / retail for KR, taker buy/sell for crypto)
+- Soldiers pick a side with a 10m / 1h / 24h window; the server scores it with real prices; ranks from record
+- User-declared A/B showdowns, war reports, comments (realtime), polls, reactions, pixel flags, propaganda posters
+- Reports auto-hide at 3, link and banned-word filters, admin view
 
-Fun-only community demo. Not investment advice. Points have no cash value.
+Stack: static page on GitHub Pages + Supabase (Postgres with RLS, anonymous auth, realtime, storage,
+pg_cron, one Edge Function `quotes-sync` that pulls Binance / Yahoo / Naver every minute).
+
+Not investment advice.
