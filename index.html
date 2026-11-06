@@ -265,6 +265,14 @@ textarea.f{min-height:90px;resize:none}
 .hcols .hc i.b{background:var(--up)}.hcols .hc i.s{background:var(--down)}
 .cfl{margin-top:4px;font-size:12px;font-weight:700;white-space:nowrap}.cfl b{font-size:11px;margin-left:1px}
 /* ---------- pixel plaza */
+.pxc{border-radius:6px;box-shadow:0 0 0 2px #1d2028,0 4px 0 2px rgba(0,0,0,.18);font-family:Galmuri11,Pretendard,sans-serif}
+.pxl{font-size:13px}.pxl .muted{font-size:11px}
+.mrow{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-top:8px}.mrow.op3{grid-template-columns:repeat(3,1fr)}
+.pb{display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 0 6px;background:var(--soft);border:2px solid #1d2028;box-shadow:2px 2px 0 rgba(0,0,0,.25);font-family:Galmuri11,Pretendard,sans-serif;font-size:10.5px;white-space:nowrap}
+.pb span{font-size:20px;line-height:1}.op3 .pb{flex-direction:row;justify-content:center;gap:5px;font-size:12px}.op3 .pb span{font-size:16px}
+.pb:active{transform:translate(2px,2px);box-shadow:none}
+.emobar{font-family:Galmuri11,Pretendard,sans-serif}.emobar button{border-radius:0;border:2px solid #1d2028;box-shadow:2px 2px 0 rgba(0,0,0,.25);height:38px}
+.ev{border-radius:0;border:2px solid #1d2028;border-left-width:6px;box-shadow:2px 2px 0 rgba(0,0,0,.2);font-family:Galmuri11,Pretendard,sans-serif}.ev b{font-weight:400}.pb.on{background:#ffd84a;color:#1d2028}
 .plaza.px{height:300px;border-radius:6px;background:#0b1430;box-shadow:0 0 0 2px #1d2028,0 4px 0 2px rgba(0,0,0,.25)}
 .px .pxbg,.px .pxfx{position:absolute;left:0;top:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges}
 .px .pxbg{z-index:0}.px .pxfx{z-index:850;pointer-events:none}
@@ -532,12 +540,8 @@ async function vHome(){
 async function opinionHTML(){
   const a = A[UI.room]; if (!a) return '';
   const o = await rpc('opinion_today', {p_symbol: a.symbol}).catch(() => ({up:0, down:0, dunno:0})); PX.votes(a.symbol, o);
-  const t = o.up + o.down + o.dunno, w = k => t ? o[k] / t * 100 : 0;
-  const q = pct(a) <= -3 ? `${a.short} ${fmtC(a)}… 내일은 어떨까요?` : pct(a) >= 3 ? `${a.short} ${fmtC(a)}! 더 갈까요?` : `${a.short}, 내일은 어떨까요?`;
-  return `<div class="card" id="op"><h2 class="h2">💬 ${esc(q)}</h2><div class="muted s">맞히기 아님 · 생각만 나눠요</div>
-    <div class="opbtn">${[['up','📈 오른다'],['down','📉 내린다'],['dunno','🤷 몰라']].map(([k, n]) => `<button class="ob ${o.mine === k ? 'on' : ''}" data-act="op" data-v="${k}">${n}</button>`).join('')}</div>
-    ${t ? `<div class="obar"><i style="width:${w('up')}%;background:var(--up)"></i><i style="width:${w('dunno')}%;background:var(--line)"></i><i style="width:${w('down')}%;background:var(--down)"></i></div>
-    <div class="row sb s"><span class="up">오른다 ${Math.round(w('up'))}%</span><span class="muted">${t}명</span><span class="down">내린다 ${Math.round(w('down'))}%</span></div>` : '<div class="muted s" style="margin-top:10px">아직 아무도 안 골랐어요</div>'}</div>`;
+  return `<div id="op"><div class="pxl" style="margin-top:12px">내일은? <span class="muted">· 맞히기 아님</span></div>
+    <div class="mrow op3">${[['up','📈','오른다'],['down','📉','내린다'],['dunno','🤷','몰라']].map(([k, e, n]) => `<button class="pb ${o.mine === k ? 'on' : ''}" data-act="op" data-v="${k}"><span>${e}</span>${n} ${o[k] || 0}</button>`).join('')}</div></div>`;
 }
 /* ---------------------------------------------------------------- who is buying, who is selling (same characters as the plaza) */
 const WHO = {foreign:['👽','외국인'], inst:['👮','기관'], retail:['🐜','개인']};
@@ -587,14 +591,9 @@ function forceMini(a){
 }
 async function vRoom(sym){
   const a = A[sym]; if (!a) return '<div class="empty">없는 방이에요 · <a href="#/" class="b">방 목록</a></div>';
-  const [{ data:moods }, op] = await Promise.all([
-    sb.from('moods').select(MOODSEL).eq('symbol', sym).order('created_at', {ascending:false}).limit(UI.limit), opinionHTML()]);
-  const list = moods || [], my = await myReactions(list.map(m => m.id));
-  return forceHTML(a) + `<div class="card"><h2 class="h2">이 방에서 내 기분은?</h2><div class="muted s" style="margin-top:2px">누르면 내 캐릭터 머리 위에 떠요 · 가입 없음</div>
-      <div class="moodgrid">${MOODS.map(m => `<button class="mb" data-act="compose" data-v="${m.k}"><span>${m.e}</span>${m.n}</button>`).join('')}</div></div>`
-    + op
-    + `<div class="sec"><h3>이 방 이야기</h3></div><div id="feed">${list.map(m => moodCard(m, my, true)).join('') || '<div class="empty">아직 아무도 없어요. 첫 기분을 남겨 보세요</div>'}</div>
-      ${list.length >= UI.limit ? '<button class="btn full" data-act="more">더 보기</button>' : ''}` + foot();
+  return `<div class="card pxc"><div class="pxl">내 기분 <span class="muted">· 내 캐릭터 머리 위에 떠요</span></div>
+      <div class="mrow">${MOODS.map(m => `<button class="pb" data-act="compose" data-v="${m.k}"><span>${m.e}</span>${m.n}</button>`).join('')}</div>
+      ${await opinionHTML()}</div>` + foot();
 }
 
 /* ---------------------------------------------------------------- compose */
