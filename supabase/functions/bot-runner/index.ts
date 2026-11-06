@@ -237,7 +237,7 @@ Deno.serve(async (req) => {
     const a = A[p.symbol]; const v = a ? vars(a) : { name: p.symbol, chg: '' };
     const up = a ? mv(a) >= 0 : true;
     let pool = up ? REACTORS_UP : REACTORS_DOWN;
-    if (a?.kind === 'CRYPTO') pool = [...pool, 'degen', 'degen']; if (a?.kind === 'BOND') pool = [...pool, 'admiral', 'admiral'];
+    if (a?.kind === 'CRYPTO') pool = [...pool, 'degen', 'degen'];
     if (p.category === 'chat') pool = COMMENTERS.chat;
     const who = shuffle(pool).find(b => !done.has(b)); if (!who) continue;
     const txt = line(who, p.category === 'chat' ? 'chat' : up ? 'react_up' : 'react_down', v); if (!txt) continue;
@@ -269,7 +269,7 @@ Deno.serve(async (req) => {
   {
     const last = [...seen.values()].filter(l => l.key.startsWith('posted:')).sort((a, b) => Date.parse(b.at) - Date.parse(a.at))[0];
     if ((!last || Date.parse(last.at) < now - 35 * 60e3) && nPosts() === 0 && Math.random() < .7) {
-      const who = pick(IDLERS), a = who === 'degen' ? A.BTCUSDT : who === 'admiral' ? (A.US10Y || A.KR10Y) : pick(all);
+      const who = pick(IDLERS), a = who === 'degen' ? A.BTCUSDT : pick(all);
       const v = a ? vars(a) : {}; const title = line(who, 'idle_t', v), body = line(who, 'idle', v);
       if (title && body && a) post({ id: `idle-${who}`, bot: who, symbol: a.symbol, category: 'chat', title, body, log: [`idle:${date}:${hour}:${who}`] });
     }

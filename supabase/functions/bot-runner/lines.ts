@@ -217,4 +217,4 @@ export const COMMENTERS: Record<string, string[]> = {
   call: ['optimist', 'doomer', 'contra', 'cynic', 'chartist', 'grandma', 'ramen', 'salaryman', 'meter'],
 };
 // Who posts idle musings
-export const IDLERS = ['optimist', 'doomer', 'cynic', 'grandma', 'chartist', 'ramen', 'salaryman', 'degen', 'admiral', 'meter', 'contra', 'seer'];
+export const IDLERS = ['optimist', 'doomer', 'cynic', 'grandma', 'chartist', 'ramen', 'salaryman', 'degen', 'meter', 'contra', 'seer'];  // admiral retired with the bond fronts

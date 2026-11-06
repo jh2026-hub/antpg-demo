@@ -74,6 +74,13 @@ label.l{display:block;font-size:13px;color:var(--muted);margin:14px 0 6px}
 .pin{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:row;gap:4px;align-items:center;padding:2px 7px;min-width:44px;border-radius:7px;background:rgba(8,12,20,.86);border:1px solid rgba(255,255,255,.14);border-left:4px solid #8a8f99;font-size:10.5px;line-height:1.25;white-space:nowrap;z-index:3;box-shadow:0 2px 6px rgba(0,0,0,.5)}
 .pin b{font-weight:700}
 .pin span{font-size:10px}
+.pin.big{padding:4px 9px 4px 6px;gap:6px;border-radius:10px;min-width:0}
+.pin.big .ic{font-style:normal;font-size:17px;line-height:1}
+.pin.big .pt{display:flex;flex-direction:column;align-items:flex-start;line-height:1.15}
+.pin.big .pt b{font-size:12.5px}.pin.big .pt span{font-size:11px;font-weight:700}
+.maplbl.camp{font-size:11px;font-weight:700;letter-spacing:1px}
+.maplbl.wm{font-size:30px;font-weight:900;letter-spacing:4px;writing-mode:vertical-rl}
+.maphelp{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;font-weight:700;margin-top:6px}
 .maplbl.side{left:3%;transform:translate(0,-50%);writing-mode:vertical-rl;letter-spacing:3px;font-size:10px;color:rgba(255,255,255,.55)}
 .pin.hot{animation:pinpulse .9s ease-in-out infinite alternate}
 @keyframes pinpulse{to{box-shadow:0 0 0 3px rgba(245,197,66,.4)}}
@@ -322,7 +329,8 @@ function fmtC(a){
 }
 // bonds trade on yield: a falling yield is a stronger bond, so it counts as 상승군
 const mv = a => a.kind === 'BOND' ? -(a.change || 0) : (a.change_pct || 0);
-const score = a => Math.max(-1, Math.min(1, mv(a) / a.threshold));
+// soft saturation: a move of one threshold leaves the losing side ~12% of the ground, two thresholds ~4%
+const score = a => Math.tanh(mv(a) / a.threshold);
 const dir = v => v > 0 ? 'up' : v < 0 ? 'down' : 'flat';
 const control = a => Math.round(50 + 50 * score(a));
 const isOpen = a => a.market_open !== false;
@@ -454,7 +462,9 @@ async function doNick(){
 // territory pushes red east and a falling one lets blue push west. Red area = overall power.
 const MW = 100, MH = 124, CELL = 4;
 const CONT = {cx:50, cy:63, rx:47, ry:58, s:2.2};
-const ORDER = [['크립토', ['BTCUSDT','ETHUSDT']], ['미국', ['SPX','NVDA','TSLA','US2Y','US10Y']], ['환율', ['USDKRW','JPYKRW']], ['한국', ['KOSPI','005930','000660','KR3Y','KR10Y']]];
+const ORDER = [['크립토', ['BTCUSDT','ETHUSDT']], ['미국', ['SPX','NVDA','TSLA']], ['한국', ['KOSPI','005930','000660']]];
+const ICON = {BTCUSDT:'₿', ETHUSDT:'Ξ', SPX:'🇺🇸', NVDA:'🟩', TSLA:'🚗', KOSPI:'🇰🇷', '005930':'📱', '000660':'💾'};
+const iconOf = a => ICON[a.symbol] || ({CRYPTO:'🪙', ETF:'🧺', INDEX:'📊', FUTURE:'🛢'}[a.kind] || '📈');
 const FR_ON_MAP = 4, SKY = [];
 let LINE = [], GROUPS = [], GRID = null, ROWS = null, MAPDIRTY = true, MAPSIG = null;
 function inCont(x, y){
@@ -468,13 +478,13 @@ function buildGrid(){
     for (let x = 0; x < MW; x++) if (inCont(x + .5, y + .5)){ GRID[y * MW + x] = true; if (x0 < 0) x0 = x; x1 = x; }
     ROWS.push(x0 < 0 ? null : [x0, x1]); }
 }
-const regName = a => a.frontier ? '개척지' : a.kind === 'FX' ? '환율' : a.region === 'CRYPTO' ? '크립토' : a.region === 'US' ? '미국' : '한국';
+const regName = a => a.frontier ? '개척지' : a.region === 'CRYPTO' ? '크립토' : a.region === 'US' ? '미국' : '한국';
 const onMap = a => a && LINE.some(l => l.sym === a.symbol);
 function layoutFrontier(){
   if (!GRID) buildGrid();
   const fr = ASSETS.filter(a => a.frontier).sort((a, b) => T(b.last_activity) - T(a.last_activity)).slice(0, FR_ON_MAP).map(a => a.symbol);
   const groups = ORDER.map(([n, syms]) => [n, syms.filter(x => A[x])]).concat(fr.length ? [['개척지', fr]] : []);
-  const syms = groups.flatMap(g => g[1]), y0 = 9, y1 = MH - 9, step = (y1 - y0) / Math.max(1, syms.length - 1);
+  const syms = groups.flatMap(g => g[1]), y0 = 16, y1 = MH - 12, step = (y1 - y0) / Math.max(1, syms.length - 1);
   LINE = syms.map((sym, i) => ({sym, y: y0 + i * step}));
   GROUPS = []; let i = 0; for (const [n, g] of groups){ GROUPS.push({name:n, y0:y0 + i * step, y1:y0 + (i + g.length - 1) * step}); i += g.length; }
   placeLine();
@@ -502,11 +512,23 @@ function drawMapBase(cv){
         g.fillStyle = shore ? '#1c3d5e' : ((x * 7 + y * 13) % 29 === 0 ? '#1a3655' : (x + y * 3) % 17 === 0 ? '#11294a' : '#0d1f37'); }
       else if (!land(x-1,y) || !land(x+1,y) || !land(x,y-1) || !land(x,y+1)) g.fillStyle = (x + y) % 3 ? '#c4b07a' : '#b09c66';
       else { const d = x + .5 - fx;
-        if (Math.abs(d) < 1.1) g.fillStyle = '#f5e6b0';
-        else if (Math.abs(d) < 2.6) g.fillStyle = (x + y) % 2 ? '#7a1f2a' : '#1f3a73';
+        if (Math.abs(d) < 1.6) g.fillStyle = '#fff1c2';
+        else if (Math.abs(d) < 3.4) g.fillStyle = (x + y) % 2 ? '#7a1f2a' : '#1f3a73';
         else { const c = d < 0 ? RED : BLUE, t = ((x * 3 + y * 5) % 7 === 0) ? 14 : ((x * 5 + y) % 11 === 0 ? -8 : 0); g.fillStyle = `rgb(${c[0] - t},${c[1] - t},${c[2] - t})`; } }
       g.fillRect(x * C, y * C, C, C);
     } }
+  // soldiers on both sides of every territory: one per recent participant (plus a sentry)
+  const SPR = ['.h.', 'hfh', 'bbb', 'b.b'];
+  const soldier = (cx, cy, team) => { const pal = {h: team ? '#5c0f1c' : '#0f2552', f:'#f2c9a0', b: team ? '#ff6b7b' : '#6aa6ff'};
+    SPR.forEach((r, j) => [...r].forEach((ch, i) => { if (ch === '.' || !land(cx + i, cy + j)) return; g.fillStyle = pal[ch]; g.fillRect((cx + i) * C, (cy + j) * C, C, C); })); };
+  for (const l of LINE){ const f = FORCES[l.sym] || {}, nR = Math.min(5, 1 + (f.up || 0)), nB = Math.min(5, 1 + (f.down || 0)), y = Math.round(l.y) - 2, px = pinX(l) / 100 * MW;
+    for (let k = 0; k < nR; k++){ const x = Math.round(Math.min(l.x, px) - 16 - k * 4); if (land(x, y) && land(x + 2, y)) soldier(x, y, 1); }
+    for (let k = 0; k < nB; k++){ const x = Math.round(Math.max(l.x, px) + 14 + k * 4); if (land(x, y) && land(x + 2, y)) soldier(x, y, 0); } }
+  // HQ castles in the top corners
+  const castle = (cx, cy, team) => { const rows = ['k.k.k.k', 'kkkkkkk', 'kwkkkwk', 'kkkdkkk', 'kkkdkkk'];
+    rows.forEach((r, j) => [...r].forEach((ch, i) => { if (ch === '.') return; g.fillStyle = ch === 'k' ? (team ? '#e8c9cf' : '#c9d6ee') : ch === 'w' ? '#333' : '#4a3424'; g.fillRect((cx + i) * C, (cy + j) * C, C, C); }));
+    g.fillStyle = team ? '#f04452' : '#3b82f6'; g.fillRect((cx + 3) * C, (cy - 3) * C, C, 3 * C); g.fillRect((cx + 4) * C, (cy - 3) * C, 2 * C, C * 2); };
+  castle(24, 7, 1); castle(69, 7, 0);
   // faint dividers between groups
   g.fillStyle = 'rgba(255,255,255,.18)';
   for (let k = 1; k < GROUPS.length; k++){ const y = Math.round((GROUPS[k - 1].y1 + GROUPS[k].y0) / 2), r = ROWS[y]; if (!r) continue;
@@ -528,14 +550,16 @@ function powerHTML(){
 const pinX = l => Math.max(17, Math.min(83, l.x / MW * 100));   // keep labels on screen; the line itself may hit the coast
 function pinHTML(l){
   const a = A[l.sym], h = heat(a);
-  return `<button class="pin ${h >= .5 ? 'fire' : ''}" data-pin="${esc(a.symbol)}" data-act="quick" data-sym="${esc(a.symbol)}" style="left:${pinX(l)}%;top:${l.y / MH * 100}%">${h >= .5 ? '<em class="fl">🔥</em>' : ''}<b>${esc(a.short)}</b><span class="num" data-c="${esc(a.symbol)}">${fmtC(a)}</span></button>`;
+  return `<button class="pin big ${h >= .5 ? 'fire' : ''}" data-pin="${esc(a.symbol)}" data-act="quick" data-sym="${esc(a.symbol)}" style="left:${pinX(l)}%;top:${l.y / MH * 100}%">${h >= .5 ? '<em class="fl">🔥</em>' : ''}<i class="ic">${iconOf(a)}</i><span class="pt"><b>${esc(a.short)}</b><span class="num" data-c="${esc(a.symbol)}">${fmtC(a)}</span></span></button>`;
 }
 function mapHTML(){
   if (!GRID) buildGrid(); placeLine();
   return powerHTML() + `<div class="mapwrap" style="margin-top:0"><div class="map" id="map"><canvas id="mapc" width="${MW*CELL}" height="${MH*CELL}" class="px"></canvas><canvas id="mapfx" width="${MW*CELL}" height="${MH*CELL}" class="px"></canvas>
-    <div class="maplbl" style="left:16%;top:3%;color:#ffb3bb">상승군 진영</div><div class="maplbl" style="left:84%;top:3%;color:#a9c8ff">하락군 진영</div>
+    <div class="maplbl camp" style="left:27%;top:3.2%;color:#ffb3bb">상승군 본진</div><div class="maplbl camp" style="left:72%;top:3.2%;color:#a9c8ff">하락군 본진</div>
+    <div class="maplbl wm" style="left:22%;top:55%;color:rgba(255,120,130,.16)">상승군</div><div class="maplbl wm" style="left:78%;top:55%;color:rgba(120,170,255,.16)">하락군</div>
     ${LINE.map(pinHTML).join('')}
-  </div></div><div class="row sb s muted" style="margin-top:6px"><span>경계선 위 종목을 눌러 바로 참전</span><a href="#/claim" style="text-decoration:underline">🚩 종목 추가</a></div>`;
+  </div></div><div class="maphelp"><span class="up">◀ 오른 만큼 빨강이 밀고 나가요</span><span class="down">내린 만큼 파랑이 밀고 들어와요 ▶</span></div>
+  <div class="row sb s muted" style="margin-top:4px"><span>🪖 병사 = 최근 24시간 참전자 · 종목을 눌러 바로 참전</span><a href="#/claim" style="text-decoration:underline;white-space:nowrap">🚩 종목 추가</a></div>`;
 }
 let boomTimer = null;
 function mapDelta(a, prev, cur){
@@ -555,8 +579,8 @@ function mapFxStart(){
   const flames = [];
   function arrow(x, y, dir, col, off){
     g.fillStyle = col;
-    for (let m = 0; m < 5; m++) g.fillRect((x - dir * m + dir * off) * C, y * C, C, C);
-    for (let j = 1; j < 3; j++){ g.fillRect((x - dir * j + dir * off) * C, (y - j) * C, C, C); g.fillRect((x - dir * j + dir * off) * C, (y + j) * C, C, C); }
+    for (let m = 0; m < 7; m++){ g.fillRect((x - dir * m + dir * off) * C, y * C, C, C); g.fillRect((x - dir * m + dir * off) * C, (y + 1) * C, C, C); }
+    for (let j = 1; j < 4; j++){ g.fillRect((x - dir * j + dir * off) * C, (y - j) * C, C, C); g.fillRect((x - dir * j + dir * off) * C, (y + 1 + j) * C, C, C); }
   }
   function frame(t){
     if (!document.body.contains(cv)) return;
@@ -573,7 +597,7 @@ function mapFxStart(){
       const a = A[l.sym]; if (!a || !isOpen(a)) continue;
       const s = score(a), h = heat(a), y = Math.round(l.y), x = Math.round(l.x);
       if (Math.abs(s) > .12){ const dir = a._mom || Math.sign(s), off = Math.floor(t / 260) % 3;
-        arrow(x + dir * 7, y, dir, dir > 0 ? 'rgba(255,215,220,.9)' : 'rgba(210,228,255,.9)', off); }
+        arrow(Math.round(pinX(l) / 100 * MW) + dir * 16, y - 1, dir, dir > 0 ? 'rgba(255,215,220,.9)' : 'rgba(210,228,255,.9)', off); }
       if (h >= .45){ const n = Math.random() < h ? Math.ceil(h * 3) : 0;
         for (let k = 0; k < n; k++) flames.push({x: x + Math.round((Math.random() - .5) * 8), y: y + Math.round((Math.random() - .5) * 3), life: 0, max: 5 + Math.random() * 6 * h}); }
     }

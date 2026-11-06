@@ -12,14 +12,11 @@ export const YAHOO_KO: Record<string, [string, string, string]> = {
   'GC=F': ['금', '금', 'FUTURE'], 'SI=F': ['은', '은', 'FUTURE'], 'CL=F': ['WTI 유가', '유가', 'FUTURE'], 'BZ=F': ['브렌트유', '브렌트', 'FUTURE'],
   'NG=F': ['천연가스', '가스', 'FUTURE'], 'HG=F': ['구리', '구리', 'FUTURE'], '^IXIC': ['나스닥', '나스닥', 'INDEX'], '^DJI': ['다우존스', '다우', 'INDEX'],
   '^N225': ['니케이225', '니케이', 'INDEX'], '^KQ11': ['코스닥', '코스닥', 'INDEX'], '^SOX': ['필라델피아 반도체', '반도체지수', 'INDEX'],
-  '^VIX': ['VIX 공포지수', 'VIX', 'INDEX'], '^HSI': ['항셍', '항셍', 'INDEX'], '000001.SS': ['상해종합', '상해', 'INDEX'], 'DX-Y.NYB': ['달러인덱스', '달러인덱스', 'INDEX'],
-  'EURKRW=X': ['유로/원', '유로/원', 'CURRENCY'], 'CNYKRW=X': ['위안/원', '위안/원', 'CURRENCY'],
-};
+  '^VIX': ['VIX 공포지수', 'VIX', 'INDEX'], '^HSI': ['항셍', '항셍', 'INDEX'], '000001.SS': ['상해종합', '상해', 'INDEX'], };
 export const KO_ALIAS: Record<string, string[]> = {
   '금': ['GC=F'], '골드': ['GC=F'], '은': ['SI=F'], '유가': ['CL=F', 'BZ=F'], '원유': ['CL=F', 'BZ=F'], '기름': ['CL=F'], '가스': ['NG=F'], '천연가스': ['NG=F'],
   '구리': ['HG=F'], '나스닥': ['^IXIC'], '다우': ['^DJI'], '니케이': ['^N225'], '일본': ['^N225'], '코스닥': ['^KQ11'], '반도체': ['^SOX'],
-  '공포': ['^VIX'], 'vix': ['^VIX'], '항셍': ['^HSI'], '홍콩': ['^HSI'], '상해': ['000001.SS'], '중국': ['000001.SS', 'CNYKRW=X'], '달러': ['DX-Y.NYB'],
-  '유로': ['EURKRW=X'], '위안': ['CNYKRW=X'],
+  '공포': ['^VIX'], 'vix': ['^VIX'], '항셍': ['^HSI'], '홍콩': ['^HSI'], '상해': ['000001.SS'], '중국': ['000001.SS'],
 };
 export const COIN_KO: Record<string, string> = {
   '솔라나': 'SOL', '리플': 'XRP', '도지': 'DOGE', '도지코인': 'DOGE', '에이다': 'ADA', '트론': 'TRX', '아발란체': 'AVAX', '체인링크': 'LINK',
@@ -62,7 +59,7 @@ export async function naverSearch(q: string): Promise<Pick[]> {
 
 export function yahooPick(tk: string, name?: string, type?: string): Pick | null {
   const ko = YAHOO_KO[tk]; const qt = ko?.[2] || type;
-  if (!qt || !['FUTURE', 'INDEX', 'CURRENCY', 'ETF', 'EQUITY'].includes(qt)) return null;
+  if (!qt || !['FUTURE', 'INDEX', 'ETF', 'EQUITY'].includes(qt)) return null;   // no FX or bonds
   const kind = qt === 'FUTURE' ? 'FUTURE' : qt === 'INDEX' ? 'INDEX' : qt === 'CURRENCY' ? 'FX' : qt === 'ETF' ? 'ETF' : 'STOCK';
   const thr = { FUTURE: 3, INDEX: 2.5, FX: 1, ETF: 3, STOCK: 7 }[kind]!;
   const nm = ko?.[0] || name || tk;
