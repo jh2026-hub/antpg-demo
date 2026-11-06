@@ -122,11 +122,11 @@ Deno.serve(async (req) => {
   {
     const last = ms[0] ? Date.parse(ms[0].created_at) : 0;
     if (hour >= 7 && last < now - 40 * 60e3 && !n('mood') && Math.random() < .6) {
-      const avg = all.length ? all.reduce((s, a) => s + +(a.change_pct || 0), 0) / all.length : 0;
-      const mood = avg <= -1.5 ? pick(['rekt', 'empty', 'unfair']) : avg >= 1.5 ? pick(['won', 'held']) : pick(['meh', 'meh', 'held', 'empty']);
+      const room = pick(all), c = room ? +(room.change_pct || 0) : 0;   // every mood lives in a ticker room now
+      const mood = c <= -1.5 ? pick(['rekt', 'empty', 'unfair']) : c >= 1.5 ? pick(['won', 'held']) : pick(['meh', 'meh', 'held', 'empty']);
       const who = pick(['grandma', 'cynic', 'ramen', 'salaryman', 'optimist', 'doomer', 'chartist', 'seer']);
       const bank = (L[who]?.idle || []).filter(s => !OLD_WAR.test(s) && !s.includes('{'));
-      if (bank.length) addMood({ id: `idle-${who}`, bot: who, mood, symbol: null, body: pick(bank), log: [`midle:${date}:${hour}`] });
+      if (bank.length && room) addMood({ id: `idle-${who}`, bot: who, mood, symbol: room.symbol, body: pick(bank), log: [`midle:${date}:${hour}`] });
     }
   }
 
