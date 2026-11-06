@@ -161,13 +161,27 @@ table.t .r{text-align:right}
 .summary{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;margin-top:10px}
 .summary>*{background:var(--card2);border-radius:10px;padding:8px 4px;display:block}
 .summary b{display:block;font-size:22px;font-family:'Galmuri11',monospace}
+.cats{display:flex;gap:6px;overflow-x:auto;margin:14px -16px 0;padding:0 16px 2px;scrollbar-width:none}
+.cats::-webkit-scrollbar{display:none}
+.cats button{flex:none;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:13px;white-space:nowrap}
+.cats button.on{background:var(--gold);color:#1d1600;border-color:var(--gold);font-weight:700}
+.cat{font-size:11.5px;border-radius:6px;padding:0 6px;background:#262d3b;color:var(--text);white-space:nowrap}
+.candles{font-size:22px;letter-spacing:-6px;margin:10px 0 4px;min-height:26px;line-height:1.2;overflow-wrap:anywhere}
+.candles i{display:inline-block;font-style:normal;animation:flick 1.1s ease-in-out infinite alternate}
+.candles i:nth-child(3n){animation-delay:-.4s}.candles i:nth-child(3n+1){animation-delay:-.8s}
+@keyframes flick{to{transform:translateY(-2px) scale(1.06);opacity:.8}}
+.bigrx{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}
+.bigrx .rx{justify-content:center;min-height:50px;font-size:15px}
+.score{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;text-align:center}
+.score b{font-family:'Galmuri11',monospace;font-size:32px;display:block;line-height:1.1}
+.lb td{vertical-align:middle}
 </style>
 </head>
 <body>
 <div class="wrap"><main id="app"><div class="skel"></div><div class="skel"></div></main></div>
 <nav class="tabbar"><div class="in">
   <a href="#/" data-tab="home"><span class="ic">🗺</span>전황</a>
-  <a href="#/fronts" data-tab="fronts"><span class="ic">🏰</span>영토</a>
+  <a href="#/square" data-tab="square"><span class="ic">📣</span>광장</a>
   <a href="#/battles" data-tab="battles"><span class="ic">⚔️</span>결전</a>
   <a href="#/barracks" data-tab="barracks"><span class="ic">🎨</span>병영</a>
   <a href="#/me" data-tab="me"><span class="ic">🎖</span>내 정보</a>
@@ -178,7 +192,12 @@ table.t .r{text-align:right}
 const CFG = window.MW_CONFIG || {};
 const sb = (CFG.url && !CFG.url.startsWith('__')) ? supabase.createClient(CFG.url, CFG.anonKey, { auth: { persistSession: true, autoRefreshToken: true } }) : null;
 const PAL = ['#000000','#1d2b53','#7e2553','#008751','#ab5236','#5f574f','#c2c3c7','#fff1e8','#ff004d','#ffa300','#ffec27','#00e436','#29adff','#83769c','#ff77a8','#ffccaa'];
-const RX = [['charge','⚔️','돌격'],['shield','🛡','방어'],['flag','🏳️','항복'],['medal','🎖','훈장']];
+const RX = {charge:['⚔️','돌격'], shield:['🛡','방어'], flag:['🏳️','항복'], medal:['🎖','훈장'], pray:['🙏','같이 빌기'], hug:['🫂','토닥'], metoo:['😭','나도 그래'], lol:['🤣','ㅋㅋ']};
+const CATS = [['forecast','📡','전망'],['bet','🎲','내기'],['wish','🙏','기원'],['vent','😩','푸념'],['info','📰','정보'],['chat','💬','잡담']];
+const CAT = Object.fromEntries(CATS.map(([k,e,n]) => [k, {e, n}]));
+const RXSET = {forecast:['charge','shield','flag','medal'], bet:['charge','shield','flag','medal'], wish:['pray','medal','hug','lol'], vent:['hug','metoo','lol','medal'], info:['medal','charge','metoo','lol'], chat:['lol','metoo','hug','charge']};
+const rxSum = p => Object.keys(RX).reduce((s, k) => s + (p['rx_' + k] || 0), 0);
+const catChips = (sel, act) => `<div class="cats"><button class="${!sel ? 'on' : ''}" data-act="${act}" data-v="">전체</button>${CATS.map(([k,e,n]) => `<button class="${sel === k ? 'on' : ''}" data-act="${act}" data-v="${k}">${e} ${n}</button>`).join('')}</div>`;
 const REGION = {KR:'코리아 반도', JP:'환율 해협', CRYPTO:'크립토 공중섬', US:'아메리카 대륙'};
 const ALLOWED_LINKS = ['naver.com','dart.fss.or.kr','kind.krx.co.kr','yna.co.kr','hankyung.com','mk.co.kr','sec.gov','reuters.com','bloomberg.com','coindesk.com','federalreserve.gov','bok.or.kr'];
 
@@ -461,25 +480,29 @@ const SIDE = {UP:'상승군', DOWN:'하락군'};
 const WIN_LBL = {10:'10분', 60:'1시간', 1440:'24시간'};
 function resBadge(p){
   if (!p.side) return '';
-  if (p.result === 'WIN') return '<span class="res WIN">🎖 승전</span>';
-  if (p.result === 'LOSE') return '<span class="res LOSE">💀 패전</span>';
-  return `<span class="res">판정까지 <b class="num" data-cd="${T(p.settle_at)}">${mmss(T(p.settle_at) - now())}</b></span>`;
+  const wish = p.category === 'wish';
+  if (p.result === 'WIN') return `<span class="res WIN">${wish ? '✨ 기원 성취' : '🎖 승전'}</span>`;
+  if (p.result === 'LOSE') return `<span class="res LOSE">${wish ? '🕯 다음 기회에' : '💀 패전'}</span>`;
+  return `<span class="res">${wish ? '응답까지' : '판정까지'} <b class="num" data-cd="${T(p.settle_at)}">${mmss(T(p.settle_at) - now())}</b></span>`;
 }
+const sideLbl = p => p.category === 'wish' ? (p.side === 'UP' ? '오르길' : '내리길') : SIDE[p.side];
 function postCard(p, showFront){
-  const a = A[p.symbol] || {}, au = p.author || {};
-  const rxn = p.rx_charge + p.rx_shield + p.rx_flag + p.rx_medal;
+  const a = A[p.symbol] || {}, au = p.author || {}, c = CAT[p.category] || CAT.chat;
+  const same = p.side === 'UP' ? p.join_up : p.join_down, opp = p.side === 'UP' ? p.join_down : p.join_up;
+  const lead = p.category === 'wish' ? `<span>🕯 ${p.rx_pray}</span>` : p.category === 'bet' ? `<span>동조 ${same} · 맞불 ${opp}</span>`
+    : p.category === 'vent' ? `<span>🫂 ${p.rx_hug + p.rx_metoo}</span>` : `<span>⚔️ ${p.rx_charge}</span>`;
   return `<a class="post" href="#/p/${p.id}">
-    <div class="meta">${showFront ? `<span class="ftag">${esc(a.name)}</span>` : ''}${flagImg(au.flag_art)}<b style="color:var(--text)">${esc(au.nickname || '탈영병')}</b><span>· ${ago(p.created_at)}</span></div>
-    <div class="t">${p.side ? `<span class="side ${p.side}">${SIDE[p.side]}</span>` : ''}${esc(p.title)}${p.meme_url ? ' 🖼' : ''}${p.poll ? ' 📊' : ''}</div>
-    <div class="foot"><span>⚔️ ${p.rx_charge}</span><span>반응 ${rxn}</span><span>💬 ${p.comment_count}</span>${resBadge(p)}</div></a>`;
+    <div class="meta"><span class="cat">${c.e} ${c.n}</span>${showFront ? `<span class="ftag">${esc(a.name)}</span>` : ''}${flagImg(au.flag_art)}<b style="color:var(--text)">${esc(au.nickname || '탈영병')}</b><span>· ${ago(p.created_at)}</span></div>
+    <div class="t">${p.side ? `<span class="side ${p.side}">${sideLbl(p)}</span>` : ''}${esc(p.title)}${p.meme_url ? ' 🖼' : ''}${p.poll ? ' 📊' : ''}</div>
+    <div class="foot">${lead}<span>반응 ${rxSum(p)}</span><span>💬 ${p.comment_count}</span>${resBadge(p)}</div></a>`;
 }
-function hot(posts){ const sc = p => (p.rx_charge + p.rx_shield + p.rx_flag + p.rx_medal + p.comment_count * 2 + 1) / (1 + (now() - T(p.created_at)) / 864e5); return posts.slice().sort((a,b) => sc(b) - sc(a)); }
+function hot(posts){ const sc = p => (rxSum(p) + p.comment_count * 2 + (p.join_up + p.join_down) * 2 + 1) / (1 + (now() - T(p.created_at)) / 864e5); return posts.slice().sort((a,b) => sc(b) - sc(a)); }
 function renderBody(s){
   const h = esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
   return h.replace(/https?:\/\/[^\s<]+/g, u => { let host = ''; try { host = new URL(u.replace(/&amp;/g,'&')).hostname; } catch(e){}
     return ALLOWED_LINKS.some(d => host === d || host.endsWith('.' + d)) ? `<a href="${u}" target="_blank" rel="noopener nofollow ugc">${u}</a>` : `<span class="muted" title="허용되지 않은 링크라 누를 수 없어요">${u}</span>`; });
 }
-const POSTSEL = 'id,symbol,title,side,window_min,settle_at,result,created_at,rx_charge,rx_shield,rx_flag,rx_medal,comment_count,poll,meme_url,author:profiles!posts_author_id_fkey(nickname,flag_art)';
+const POSTSEL = 'id,symbol,category,title,side,window_min,settle_at,result,created_at,rx_charge,rx_shield,rx_flag,rx_medal,rx_pray,rx_hug,rx_metoo,rx_lol,join_up,join_down,comment_count,poll,meme_url,author:profiles!posts_author_id_fkey(nickname,flag_art)';
 function battleCard(b){
   const a = A[b.symbol] || {}, e = b.entries || [];
   const na = e.filter(x => x.option === 'A').length, nb = e.length - na, t = e.length;
@@ -525,10 +548,11 @@ function flowCard(a){
 const UI = {sort:'new', btab:'open', side:null, win:60, pollOn:false, tool:'pen', color:8, mtpl:'chart', msym:'BTCUSDT'};
 async function vHome(){
   await loadForces();
-  const [{ data:posts }, { data:bts }, { data:fd }] = await Promise.all([
+  const [{ data:posts }, { data:bts }, { data:fd }, army] = await Promise.all([
     sb.from('posts').select(POSTSEL).gte('created_at', new Date(now() - 3 * 864e5).toISOString()).order('created_at', {ascending:false}).limit(80),
     sb.from('battles').select('*,entries:battle_entries(option),creator:profiles!battles_creator_id_fkey(nickname)').in('status', ['OPEN','CLOSED']).order('closes_at').limit(3),
     sb.from('front_daily').select('defeated').gte('day', new Date(now() - 30 * 864e5).toISOString().slice(0,10)),
+    rpc('army_score').catch(() => null),
   ]);
   const up = ASSETS.filter(a => score(a) >= .15).length, down = ASSETS.filter(a => score(a) <= -.15).length;
   const tu = Object.values(FORCES).reduce((s,x) => s + x.up, 0), td = Object.values(FORCES).reduce((s,x) => s + x.down, 0);
@@ -537,28 +561,30 @@ async function vHome(){
   return topbar() + mapHTML() + `
   <section class="card"><div class="row sb"><h2 class="h pix">오늘의 전황</h2><span class="muted s">영토 ${ASSETS.length}곳</span></div>
     <div class="summary"><div><b class="up">${up}</b><span class="s">상승군 우세</span></div><div><b class="muted">${ASSETS.length - up - down}</b><span class="s">교착</span></div><div><b class="down">${down}</b><span class="s">하락군 우세</span></div></div></section>
-  <h3 class="sec">🔥 최대 격전지</h3>
+  ${army ? armyCard(army) : ''}
+  <div class="summary" style="grid-template-columns:1fr 1fr"><a href="#/square" data-act="gocat" data-v="wish"><b style="font-size:20px">🙏</b><span class="s">기원 제단</span></a><a href="#/square" data-act="gocat" data-v="vent"><b style="font-size:20px">😩</b><span class="s">위로의 참호</span></a></div>
+  <h3 class="sec">🔥 최대 격전지 <a class="more" href="#/fronts">전체 영토 ›</a></h3>
   <div class="flist">${hotFronts.map(frontRow).join('')}</div>
   <section class="card"><h2 class="h pix">병사들의 참전 현황</h2>${forceBar(tu, td)}
     <div class="muted s" style="margin-top:8px">다수 진영 패배율 ${defeat == null ? '<b>집계 중</b> (참전 기록이 5일 이상 쌓이면 계산돼요)' : `<b class="pix" style="color:var(--gold);font-size:16px">${defeat}%</b> · 최근 30일, 병사 다수가 고른 진영이 다음 날 진 비율`}</div></section>
   <h3 class="sec">📯 진행 중인 결전 <a class="more" href="#/battles">전체 ›</a></h3>
   ${(bts || []).map(battleCard).join('') || empty('진행 중인 결전이 없어요')}
-  <h3 class="sec">📜 화제의 전황 보고</h3>
-  ${hot(posts || []).slice(0, 6).map(p => postCard(p, true)).join('') || empty('아직 보고가 없어요. 영토에 들어가 첫 보고를 올려 보세요')}
+  <h3 class="sec">📜 광장 화제글 <a class="more" href="#/square">광장 ›</a></h3>
+  ${hot(posts || []).slice(0, 6).map(p => postCard(p, true)).join('') || empty('아직 글이 없어요. 광장에서 첫 글을 올려 보세요')}
   ${disc()}`;
 }
 function frontRow(a){
   return `<a href="#/f/${a.symbol}"><div class="ctl"><i data-ctl="${a.symbol}" style="width:${control(a)}%"></i></div><div class="nm">${esc(a.name)}<div class="muted s" data-st="${a.symbol}">${stateOf(a)}</div></div><div class="pr num"><div data-p="${a.symbol}">${fmtP(a)}</div><b data-c="${a.symbol}" class="${dir(mv(a))}">${fmtC(a)}</b></div></a>`;
 }
 async function vFronts(){
-  return topbar('영토 목록') + ['KR','JP','CRYPTO','US'].map(r => `<h3 class="sec">${REGION[r]}</h3><div class="flist">${ASSETS.filter(a => a.region === r || (r === 'JP' && a.kind === 'FX')).filter(a => r === 'JP' || a.kind !== 'FX').map(frontRow).join('')}</div>`).join('')
+  return topbar('영토 목록', '#/') + ['KR','JP','CRYPTO','US'].map(r => `<h3 class="sec">${REGION[r]}</h3><div class="flist">${ASSETS.filter(a => a.region === r || (r === 'JP' && a.kind === 'FX')).filter(a => r === 'JP' || a.kind !== 'FX').map(frontRow).join('')}</div>`).join('')
     + `<div class="muted s" style="margin-top:12px">막대 = 상승군 점령률. 하루 등락이 기준만큼 움직이면 한쪽이 완전히 점령해요 (주식 5~7%, 지수 2.5~3%, 환율 1%, 국채 10bp).</div>${disc()}`;
 }
 async function vFront(sym){
   const a = A[sym]; if (!a) return v404();
   await loadForces();
   const [{ data:posts }, { data:hist }, { data:fd }] = await Promise.all([
-    sb.from('posts').select(POSTSEL).eq('symbol', sym).order('created_at', {ascending:false}).limit(60),
+    (UI.fcat ? sb.from('posts').select(POSTSEL).eq('symbol', sym).eq('category', UI.fcat) : sb.from('posts').select(POSTSEL).eq('symbol', sym)).order('created_at', {ascending:false}).limit(60),
     sb.from('quote_history').select('price,ts').eq('symbol', sym).gte('ts', new Date(now() - 864e5).toISOString()).order('ts').limit(1500),
     sb.from('front_daily').select('defeated').eq('symbol', sym).order('day', {ascending:false}).limit(30)]);
   HIST[sym] = (hist || []).map(h => +h.price);
@@ -574,37 +600,62 @@ async function vFront(sym){
   <p class="muted s" style="margin:10px 0 0">${esc(a.description)}</p>
   ${flowCard(a)}
   <section class="card"><h2 class="h pix">이 영토의 병사들</h2>${forceBar(f.up, f.down)}<div class="muted s" style="margin-top:6px">다수 진영 패배율 ${defeat}</div></section>
-  <div class="sortt"><button class="${UI.sort==='new'?'on':''}" data-act="sort" data-v="new">최신순</button><button class="${UI.sort==='hot'?'on':''}" data-act="sort" data-v="hot">인기순</button></div>
-  ${list.map(p => postCard(p)).join('') || empty('첫 전황 보고를 올려 보세요')}
+  <h3 class="sec">이 영토의 글</h3>${catChips(UI.fcat, 'fcat')}
+  ${sortTabs()}
+  ${list.map(p => postCard(p)).join('') || empty('첫 글을 올려 보세요')}
   ${disc()}
-  <a class="fab" href="#/f/${sym}/new">⚔️ 참전하기</a>`;
+  <a class="fab" href="#/write?f=${sym}&c=forecast">⚔️ 참전하기</a>`;
 }
-async function vNew(sym){
-  const a = A[sym]; if (!a) return v404();
-  return topbar(a.name + ' · 참전', '#/f/' + sym) + `
-  <label class="l">어느 편에 설까요? (선택)</label>
-  <div class="seg"><button data-act="side" data-v="" class="${!UI.side?'on':''}">보고만</button><button data-act="side" data-v="UP" class="U ${UI.side==='UP'?'on':''}">🔴 상승군</button><button data-act="side" data-v="DOWN" class="D ${UI.side==='DOWN'?'on':''}">🔵 하락군</button></div>
-  ${UI.side ? `<label class="l">판정 시점</label><div class="seg">${[10,60,1440].map(m => `<button data-act="win" data-v="${m}" class="${UI.win===m?'on':''}">${WIN_LBL[m]} 뒤</button>`).join('')}</div>
-    <div class="note">지금 <b class="num" data-p="${sym}">${fmtP(a)}</b> 에서 참전. ${WIN_LBL[UI.win]} 뒤 서버가 실제 시세로 판정해요. ${UI.side==='UP'?'오르면':'내리면'} 승전, 그대로면 패전.${!isOpen(a) ? '<br>⚠️ 지금은 장이 닫혀 있어서 짧은 판정은 가격이 안 움직일 수 있어요.' : ''}</div>` : ''}
-  <label class="l">제목</label><input class="f" id="pt" maxlength="60" placeholder="예: 오늘 밤 반격 간다">
-  <label class="l">전황 보고 <span class="muted">· **굵게**, 허용된 뉴스 링크만 눌려요</span></label><textarea class="f" id="pb" maxlength="2000" placeholder="오픈채팅·텔레그램 링크는 올릴 수 없어요"></textarea>
+const PH = {forecast:'예: 오늘 밤 반격 간다', bet:'예: 1시간 안에 하락군 승리에 건다', wish:'예: 제발 본전만…', vent:'예: 고점에 물렸습니다', info:'예: 오늘 나온 실적 정리', chat:'예: 다들 점심 뭐 드세요'};
+async function vWrite(){
+  const sym = A[UI.wsym] ? UI.wsym : 'BTCUSDT', a = A[sym], cat = UI.wcat || 'chat';
+  const needSide = cat === 'forecast' || cat === 'bet', canSide = needSide || cat === 'wish';
+  if (!canSide) UI.side = null; else if (needSide && !UI.side) UI.side = 'UP';
+  const sideSeg = cat === 'wish'
+    ? `<div class="seg"><button data-act="side" data-v="" class="${!UI.side?'on':''}">그냥 빌기</button><button data-act="side" data-v="UP" class="U ${UI.side==='UP'?'on':''}">🔴 오르길</button><button data-act="side" data-v="DOWN" class="D ${UI.side==='DOWN'?'on':''}">🔵 내리길</button></div>`
+    : `<div class="seg"><button data-act="side" data-v="UP" class="U ${UI.side==='UP'?'on':''}">🔴 상승군</button><button data-act="side" data-v="DOWN" class="D ${UI.side==='DOWN'?'on':''}">🔵 하락군</button></div>`;
+  const note = !UI.side ? '' : cat === 'wish'
+    ? `<div class="note">지금 <b class="num" data-p="${sym}">${fmtP(a)}</b>. 내일 이맘때 시세로 기원이 이뤄졌는지 알려 드려요. 기원은 전적에 들어가지 않아요.</div>`
+    : `<div class="note">지금 <b class="num" data-p="${sym}">${fmtP(a)}</b> 에서 ${WIN_LBL[UI.win]} 뒤 서버가 실제 시세로 판정해요. ${UI.side==='UP'?'오르면':'내리면'} 승, 그대로면 패.${cat === 'bet' ? '<br>🎲 다른 병사들이 처음 30% 시간 동안 동조·맞불로 끼어들 수 있어요.' : ''}${!isOpen(a) ? '<br>⚠️ 지금은 장이 닫혀 있어서 짧은 판정은 가격이 안 움직일 수 있어요.' : ''}</div>`;
+  return topbar('글쓰기', '#/square') + `
+  <label class="l">말머리</label>${catChips(cat, 'wcat').replace(/<button class="[^"]*" data-act="wcat" data-v="">전체<\/button>/, '')}
+  <label class="l">영토</label><select class="f" id="wf">${ASSETS.map(x => `<option value="${x.symbol}" ${x.symbol===sym?'selected':''}>${esc(x.name)}</option>`).join('')}</select>
+  ${canSide ? `<label class="l">${cat === 'wish' ? '무엇을 빌까요?' : '어느 편에 설까요?'}</label>${sideSeg}` : ''}
+  ${needSide ? `<label class="l">판정 시점</label><div class="seg">${[10,60,1440].map(m => `<button data-act="win" data-v="${m}" class="${UI.win===m?'on':''}">${WIN_LBL[m]} 뒤</button>`).join('')}</div>` : ''}
+  ${note}
+  <label class="l">제목</label><input class="f" id="pt" maxlength="60" placeholder="${PH[cat]}">
+  <label class="l">내용 <span class="muted">· **굵게**, 허용된 뉴스 링크만 눌려요</span></label><textarea class="f" id="pb" maxlength="2000" placeholder="오픈채팅·텔레그램 링크는 올릴 수 없어요"></textarea>
   <label class="l">투표 (선택)</label>
   ${UI.pollOn ? `<div>${[0,1,2,3,4].map(i => `<input class="f" style="margin-bottom:6px" data-po maxlength="20" placeholder="선택지 ${i+1}${i<2?' (필수)':''}">`).join('')}</div><button class="btn sm" data-act="poll">투표 빼기</button>` : `<button class="btn sm" data-act="poll">📊 투표 붙이기</button>`}
   <label class="l">선전 포스터</label>
   ${UI.draft ? `<img class="memeimg" src="${UI.draft.url}" alt="첨부한 포스터"><button class="btn sm" data-act="undraft">포스터 빼기</button>` : `<a class="btn sm" href="#/barracks/poster?f=${sym}">🖼 포스터 만들러 가기</a>`}
-  <button class="btn pri full" style="margin-top:20px" data-act="post" data-sym="${sym}">${UI.side ? '참전 선언' : '보고 올리기'}</button>${disc()}`;
+  <button class="btn pri full" style="margin-top:20px" data-act="post" data-sym="${sym}">${CAT[cat].e} ${needSide ? '참전 선언' : cat === 'wish' ? '기원 올리기' : '올리기'}</button>${disc()}`;
+}
+const sortTabs = () => `<div class="sortt"><button class="${UI.sort==='new'?'on':''}" data-act="sort" data-v="new">최신순</button><button class="${UI.sort==='hot'?'on':''}" data-act="sort" data-v="hot">인기순</button></div>`;
+const INTRO = {wish:'🙏 <b>기원 제단</b> — 같이 빌어 주면 촛불이 켜져요. 하루 뒤 시세로 기원이 이뤄졌는지 알려 드려요.', vent:'😩 <b>위로의 참호</b> — 물렸다, 털렸다, 다 털어놓으세요. 토닥과 나도 그래로 서로 위로해요.', bet:'🎲 <b>내기판</b> — 남의 내기에 동조하거나 맞불을 놓아 같이 판정받아요 (판정 시간의 처음 30% 동안).', forecast:'📡 <b>전망</b> — 진영과 판정 시간을 걸고 올리는 글. 승패가 전적과 계급에 쌓여요.', info:'📰 <b>정보</b> — 뉴스·공시·실적 정리. 허용된 뉴스 링크만 눌려요.', chat:'💬 <b>잡담</b> — 시장 얘기든 점심 메뉴든.'};
+async function vSquare(){
+  let q = sb.from('posts').select(POSTSEL).order('created_at', {ascending:false}).limit(60);
+  if (UI.cat) q = q.eq('category', UI.cat);
+  if (UI.sort === 'hot') q = q.gte('created_at', new Date(now() - 3 * 864e5).toISOString());
+  const { data } = await q;
+  const list = UI.sort === 'hot' ? hot(data || []) : (data || []);
+  return topbar('광장') + catChips(UI.cat, 'cat') + (UI.cat ? `<div class="note">${INTRO[UI.cat]}</div>` : '') + sortTabs()
+    + (list.map(p => postCard(p, true)).join('') || empty('아직 글이 없어요. 첫 글을 올려 보세요'))
+    + disc() + `<a class="fab" href="#/write${UI.cat ? '?c=' + UI.cat : ''}">✏️ 글쓰기</a>`;
 }
 let CURPOST = null;
 async function vPost(id){
   const { data:p } = await sb.from('posts').select('*,author:profiles!posts_author_id_fkey(id,nickname,flag_art)').eq('id', id).maybeSingle();
   if (!p) return v404();
   const a = A[p.symbol];
-  const [{ data:cms }, mine, vote, st] = await Promise.all([
+  const [{ data:cms }, mine, vote, st, joinsR] = await Promise.all([
     sb.from('comments').select('*,author:profiles!comments_author_id_fkey(nickname,flag_art)').eq('post_id', id).order('created_at').limit(300),
     ME ? sb.from('reactions').select('kind').eq('post_id', id).eq('user_id', ME.id) : {data:[]},
     ME && p.poll ? sb.from('poll_votes').select('option_index').eq('post_id', id).eq('user_id', ME.id).maybeSingle() : {data:null},
     rpc('soldier_stats', {p_user:p.author_id}).catch(() => ({wins:0,total:0})),
+    p.category === 'bet' ? sb.from('post_joins').select('side,result,user_id,created_at,soldier:profiles!post_joins_user_id_fkey(nickname,flag_art)').eq('post_id', id).order('created_at') : {data:[]},
   ]);
+  const joins = joinsR.data || [], c = CAT[p.category] || CAT.chat, isAuthor = ME && ME.id === p.author_id;
   const my = new Set((mine.data || []).map(x => x.kind));
   const myVote = vote.data ? vote.data.option_index : null;
   const showPoll = p.poll && (myVote != null || UI.peek === id);
@@ -612,26 +663,63 @@ async function vPost(id){
   CURPOST = id;
   return topbar(a.name, '#/f/' + p.symbol) + `
   <div class="row s" style="margin-top:14px">${flagImg(p.author?.flag_art)}<a class="b" href="#/u/${encodeURIComponent(p.author?.nickname || '')}">${esc(p.author?.nickname || '탈영병')}</a><span class="rank">${rankOf(st)}</span><span class="muted">${ago(p.created_at)}</span></div>
-  <h1 style="font-size:20px;margin:12px 0 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap">${p.side ? `<span class="side ${p.side}" style="font-size:13px">${SIDE[p.side]}</span>` : ''}${esc(p.title)}</h1>
-  ${p.side ? `<div class="card s"><div class="row sb wrapf"><span>참전 시세 <b class="num">${fmtP(a, +p.entry_price)}</b> · ${WIN_LBL[p.window_min]} 판정</span>${resBadge(p)}</div>
-    <div class="muted" style="margin-top:4px">${p.result ? `판정 시세 <span class="num">${fmtP(a, +p.settled_price)}</span>` : `지금 <b class="num" data-p="${p.symbol}">${fmtP(a)}</b>`} · ${p.side === 'UP' ? '오르면' : '내리면'} 승전, 그대로면 패전</div></div>` : ''}
+  <div class="row s" style="margin-top:10px"><span class="cat">${c.e} ${c.n}</span><a class="ftag" href="#/f/${p.symbol}">${esc(a.name)}</a></div>
+  <h1 style="font-size:20px;margin:8px 0 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap">${p.side ? `<span class="side ${p.side}" style="font-size:13px">${sideLbl(p)}</span>` : ''}${esc(p.title)}</h1>
+  ${p.side ? `<div class="card s"><div class="row sb wrapf"><span>${p.category === 'wish' ? '빌던 때' : '참전'} 시세 <b class="num">${fmtP(a, +p.entry_price)}</b> · ${WIN_LBL[p.window_min]} 뒤 ${p.category === 'wish' ? '응답' : '판정'}</span>${resBadge(p)}</div>
+    <div class="muted" style="margin-top:4px">${p.result ? `${p.category === 'wish' ? '응답' : '판정'} 시세 <span class="num">${fmtP(a, +p.settled_price)}</span>` : `지금 <b class="num" data-p="${p.symbol}">${fmtP(a)}</b>`} · ${p.side === 'UP' ? '오르면' : '내리면'} ${p.category === 'wish' ? '성취' : '승, 그대로면 패'}</div></div>` : ''}
   <div class="body">${renderBody(p.body)}</div>
   ${p.meme_url ? `<img class="memeimg" src="${esc(p.meme_url)}" alt="선전 포스터" loading="lazy">` : ''}
   ${p.poll ? `<div class="card"><div class="b s">📊 투표 · ${tv}표</div>${p.poll.map((o,i) => { const pc = tv ? Math.round(p.poll_counts[i] / tv * 100) : 0; return `<button class="pollo ${myVote===i?'mine':''}" data-act="vote" data-id="${id}" data-i="${i}" ${myVote!=null?'disabled':''}>${showPoll ? `<i class="fill" style="width:${pc}%"></i>` : ''}<span>${esc(o)}</span>${showPoll ? `<span class="num" style="float:right">${pc}%</span>` : ''}</button>`; }).join('')}
     ${!showPoll ? `<button class="btn sm" data-act="peek" data-id="${id}">결과 먼저 보기</button>` : ''}</div>` : ''}
-  <div class="rxbar">${RX.map(([k,e,n]) => `<button class="rx ${my.has(k)?'on':''}" data-act="rx" data-id="${id}" data-k="${k}">${e} <span class="s">${n}</span> <b class="num">${p['rx_' + k]}</b></button>`).join('')}</div>
+  ${p.category === 'wish' ? `<div class="card" style="text-align:center"><div class="b">🕯 촛불 ${p.rx_pray}개</div><div class="candles">${'<i>🕯</i>'.repeat(Math.min(p.rx_pray, 40)) || '<span class="muted s">아직 촛불이 없어요. 같이 빌어 주세요</span>'}</div></div>` : ''}
+  ${p.category === 'bet' ? betBox(p, joins, isAuthor) : ''}
+  <div class="bigrx">${(RXSET[p.category] || RXSET.chat).map(k => `<button class="rx ${my.has(k)?'on':''}" data-act="rx" data-id="${id}" data-k="${k}">${RX[k][0]} <span class="s">${RX[k][1]}</span> <b class="num">${p['rx_' + k]}</b></button>`).join('')}</div>
   <div class="row sb"><h3 class="h">댓글 <span id="ccount">${p.comment_count}</span> <span class="muted s">· 실시간</span></h3><button class="btn sm" data-act="report" data-t="post" data-id="${id}">🚩 신고${p.reports ? ' ' + p.reports + '/3' : ''}</button></div>
   <div id="cmts">${(cms || []).map(c => cmtHTML(c)).join('') || empty('첫 댓글을 남겨 보세요')}</div>
   <div class="row" style="margin-top:10px"><input class="f" id="ci" maxlength="200" placeholder="댓글 달기"><button class="btn pri" data-act="cmt" data-id="${id}">등록</button></div>${disc()}`;
 }
+function betBox(p, joins, isAuthor){
+  const same = joins.filter(j => j.side === p.side), opp = joins.filter(j => j.side !== p.side), t = joins.length;
+  const cutoff = T(p.created_at) + p.window_min * 60000 * .3, mine = ME && joins.find(j => j.user_id === ME.id);
+  const otherSide = p.side === 'UP' ? 'DOWN' : 'UP';
+  let act = '';
+  if (p.result) act = '';
+  else if (isAuthor) act = `<div class="muted s" style="margin-top:8px">내 내기예요. 끼어들기 마감까지 <b class="num" data-cd="${cutoff}">${mmss(cutoff - now())}</b></div>`;
+  else if (mine) act = `<div class="note">${mine.side === p.side ? '🤝 동조' : '🔥 맞불'}로 끼어들었어요. 같이 판정받아요.</div>`;
+  else if (now() < cutoff) act = `<div class="row" style="margin-top:10px"><button class="btn ${p.side === 'UP' ? 'bu' : 'bd'}" style="flex:1" data-act="joinbet" data-id="${p.id}" data-v="${p.side}">🤝 동조 (${SIDE[p.side]})</button><button class="btn ${otherSide === 'UP' ? 'bu' : 'bd'}" style="flex:1" data-act="joinbet" data-id="${p.id}" data-v="${otherSide}">🔥 맞불 (${SIDE[otherSide]})</button></div>
+    <div class="muted s" style="margin-top:6px">끼어들기 마감까지 <b class="num" data-cd="${cutoff}">${mmss(cutoff - now())}</b> · 판정 기준은 글쓴이의 참전 시세</div>`;
+  else act = `<div class="muted s" style="margin-top:8px">끼어들기 시간이 끝났어요. 판정을 기다리는 중</div>`;
+  const row = j => `<tr><td>${flagImg(j.soldier?.flag_art)} ${esc(j.soldier?.nickname || '')}</td><td class="${j.side === 'UP' ? 'up' : 'down'}">${j.side === p.side ? '🤝 동조' : '🔥 맞불'}</td><td class="r">${j.result === 'WIN' ? '🎖 승' : j.result === 'LOSE' ? '💀 패' : ''}</td></tr>`;
+  return `<section class="card"><div class="row sb"><div class="b">🎲 내기판</div><span class="muted s">${t}명 참여</span></div>
+    <div class="pool"><div class="${p.side === 'UP' ? 'pa' : 'pb'}" style="width:${t ? Math.max((same.length + 1) / (t + 1) * 100, 25) : 50}%">글쓴이+동조 ${same.length + 1}</div><div class="${p.side === 'UP' ? 'pb' : 'pa'}" style="width:${t ? Math.max(opp.length / (t + 1) * 100, 25) : 50}%">맞불 ${opp.length}</div></div>
+    ${act}${t ? `<table class="t" style="margin-top:8px">${joins.map(row).join('')}</table>` : ''}</section>`;
+}
 function cmtHTML(c, fresh){ const au = c.author || {}; return `<div class="cm${fresh ? ' new' : ''}" data-cid="${c.id}"><div class="row s">${flagImg(au.flag_art)}<a class="b" href="#/u/${encodeURIComponent(au.nickname || '')}">${esc(au.nickname || '탈영병')}</a><span class="muted">${ago(c.created_at)}</span></div><div style="margin:4px 0 0 32px">${renderBody(c.body)}</div></div>`; }
+function armyCard(s){
+  const u = s.up_win, d = s.down_win;
+  return `<section class="card"><div class="row sb"><h2 class="h pix">⚔️ 오늘의 진영전</h2><span class="muted s">판정 끝난 전망·내기</span></div>
+    <div class="score" style="margin-top:10px"><div><b class="up">${u}</b><span class="s up">상승군 승리</span></div><div class="pix muted">VS</div><div><b class="down">${d}</b><span class="s down">하락군 승리</span></div></div>
+    <div class="muted s" style="text-align:center;margin-top:8px">${u + d === 0 ? '오늘은 아직 판정된 전투가 없어요' : u > d ? '🔴 오늘은 상승군이 앞서고 있어요' : d > u ? '🔵 오늘은 하락군이 앞서고 있어요' : '팽팽한 접전이에요'}</div></section>`;
+}
 async function vBattles(){
-  const open = UI.btab === 'open';
+  const tab = UI.btab || 'open';
+  const tabs = `<div class="sortt"><button class="${tab==='open'?'on':''}" data-act="btab" data-v="open">진행 중</button><button class="${tab==='done'?'on':''}" data-act="btab" data-v="done">종전</button><button class="${tab==='rank'?'on':''}" data-act="btab" data-v="rank">🏆 명예의 전당</button></div>`;
+  if (tab === 'rank'){
+    const days = UI.lbdays || 7;
+    const [army, lb] = await Promise.all([rpc('army_score').catch(() => null), rpc('leaderboard', {p_days:days}).catch(() => [])]);
+    const medal = i => ['🥇','🥈','🥉'][i] || (i + 1);
+    return topbar('결전') + tabs + (army ? armyCard(army) : '') + `
+    <div class="row sb" style="margin-top:18px"><h3 class="h">🏆 명예의 전당</h3><div class="sortt" style="margin:0"><button class="${days===7?'on':''}" data-act="lbdays" data-v="7">7일</button><button class="${days===30?'on':''}" data-act="lbdays" data-v="30">30일</button></div></div>
+    <div class="muted s" style="margin-top:4px">전망·내기·결전 판정 기록 3건 이상 · 승률 순 · 🔥 = 지금 연승 중</div>
+    ${(lb || []).length ? `<table class="t lb" style="margin-top:8px">${lb.map((r, i) => `<tr><td>${medal(i)}</td><td>${flagImg(r.flag_art)} <a class="b" href="#/u/${encodeURIComponent(r.nickname)}">${esc(r.nickname)}</a>${r.streak >= 2 ? ` <span class="s" style="color:var(--gold)">🔥${r.streak}연승</span>` : ''}</td><td class="r num">${r.wins}/${r.total}</td><td class="r num b">${Math.round(r.wins / r.total * 100)}%</td></tr>`).join('')}</table>` : empty('아직 순위에 오른 병사가 없어요. 판정 3건이면 이름이 올라가요')}
+    ${disc()}`;
+  }
+  const open = tab === 'open';
   const { data } = await sb.from('battles').select('*,entries:battle_entries(option),creator:profiles!battles_creator_id_fkey(nickname)')
     .in('status', open ? ['OPEN','CLOSED'] : ['RESOLVED','VOID']).order(open ? 'closes_at' : 'resolves_at', {ascending:open}).limit(40);
   return topbar('결전') + `
   <div class="note">누구나 결전을 선포할 수 있어요. A·B 중 한쪽에 참전하면 판정 시각의 실제 시세로 서버가 승패를 가려요. 한쪽에만 병사가 있으면 무효.</div>
-  <div class="sortt"><button class="${open?'on':''}" data-act="btab" data-v="open">진행 중</button><button class="${!open?'on':''}" data-act="btab" data-v="done">종전</button><a class="btn sm pri" style="margin-left:auto" href="#/battles/new">📯 결전 선포</a></div>
+  ${tabs}<div style="text-align:right;margin-top:10px"><a class="btn sm pri" href="#/battles/new">📯 결전 선포</a></div>
   ${(data || []).map(battleCard).join('') || empty('결전이 없어요')}${disc()}`;
 }
 function ruleText(b){
@@ -720,11 +808,12 @@ async function vProfile(nick){
   return topbar(isMe ? '내 정보' : p.nickname, '#/') + `
   <div class="row" style="margin-top:16px;gap:14px">${flagImg(p.flag_art, 'lg')}<div style="min-width:0"><div class="pix" style="font-size:18px">${esc(p.nickname)}</div><span class="rank">${rankOf(st)}</span>
     <div class="s muted" style="margin-top:4px">입대 ${new Date(p.created_at).toLocaleDateString('ko-KR')}</div></div></div>
-  <div class="summary"><div><b>${st.wins}/${st.total}</b><span class="s">참전 승패</span></div><div><b>${rate}</b><span class="s">승률</span></div><div><b>${st.b_wins}/${st.b_total}</b><span class="s">결전 승</span></div></div>
+  <div class="summary"><div><b>${st.wins}/${st.total}</b><span class="s">전망·내기</span></div><div><b>${rate}</b><span class="s">승률</span></div><div><b>${(st.j_wins || 0) + st.b_wins}/${(st.j_total || 0) + st.b_total}</b><span class="s">끼어들기·결전</span></div></div>
+  <div class="row s muted" style="margin-top:8px;justify-content:center;gap:14px"><span>✨ 기원 성취 ${st.wishes || 0}</span><span>🫂 받은 공감 ${st.hugs || 0}</span></div>
   ${st.pending ? `<div class="muted s" style="margin-top:8px">판정 대기 중인 참전 ${st.pending}건</div>` : ''}
   ${isMe ? `<div class="row wrapf" style="margin-top:14px"><a class="btn sm" href="#/barracks">🚩 깃발 바꾸기</a><button class="btn sm" data-act="rename">✏️ 이름 바꾸기</button>${ME.is_admin ? '<a class="btn sm" href="#/admin">⚖️ 군사재판</a>' : ''}</div>
     <div class="note">계급: 훈련병 → 이병(3전) → 일병(10전) → 상병(20전) → 30전부터 승률로 병장·대위·⭐백전노장, 승률 30% 이하는 🕵️ 적군 첩자 의심</div>` : ''}
-  <h3 class="sec">전황 보고 ${(posts || []).length}</h3>${(posts || []).map(x => postCard(x, true)).join('') || empty('아직 보고가 없어요')}${disc()}`;
+  <h3 class="sec">쓴 글 ${(posts || []).length}</h3>${(posts || []).map(x => postCard(x, true)).join('') || empty('아직 보고가 없어요')}${disc()}`;
 }
 async function vAdmin(){
   if (!ME || !ME.is_admin) return topbar('군사재판') + empty('관리자만 볼 수 있어요');
@@ -746,10 +835,12 @@ async function render(keep){
   const id = ++RENDER_ID, y = window.scrollY;
   const {parts, qs} = parse(); const [a, b, c] = parts; let tab = 'home', fn;
   if (!a) fn = vHome;
-  else if (a === 'fronts'){ fn = vFronts; tab = 'fronts'; }
-  else if (a === 'f' && c === 'new'){ fn = () => vNew(b); tab = 'fronts'; }
-  else if (a === 'f'){ fn = () => vFront(b); tab = 'fronts'; }
-  else if (a === 'p'){ fn = () => vPost(b); tab = 'fronts'; }
+  else if (a === 'fronts'){ fn = vFronts; }
+  else if (a === 'f' && c === 'new'){ location.replace('#/write?f=' + b + '&c=forecast'); return; }
+  else if (a === 'f'){ fn = () => vFront(b); }
+  else if (a === 'square'){ fn = vSquare; tab = 'square'; }
+  else if (a === 'write'){ if (UI._wsrc !== location.hash){ UI._wsrc = location.hash; if (qs.get('f')) UI.wsym = qs.get('f'); UI.wcat = qs.get('c') || UI.wcat || 'chat'; } fn = vWrite; tab = 'square'; }
+  else if (a === 'p'){ fn = () => vPost(b); tab = 'square'; }
   else if (a === 'battles' && b === 'new'){ fn = vBattleNew; tab = 'battles'; }
   else if (a === 'battles' && b){ fn = () => vBattle(b); tab = 'battles'; }
   else if (a === 'battles'){ fn = vBattles; tab = 'battles'; }
@@ -775,8 +866,8 @@ async function render(keep){
   subscribeComments();
   window.scrollTo(0, keep ? y : 0);
 }
-function softRender(){ if (isTyping() || /\/new|barracks\/(flag|poster)/.test(location.hash) || $('.modal')) return; render(true); }
-window.addEventListener('hashchange', () => { if (!/\/new/.test(location.hash)){ UI.side = null; UI.pollOn = false; } render(); });
+function softRender(){ if (isTyping() || /\/write|barracks\/(flag|poster)/.test(location.hash) || $('.modal')) return; render(true); }
+window.addEventListener('hashchange', () => { if (!/^#\/write/.test(location.hash)){ UI.side = null; UI.pollOn = false; UI._wsrc = null; UI.wcat = null; } render(); });
 function drawSpark(cv){
   const a = HIST[cv.dataset.spark]; if (!a || a.length < 20){ cv.style.display = 'none'; return; }
   const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight; if (!w) return;
@@ -810,6 +901,12 @@ const ACT = {
   rename(){ nickModal(); },
   close(){ closeModal(); },
   sort(el){ UI.sort = el.dataset.v; render(true); },
+  cat(el){ UI.cat = el.dataset.v || null; render(true); },
+  fcat(el){ UI.fcat = el.dataset.v || null; render(true); },
+  wcat(el){ UI.wcat = el.dataset.v; keepForm(() => render(true)); },
+  gocat(el){ UI.cat = el.dataset.v; location.hash = '#/square'; render(); },
+  lbdays(el){ UI.lbdays = +el.dataset.v; render(true); },
+  async joinbet(el){ if (!need()) return; try { await rpc('join_bet', {p_post:el.dataset.id, p_side:el.dataset.v}); toast('끼어들었어요! 같이 판정받아요'); render(true); } catch(e){ toast(errMsg(e)); } },
   btab(el){ UI.btab = el.dataset.v; render(true); },
   wsort(el){ UI.wsort = el.dataset.v; render(true); },
   side(el){ UI.side = el.dataset.v || null; keepForm(() => render(true)); },
@@ -828,10 +925,11 @@ const ACT = {
         memeUrl = sb.storage.from('posters').getPublicUrl(path).data.publicUrl;
       }
       const poll = UI.pollOn ? $$('[data-po]').map(i => i.value.trim()).filter(Boolean) : null;
-      const side = UI.side, win = UI.win;
-      const id = await rpc('create_post', {p_symbol:el.dataset.sym, p_title:$('#pt').value, p_body:$('#pb').value, p_side:side, p_window:side ? win : null, p_poll:poll, p_meme_url:memeUrl});
+      const side = UI.side, cat_ = UI.wcat || 'chat', win = cat_ === 'wish' ? 1440 : UI.win;
+      const id = await rpc('create_post', {p_symbol:el.dataset.sym, p_category:UI.wcat || 'chat', p_title:$('#pt').value, p_body:$('#pb').value, p_side:side, p_window:side ? win : null, p_poll:poll, p_meme_url:memeUrl});
       UI.draft = null; UI.side = null; UI.pollOn = false;
-      if (side) toast(`${SIDE[side]}으로 참전! ${WIN_LBL[win]} 뒤 판정`);
+      UI.wcat = null; UI._wsrc = null;
+      if (side) toast(cat_ === 'wish' ? '🙏 기원을 올렸어요. 내일 이맘때 응답이 와요' : `${SIDE[side]}으로 참전! ${WIN_LBL[win]} 뒤 판정`);
       location.hash = '#/p/' + id;
     } catch(e){ toast(errMsg(e)); el.disabled = false; }
   },
@@ -846,7 +944,7 @@ const ACT = {
     if (!need()) return;
     try { const r = await rpc('toggle_reaction', {p_post:el.dataset.id, p_kind:el.dataset.k});
       el.classList.toggle('on', r.on); el.querySelector('b').textContent = r.count;
-      if (r.on){ const s = document.createElement('span'); s.className = 'pop'; s.textContent = RX.find(x => x[0] === el.dataset.k)[1]; el.appendChild(s); setTimeout(() => s.remove(), 900); }
+      if (r.on){ const s = document.createElement('span'); s.className = 'pop'; s.textContent = RX[el.dataset.k][0]; el.appendChild(s); setTimeout(() => s.remove(), 900); }
     } catch(e){ toast(errMsg(e)); }
   },
   async vote(el){ if (!need()) return; try { await rpc('vote', {p_post:el.dataset.id, p_index:+el.dataset.i}); render(true); } catch(e){ toast(errMsg(e)); } },
@@ -891,12 +989,13 @@ const ACT = {
   mdown(){ const a = document.createElement('a'); a.download = 'market-wars-poster.png'; a.href = $('#mmc').toDataURL('image/png'); a.click(); },
   mattach(){
     if (!need()) return;
-    $('#mmc').toBlob(blob => { UI.draft = {blob, url:URL.createObjectURL(blob)}; location.hash = '#/f/' + (UI.backFront || UI.msym) + '/new'; toast('포스터를 붙였어요'); }, 'image/jpeg', .82);
+    $('#mmc').toBlob(blob => { UI.draft = {blob, url:URL.createObjectURL(blob)}; UI.wsym = UI.backFront || UI.wsym || UI.msym; location.hash = '#/write'; toast('포스터를 붙였어요'); }, 'image/jpeg', .82);
   },
 };
 document.addEventListener('click', e => { const el = e.target.closest('[data-act]'); if (!el || !ACT[el.dataset.act]) return; e.preventDefault(); ACT[el.dataset.act](el); });
 document.addEventListener('change', async e => {
   if (e.target.id === 'bs'){ UI.bsym = e.target.value; render(true); }
+  if (e.target.id === 'wf'){ UI.wsym = e.target.value; keepForm(() => render(true)); }
   if (e.target.id === 'msym'){ UI.msym = e.target.value; keepMeme(); render(true); }
   if (e.target.id === 'mup') onUpload(e.target.files[0]);
 });
