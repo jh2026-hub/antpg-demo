@@ -19,7 +19,7 @@ a{color:inherit;text-decoration:none}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 .px{image-rendering:pixelated}
-.wrap{max-width:560px;margin:0 auto;padding:0 16px calc(88px + env(safe-area-inset-bottom))}
+.wrap{max-width:560px;margin:0 auto;padding:0 16px calc(118px + env(safe-area-inset-bottom))}
 .pix{font-family:'Galmuri11','Galmuri9',monospace;letter-spacing:-.2px}
 .num{font-variant-numeric:tabular-nums}
 .up{color:var(--up)}.down{color:var(--down)}.flat{color:var(--muted)}
@@ -58,7 +58,7 @@ label.l{display:block;font-size:13px;color:var(--muted);margin:14px 0 6px}
 .bar .bu{background:var(--up)}.bar .bd{background:var(--down)}
 .empty{color:var(--muted);text-align:center;padding:26px 0;font-size:14px}
 .disc{margin:28px 0 8px;padding:12px;border-radius:12px;background:var(--card);border:1px solid var(--line);color:var(--muted);font-size:12px;text-align:center}
-.toast{position:fixed;left:50%;bottom:calc(80px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;background:#f3f4f6;color:#111;padding:10px 16px;border-radius:12px;font-weight:600;font-size:14px;max-width:calc(100vw - 32px);box-shadow:0 8px 24px rgba(0,0,0,.4);animation:tin .2s}
+.toast{position:fixed;left:50%;bottom:calc(108px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;background:#f3f4f6;color:#111;padding:10px 16px;border-radius:12px;font-weight:600;font-size:14px;max-width:calc(100vw - 32px);box-shadow:0 8px 24px rgba(0,0,0,.4);animation:tin .2s}
 @keyframes tin{from{opacity:0;transform:translate(-50%,8px)}}
 .modal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center}
 .modal .sheet{background:var(--card);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom));max-height:90vh;overflow:auto}
@@ -126,7 +126,7 @@ label.l{display:block;font-size:13px;color:var(--muted);margin:14px 0 6px}
 .cm{padding:10px 0;border-bottom:1px solid var(--line)}
 .cm.new{animation:flash 1.5s}
 @keyframes flash{0%{background:#2a2412}100%{background:transparent}}
-.fab{position:fixed;right:max(16px,calc(50% - 264px));bottom:calc(72px + env(safe-area-inset-bottom));z-index:25;height:52px;padding:0 20px;border-radius:999px;background:var(--gold);color:#1d1600;font-weight:800;box-shadow:0 6px 20px rgba(0,0,0,.45);display:flex;align-items:center}
+.fab{position:fixed;right:max(16px,calc(50% - 264px));bottom:calc(100px + env(safe-area-inset-bottom));z-index:25;height:52px;padding:0 20px;border-radius:999px;background:var(--gold);color:#1d1600;font-weight:800;box-shadow:0 6px 20px rgba(0,0,0,.45);display:flex;align-items:center}
 .sortt{display:flex;gap:6px;margin:16px 0 0;align-items:center}
 .sortt button{min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:13px}
 .sortt button.on{background:var(--text);color:var(--bg);border-color:var(--text)}
@@ -175,10 +175,53 @@ table.t .r{text-align:right}
 .score{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;text-align:center}
 .score b{font-family:'Galmuri11',monospace;font-size:32px;display:block;line-height:1.1}
 .lb td{vertical-align:middle}
+/* motion */
+#mapfx{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1}
+.bar .bu{transform-origin:left}.bar .bd{transform-origin:right}
+.tick-up,.tick-down{border-radius:4px}
+.tick-up{animation:tku .9s ease-out}.tick-down{animation:tkd .9s ease-out}
+@keyframes tku{0%{background:rgba(240,68,82,.5);box-shadow:0 0 0 3px rgba(240,68,82,.5)}100%{background:transparent;box-shadow:0 0 0 0 transparent}}
+@keyframes tkd{0%{background:rgba(59,130,246,.5);box-shadow:0 0 0 3px rgba(59,130,246,.5)}100%{background:transparent;box-shadow:0 0 0 0 transparent}}
+.delta{position:absolute;z-index:5;pointer-events:none;font:800 11px Pretendard,sans-serif;transform:translate(-50%,-50%);animation:delta 1.6s ease-out forwards;text-shadow:0 1px 3px #000,0 0 6px #000;white-space:nowrap}
+@keyframes delta{0%{opacity:0;transform:translate(-50%,-20%)}15%{opacity:1}100%{opacity:0;transform:translate(-50%,-260%)}}
+#ticker{position:fixed;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom));z-index:29;height:28px;overflow:hidden;background:#0a0e15;border-top:1px solid var(--line)}
+#ticker .lbl{position:absolute;left:0;top:0;bottom:0;z-index:2;background:var(--up);color:#fff;font:700 11px 'Galmuri11',monospace;padding:0 10px;display:flex;align-items:center;box-shadow:6px 0 10px #0a0e15}
+#ticker .lbl:after{content:'';width:6px;height:6px;border-radius:50%;background:#fff;margin-left:6px;animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+#ticker .track{display:inline-flex;gap:18px;white-space:nowrap;padding-left:100vw;animation:marq 60s linear infinite;font-size:12.5px;line-height:28px;will-change:transform}
+#ticker .track i{color:var(--line);font-style:normal}
+@keyframes marq{to{transform:translateX(-100%)}}
+.news{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top));transform:translateX(-50%);z-index:70;background:rgba(20,26,36,.97);border:1px solid var(--gold);color:var(--text);padding:9px 14px;border-radius:12px;font-size:13.5px;font-weight:600;max-width:calc(100vw - 32px);width:max-content;box-shadow:0 10px 30px rgba(0,0,0,.6);animation:newsin .4s cubic-bezier(.2,.9,.2,1.2),newsout .4s ease-in 3.3s forwards}
+.news b{color:var(--gold);margin-right:6px;font-family:'Galmuri11',monospace}
+@keyframes newsin{from{opacity:0;transform:translate(-50%,-140%)}}
+@keyframes newsout{to{opacity:0;transform:translate(-50%,-140%)}}
+.reveal{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;background:rgba(0,0,0,.75);animation:fadein .2s}
+.reveal .hero{position:relative;font-family:'Galmuri11',monospace;font-size:48px;line-height:1.1;animation:slam .55s cubic-bezier(.2,1.6,.4,1) both;text-shadow:0 5px 0 #000}
+.reveal canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+@keyframes slam{from{transform:scale(3.2) rotate(-8deg);opacity:0}}
+@keyframes fadein{from{opacity:0}}
+.shake{animation:shake .4s}
+@keyframes shake{15%{transform:translate(-4px,2px)}30%{transform:translate(4px,-2px)}45%{transform:translate(-3px,-1px)}60%{transform:translate(3px,1px)}80%{transform:translate(-1px,1px)}}
+.tabbar a.on .ic{animation:hop .45s cubic-bezier(.2,1.8,.4,1)}
+@keyframes hop{40%{transform:translateY(-6px) scale(1.15)}}
+.btn:active,.rx:active,.pin:active,.cats button:active,.sortt button:active,.seg button:active{transform:scale(.94)}
+.btn,.rx,.pin,.cats button,.sortt button,.seg button{transition:transform .12s}
+#app.fresh .post,#app.fresh .card,#app.fresh .flist a,#app.fresh .art,#app.fresh .summary>*{animation:rise .45s cubic-bezier(.2,.8,.2,1) both}
+#app.fresh .post:nth-of-type(2),#app.fresh .flist a:nth-child(2),#app.fresh .card:nth-of-type(2),#app.fresh .summary>*:nth-child(2){animation-delay:.05s}
+#app.fresh .post:nth-of-type(3),#app.fresh .flist a:nth-child(3),#app.fresh .card:nth-of-type(3),#app.fresh .summary>*:nth-child(3){animation-delay:.1s}
+#app.fresh .post:nth-of-type(4),#app.fresh .card:nth-of-type(4){animation-delay:.15s}
+#app.fresh .post:nth-of-type(5),#app.fresh .card:nth-of-type(5){animation-delay:.2s}
+#app.fresh .post:nth-of-type(n+6){animation-delay:.25s}
+#app.fresh .bar i{animation:growx .9s cubic-bezier(.2,.8,.2,1) both .15s}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}}
+@keyframes growx{from{transform:scaleX(0)}}
+.flist .nm .s{transition:color .3s}
+@media (prefers-reduced-motion: reduce){*,*:before,*:after{animation:none!important;transition:none!important}#ticker .track{padding-left:12px}}
 </style>
 </head>
 <body>
 <div class="wrap"><main id="app"><div class="skel"></div><div class="skel"></div></main></div>
+<div id="ticker" aria-label="속보"><span class="lbl">속보</span><div class="track"></div></div>
 <nav class="tabbar"><div class="in">
   <a href="#/" data-tab="home"><span class="ic">🗺</span>전황</a>
   <a href="#/square" data-tab="square"><span class="ic">📣</span>광장</a>
@@ -259,14 +302,17 @@ function onAssetRow(r){
   const a = A[r.symbol]; if (!a) return;
   const live = a.liveWS && now() - a.liveAt < 15000;
   Object.assign(a, r, {threshold:+r.threshold, lon:+r.lon, lat:+r.lat});
+  const prev = a.price;
   if (live){ a.price = a._p; a.change = a._c; a.change_pct = a._cp; } else { a.price = +r.price; a.change = +r.change; a.change_pct = +r.change_pct; }
   if (HIST[r.symbol]) HIST[r.symbol].push(+r.price);
+  if (!live && prev && a.price !== prev) mapDelta(a, prev);
   scheduleLive(); MAPDIRTY = true;
 }
 let wsTry = 0;
 function connectBinance(){
   let ws; try { ws = new WebSocket('wss://stream.binance.com:9443/stream?streams=btcusdt@ticker/ethusdt@ticker'); } catch(e){ return retryWS(); }
   ws.onmessage = ev => { let d; try { d = JSON.parse(ev.data).data; } catch(e){ return; } const a = A[d.s]; if (!a) return;
+    if (a._dBase == null || now() - (a._dAt || 0) > 6000){ if (a._dBase != null && +d.c !== a._dBase) mapDelta(a, a._dBase, +d.c); a._dBase = +d.c; a._dAt = now(); }
     a._p = a.price = +d.c; a._c = a.change = +d.p; a._cp = a.change_pct = +d.P; a.liveWS = true; a.liveAt = now(); wsTry = 0; scheduleLive(); };
   ws.onclose = () => retryWS();
 }
@@ -275,7 +321,9 @@ let liveQ = false;
 function scheduleLive(){ if (!liveQ){ liveQ = true; requestAnimationFrame(refreshLive); } }
 function refreshLive(){
   liveQ = false;
-  $$('[data-p]').forEach(el => { const a = A[el.dataset.p]; if (a) el.textContent = fmtP(a); });
+  $$('[data-p]').forEach(el => { const a = A[el.dataset.p]; if (!a) return; const v = a.price;
+    if (el._v != null && v != null && v !== el._v){ el.classList.remove('tick-up','tick-down'); void el.offsetWidth; el.classList.add(v > el._v ? 'tick-up' : 'tick-down'); }
+    el._v = v; el.textContent = fmtP(a); });
   $$('[data-c]').forEach(el => { const a = A[el.dataset.c]; if (!a) return; el.textContent = fmtC(a); el.classList.remove('up','down','flat'); el.classList.add(dir(mv(a))); });
   $$('[data-ctl]').forEach(el => { const a = A[el.dataset.ctl]; if (a) el.style.width = control(a) + '%'; });
   $$('[data-st]').forEach(el => { const a = A[el.dataset.st]; if (a) el.textContent = stateOf(a); });
@@ -394,15 +442,58 @@ function skyCanvas(I){
   return c;
 }
 function mapHTML(){
-  return `<div class="mapwrap"><div class="map" id="map"><canvas id="mapc" width="${MW*CELL}" height="${MH*CELL}" class="px"></canvas>
+  return `<div class="mapwrap"><div class="map" id="map"><canvas id="mapc" width="${MW*CELL}" height="${MH*CELL}" class="px"></canvas><canvas id="mapfx" width="${MW*CELL}" height="${MH*CELL}" class="px"></canvas>
     ${LABELS.map(([t, x, y]) => `<div class="maplbl" style="left:${x/MW*100}%;top:${y/MH*100}%">${t}</div>`).join('')}
     ${ASSETS.map(a => `<a class="pin" data-pin="${a.symbol}" href="#/f/${a.symbol}" style="left:${a.lon/MW*100}%;top:${(a.lat + 1.5)/MH*100}%"><b>${esc(a.short)}</b><span class="num" data-c="${a.symbol}">${fmtC(a)}</span></a>`).join('')}
   </div></div><div class="muted s" style="text-align:center;margin-top:6px">빨강 = 상승군 점령 · 파랑 = 하락군 점령 · 영토를 누르면 전투 현장</div>`;
 }
 let boomTimer = null;
+function mapDelta(a, prev, cur){
+  const map = $('#map'); if (!map || document.hidden) return;
+  cur = cur ?? a.price; if (!prev || !cur || cur === prev) return;
+  const up = cur > prev, txt = a.kind === 'BOND' ? `${up ? '▲' : '▼'}${Math.abs((cur - prev) * 100).toFixed(1)}bp` : `${up ? '▲' : '▼'}${Math.abs((cur / prev - 1) * 100).toFixed(2)}%`;
+  const el = document.createElement('span'); el.className = 'delta'; el.textContent = txt; el.style.color = up ? '#ff8a96' : '#8ab6ff';
+  el.style.left = (a.lon / MW * 100) + '%'; el.style.top = ((a.lat - 2) / MH * 100) + '%'; map.appendChild(el); setTimeout(() => el.remove(), 1700);
+}
+let MAPraf = 0, PROV = null, BORDERS = null;
+function buildProv(){
+  PROV = {}; BORDERS = [];
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++){
+    const i = y * MW + x, p = GRID[i]; if (!p) continue;
+    (PROV[p] = PROV[p] || []).push(i);
+    const r = x + 1 < MW ? GRID[i + 1] : null, d = y + 1 < MH ? GRID[i + MW] : null;
+    if (r && r !== p) BORDERS.push([i, p, r]); if (d && d !== p) BORDERS.push([i, p, d]);
+  }
+}
+function mapFxStart(){
+  cancelAnimationFrame(MAPraf);
+  const cv = $('#mapfx'); if (!cv) return; if (!GRID) buildGrid(); if (!PROV) buildProv();
+  const g = cv.getContext('2d'), C = CELL; let last = 0;
+  const clouds = [0, 1, 2, 3].map(i => ({x: Math.random() * MW, y: 6 + i * 30 + Math.random() * 10, v: .04 + Math.random() * .05, w: 9 + Math.random() * 9}));
+  function frame(t){
+    if (!document.body.contains(cv)) return;
+    MAPraf = requestAnimationFrame(frame);
+    if (t - last < 50) return; last = t;
+    g.clearRect(0, 0, cv.width, cv.height);
+    g.fillStyle = 'rgba(150,200,255,.22)';
+    for (let k = 0; k < 90; k++){ const y = (k * 53 + 7) % MH, x = Math.floor((k * 97 + t / 140 * (1 + k % 3)) % MW);
+      if (!GRID[y * MW + x] && !GRID[y * MW + (x + 1) % MW] && !GRID[y * MW + (x + 2) % MW]) g.fillRect(x * C, y * C + 1, C * 3, 2); }
+    for (const sym in PROV){ const a = A[sym]; if (!a || !isOpen(a)) continue; const s = score(a); if (Math.abs(s) < .3) continue;
+      const al = (Math.sin(t / 280 + sym.length * 1.7) * .5 + .5) * .28 * Math.abs(s);
+      g.fillStyle = s > 0 ? `rgba(255,90,100,${al.toFixed(3)})` : `rgba(90,150,255,${al.toFixed(3)})`;
+      for (const i of PROV[sym]) g.fillRect((i % MW) * C, ((i / MW) | 0) * C, C, C); }
+    for (const [i, p, q] of BORDERS){ const a = A[p], b = A[q]; if (!a || !b) continue; const sa = score(a), sq = score(b);
+      const hotb = (sa > .1 && sq < -.1) || (sa < -.1 && sq > .1); if (!hotb || Math.random() > .3) continue;
+      g.fillStyle = Math.random() < .5 ? '#ffe08a' : '#ff8a3d'; g.fillRect((i % MW) * C, ((i / MW) | 0) * C, C, C); }
+    g.fillStyle = 'rgba(255,255,255,.08)';
+    for (const c of clouds){ c.x += c.v; if (c.x > MW + 24) c.x = -24;
+      for (let dx = 0; dx < c.w; dx++) for (let dy = 0; dy < 5; dy++) if (Math.abs(dx - c.w / 2) / (c.w / 2) + Math.abs(dy - 2) / 3 < 1.05) g.fillRect(Math.round(c.x + dx) * C, (c.y + dy) * C, C, C); }
+  }
+  MAPraf = requestAnimationFrame(frame);
+}
 function mapInit(){
   const cv = $('#mapc'); if (!cv) return;
-  drawMapBase(cv);
+  drawMapBase(cv); mapFxStart();
   SKY.forEach(I => A[I.sym] && $('#map').appendChild(skyCanvas(I)));
   clearInterval(boomTimer);
   boomTimer = setInterval(() => {
@@ -423,42 +514,66 @@ const SOLDIER = ['.hh.','hhhh','.ff.','bbbg','bb.g','l.l.'];
 function bfStart(sym){
   cancelAnimationFrame(BFraf);
   const cv = $('#bf'), a = A[sym]; if (!cv || !a) return;
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
-  const mk = () => Array.from({length:10}, (_, i) => ({f:(i + Math.random() * .6) / 10, row:i % 3, ph:Math.random() * 6}));
-  const red = mk(), blue = mk(), booms = [];
-  let front = control(a) / 100;
+  const field = cv.parentElement, dpr = Math.min(2, window.devicePixelRatio || 1);
+  const mk = () => Array.from({length:11}, (_, i) => ({f:(i + Math.random() * .6) / 11, row:i % 3, ph:Math.random() * 6, cd:Math.random() * 90}));
+  const red = mk(), blue = mk(), booms = [], tracers = [], shells = [], smoke = [];
+  let front = control(a) / 100, lastShake = 0;
   function sprite(g, x, y, s, team, flip){
     const pal = {h: team ? '#7a1424' : '#13306b', f:'#f2c9a0', b: team ? '#f04452' : '#3b82f6', g:'#222', l:'#2a2a2a'};
     for (let r = 0; r < 6; r++) for (let c = 0; c < 4; c++){ const ch = SOLDIER[r][flip ? 3 - c : c]; if (ch === '.') continue; g.fillStyle = pal[ch]; g.fillRect(Math.round(x + c * s), Math.round(y + r * s), s, s); }
+  }
+  function boom(x, y, big){
+    booms.push({x, y, k:0, big});
+    for (let i = 0; i < (big ? 7 : 3); i++) smoke.push({x: x + (Math.random() - .5) * 18, y, r: 3 + Math.random() * (big ? 6 : 3), a: .5, vy: -.25 - Math.random() * .45, vx: (Math.random() - .5) * .3});
+    if (big && performance.now() - lastShake > 900){ lastShake = performance.now(); field.classList.remove('shake'); void field.offsetWidth; field.classList.add('shake'); }
   }
   function frame(t){
     if (!document.body.contains(cv)) return;
     const w = cv.clientWidth, h = cv.clientHeight;
     if (cv.width !== Math.round(w * dpr)){ cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
     const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const sc = score(a), open = isOpen(a);
+    const sc = score(a), open = isOpen(a), heat = open ? .25 + Math.abs(sc) : 0;
     front += (control(a) / 100 - front) * .03;
     const fx = Math.max(.12, Math.min(.88, front)) * w, gy = h * .58;
     const sky = g.createLinearGradient(0, 0, 0, gy); sky.addColorStop(0, '#0b1020'); sky.addColorStop(1, !open ? '#1a1d24' : sc > 0 ? '#3a1820' : sc < 0 ? '#16233f' : '#1c2230');
     g.fillStyle = sky; g.fillRect(0, 0, w, gy);
+    if (open && heat > .6){ g.fillStyle = `rgba(255,140,60,${(.05 + .05 * Math.sin(t / 90)).toFixed(3)})`; g.fillRect(0, 0, w, gy); }
     g.fillStyle = '#3b2025'; g.fillRect(0, gy, fx, h - gy);
     g.fillStyle = '#1d2a44'; g.fillRect(fx, gy, w - fx, h - gy);
     g.fillStyle = 'rgba(0,0,0,.18)'; for (let x = 0; x < w; x += 8) for (let y = gy + 4; y < h; y += 10) if (((x / 8) + (y / 10)) % 3 === 0) g.fillRect(x, y, 4, 3);
     g.fillStyle = open ? `rgba(255,220,120,${.5 + .5 * Math.sin(t / 120)})` : 'rgba(255,255,255,.4)';
     for (let y = gy - 6; y < h; y += 6) g.fillRect(fx - 1 + Math.sin(y + t / 300) * 2, y, 3, 4);
     g.imageSmoothingEnabled = false;
-    const fb = FLAGIMG['f-bull'], fd = FLAGIMG['f-bear'];
-    if (fb && fb.complete) g.drawImage(fb, 4, gy - 40, 36, 36); if (fd && fd.complete) g.drawImage(fd, w - 40, gy - 40, 36, 36);
+    const fb = FLAGIMG['f-bull'], fd = FLAGIMG['f-bear'], wave = open ? Math.sin(t / 200) * 2 : 0;
+    if (fb && fb.complete) g.drawImage(fb, 4, gy - 40 + wave, 36, 36); if (fd && fd.complete) g.drawImage(fd, w - 40, gy - 40 - wave, 36, 36);
     const bob = i => open ? Math.sin(t / 160 + i) * 1.5 : 0;
-    red.forEach(u => sprite(g, 18 + u.f * Math.max(10, fx - 46), gy + 6 + u.row * 18 + bob(u.ph), 3, 1, false));
-    blue.forEach(u => sprite(g, fx + 16 + u.f * Math.max(10, w - fx - 46), gy + 6 + u.row * 18 + bob(u.ph), 3, 0, true));
-    if (open && Math.random() < .03 + Math.abs(sc) * .18) booms.push({x: fx + (Math.random() - .5) * 70 + sc * 25, y: gy + Math.random() * (h - gy - 10), k: 0});
-    for (let i = booms.length - 1; i >= 0; i--){
-      const b = booms[i]; b.k++; const r = b.k * 1.4;
-      g.fillStyle = b.k < 6 ? '#fff3b0' : b.k < 14 ? '#ffa300' : 'rgba(120,120,120,.5)';
-      for (let k = 0; k < 8; k++){ const an = k / 8 * Math.PI * 2; g.fillRect(Math.round(b.x + Math.cos(an) * r), Math.round(b.y + Math.sin(an) * r * .6), 3, 3); }
-      if (b.k > 22) booms.splice(i, 1);
-    }
+    const fire = (u, x, y, team) => {
+      if (!open || --u.cd > 0 || Math.random() > heat * .08) return;
+      u.cd = 30 + Math.random() * 70;
+      const tx = team ? fx + 10 + Math.random() * Math.max(20, w - fx - 30) : 10 + Math.random() * Math.max(20, fx - 30);
+      tracers.push({x0: x + (team ? 13 : -1), y0: y + 10, x1: tx, y1: gy + 8 + Math.random() * (h - gy - 16), k:0, c: team ? '255,210,122' : '170,215,255'});
+      g.fillStyle = '#fff3b0'; g.fillRect(x + (team ? 12 : -2), y + 8, 4, 4);
+    };
+    red.forEach(u => { const adv = open ? Math.sin(t / 520 + u.ph) * 3 + Math.max(0, sc) * 4 : 0; const x = 18 + u.f * Math.max(10, fx - 50) + adv, y = gy + 6 + u.row * 18 + bob(u.ph); sprite(g, x, y, 3, 1, false); fire(u, x, y, 1); });
+    blue.forEach(u => { const adv = open ? Math.sin(t / 520 + u.ph) * 3 + Math.max(0, -sc) * 4 : 0; const x = fx + 16 + u.f * Math.max(10, w - fx - 50) - adv, y = gy + 6 + u.row * 18 + bob(u.ph); sprite(g, x, y, 3, 0, true); fire(u, x, y, 0); });
+    for (let i = tracers.length - 1; i >= 0; i--){ const r = tracers[i], p = Math.min(1, r.k / 5), q = Math.max(0, (r.k - 2) / 5);
+      g.strokeStyle = `rgba(${r.c},${(1 - r.k / 8).toFixed(2)})`; g.lineWidth = 1.5; g.beginPath();
+      g.moveTo(r.x0 + (r.x1 - r.x0) * q, r.y0 + (r.y1 - r.y0) * q); g.lineTo(r.x0 + (r.x1 - r.x0) * p, r.y0 + (r.y1 - r.y0) * p); g.stroke();
+      if (++r.k > 8){ if (Math.random() < .25) boom(r.x1, r.y1, false); tracers.splice(i, 1); } }
+    if (open && Math.random() < .004 + Math.abs(sc) * .02){ const fromRed = Math.random() < (sc > 0 ? .8 : sc < 0 ? .2 : .5);
+      shells.push({x0: fromRed ? 28 : w - 28, y0: gy - 18, x1: fx + (fromRed ? 1 : -1) * (12 + Math.random() * 70), y1: gy + 10 + Math.random() * (h - gy - 24), k:0, n:42 + Math.random() * 14}); }
+    for (let i = shells.length - 1; i >= 0; i--){ const s2 = shells[i], p = s2.k / s2.n, x = s2.x0 + (s2.x1 - s2.x0) * p, y = s2.y0 + (s2.y1 - s2.y0) * p - Math.sin(p * Math.PI) * 70;
+      g.fillStyle = 'rgba(255,255,255,.25)'; g.fillRect(x - (s2.x1 - s2.x0) / s2.n * 2, y + 2, 2, 2);
+      g.fillStyle = '#e8e2cf'; g.fillRect(Math.round(x) - 1, Math.round(y) - 1, 3, 3);
+      if (++s2.k >= s2.n){ boom(s2.x1, s2.y1, true); shells.splice(i, 1); } }
+    if (open && Math.random() < .02 + Math.abs(sc) * .08) boom(fx + (Math.random() - .5) * 70 + sc * 25, gy + Math.random() * (h - gy - 10), false);
+    for (let i = booms.length - 1; i >= 0; i--){ const b = booms[i]; b.k++; const r = b.k * (b.big ? 2 : 1.4);
+      g.fillStyle = b.k < 5 ? '#ffffff' : b.k < 9 ? '#fff3b0' : b.k < 16 ? '#ffa300' : 'rgba(120,120,120,.5)';
+      const n = b.big ? 12 : 8; for (let k = 0; k < n; k++){ const an = k / n * Math.PI * 2 + b.k * .05; g.fillRect(Math.round(b.x + Math.cos(an) * r), Math.round(b.y + Math.sin(an) * r * .6), b.big ? 4 : 3, b.big ? 4 : 3); }
+      if (b.k > (b.big ? 26 : 22)) booms.splice(i, 1); }
+    for (let i = smoke.length - 1; i >= 0; i--){ const m = smoke[i]; m.y += m.vy; m.x += m.vx; m.r += .08; m.a -= .006;
+      g.fillStyle = `rgba(150,150,160,${Math.max(0, m.a).toFixed(3)})`; g.beginPath(); g.arc(m.x, m.y, m.r, 0, Math.PI * 2); g.fill();
+      if (m.a <= 0) smoke.splice(i, 1); }
     if (!open){ g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(0, 0, w, h); }
     BFraf = requestAnimationFrame(frame);
   }
@@ -560,7 +675,7 @@ async function vHome(){
   const defeat = fd && fd.length >= 5 ? Math.round(fd.filter(x => x.defeated).length / fd.length * 100) : null;
   return topbar() + mapHTML() + `
   <section class="card"><div class="row sb"><h2 class="h pix">오늘의 전황</h2><span class="muted s">영토 ${ASSETS.length}곳</span></div>
-    <div class="summary"><div><b class="up">${up}</b><span class="s">상승군 우세</span></div><div><b class="muted">${ASSETS.length - up - down}</b><span class="s">교착</span></div><div><b class="down">${down}</b><span class="s">하락군 우세</span></div></div></section>
+    <div class="summary"><div><b class="up" data-count="${up}">${up}</b><span class="s">상승군 우세</span></div><div><b class="muted" data-count="${ASSETS.length - up - down}">${ASSETS.length - up - down}</b><span class="s">교착</span></div><div><b class="down" data-count="${down}">${down}</b><span class="s">하락군 우세</span></div></div></section>
   ${army ? armyCard(army) : ''}
   <div class="summary" style="grid-template-columns:1fr 1fr"><a href="#/square" data-act="gocat" data-v="wish"><b style="font-size:20px">🙏</b><span class="s">기원 제단</span></a><a href="#/square" data-act="gocat" data-v="vent"><b style="font-size:20px">😩</b><span class="s">위로의 참호</span></a></div>
   <h3 class="sec">🔥 최대 격전지 <a class="more" href="#/fronts">전체 영토 ›</a></h3>
@@ -698,7 +813,7 @@ function cmtHTML(c, fresh){ const au = c.author || {}; return `<div class="cm${f
 function armyCard(s){
   const u = s.up_win, d = s.down_win;
   return `<section class="card"><div class="row sb"><h2 class="h pix">⚔️ 오늘의 진영전</h2><span class="muted s">판정 끝난 전망·내기</span></div>
-    <div class="score" style="margin-top:10px"><div><b class="up">${u}</b><span class="s up">상승군 승리</span></div><div class="pix muted">VS</div><div><b class="down">${d}</b><span class="s down">하락군 승리</span></div></div>
+    <div class="score" style="margin-top:10px"><div><b class="up" data-count="${u}">${u}</b><span class="s up">상승군 승리</span></div><div class="pix muted">VS</div><div><b class="down" data-count="${d}">${d}</b><span class="s down">하락군 승리</span></div></div>
     <div class="muted s" style="text-align:center;margin-top:8px">${u + d === 0 ? '오늘은 아직 판정된 전투가 없어요' : u > d ? '🔴 오늘은 상승군이 앞서고 있어요' : d > u ? '🔵 오늘은 하락군이 앞서고 있어요' : '팽팽한 접전이에요'}</div></section>`;
 }
 async function vBattles(){
@@ -856,7 +971,10 @@ async function render(keep){
   let html;
   try { html = await fn(); } catch(e){ console.error(e); html = topbar('오류') + empty('불러오지 못했어요: ' + esc(errMsg(e)) + '<br><button class="btn sm" style="margin-top:12px" onclick="render()">다시 시도</button>'); }
   if (id !== RENDER_ID) return;
-  $('#app').innerHTML = html;
+  const app = $('#app'); app.innerHTML = html;
+  if (!keep){ app.classList.add('fresh'); clearTimeout(app._ft); app._ft = setTimeout(() => app.classList.remove('fresh'), 1200);
+    $$('[data-count]').forEach(el => { const n = +el.dataset.count, t0 = performance.now(); if (!n) return; el.textContent = '0';
+      const step = t => { const p = Math.min(1, (t - t0) / 700); el.textContent = Math.round(n * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); }); }
   refreshLive();
   $$('canvas[data-spark]').forEach(drawSpark);
   if (!a) mapInit();
@@ -1074,10 +1192,77 @@ function onUpload(f){
 const SEEN_KEY = 'mw-seen-results';
 async function watchResults(){
   if (!ME) return;
-  const { data } = await sb.from('posts').select('id,title,result,symbol').eq('author_id', ME.id).not('result', 'is', null).gte('settle_at', new Date(now() - 15 * 60000).toISOString());
+  const { data } = await sb.from('posts').select('id,title,result,symbol,category').eq('author_id', ME.id).not('result', 'is', null).gte('settle_at', new Date(now() - 15 * 60000).toISOString());
   let seen = []; try { seen = JSON.parse(localStorage.getItem(SEEN_KEY) || '[]'); } catch(e){}
-  for (const p of data || []){ if (seen.includes(p.id)) continue; seen.push(p.id); toast(p.result === 'WIN' ? `🎖 승전! ${A[p.symbol]?.name} — ${p.title}` : `💀 패전… ${A[p.symbol]?.name} — ${p.title}`); }
+  let shown = false;
+  for (const p of data || []){ if (seen.includes(p.id) || !p.result) continue; seen.push(p.id); if (p.category === 'vent' || p.category === 'info' || p.category === 'chat') continue;
+    if (!shown){ reveal(p); shown = true; } else toast(`${p.result === 'WIN' ? '🎖' : '💀'} ${A[p.symbol]?.name} — ${p.title}`); }
   try { localStorage.setItem(SEEN_KEY, JSON.stringify(seen.slice(-100))); } catch(e){}
+}
+
+function reveal(p){
+  const win = p.result === 'WIN', wish = p.category === 'wish';
+  $$('.reveal').forEach(x => x.remove());
+  const d = document.createElement('div'); d.className = 'reveal';
+  d.innerHTML = `<canvas></canvas><div class="hero" style="color:${win ? 'var(--gold)' : '#9aa3b5'}">${wish ? (win ? '✨ 기원 성취!' : '🕯 다음 기회에') : (win ? '🎖 승전!' : '💀 패전')}</div>
+    <div style="position:relative;margin-top:14px;font-weight:700">${esc(A[p.symbol]?.name || '')} · ${esc(p.title)}</div>
+    <div style="position:relative;margin-top:6px" class="muted s">${win ? (wish ? '하늘이 응답했어요' : '전공을 세웠어요. 계급에 반영돼요') : (wish ? '촛불은 다음에 다시' : '다음 전투에서 설욕하세요')}</div>
+    <div style="position:relative;margin-top:18px" class="muted s">화면을 누르면 닫혀요</div>`;
+  d.onclick = () => d.remove(); document.body.appendChild(d); confetti(d.querySelector('canvas'), win); setTimeout(() => d.remove(), 5000);
+}
+function confetti(cv, win){
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const dpr = Math.min(2, devicePixelRatio || 1), w = innerWidth, h = innerHeight; cv.width = w * dpr; cv.height = h * dpr; const g = cv.getContext('2d'); g.scale(dpr, dpr);
+  const cols = win ? ['#f04452','#f5c542','#ffffff','#ff8a96','#ffd27a'] : ['#6b7385','#8792a6','#4a5162'];
+  const ps = Array.from({length: win ? 160 : 70}, () => ({x: win ? w / 2 + (Math.random() - .5) * 60 : Math.random() * w, y: win ? h * .42 : -20 - Math.random() * h * .5,
+    vx: win ? (Math.random() - .5) * 14 : 0, vy: win ? -Math.random() * 14 - 4 : 3 + Math.random() * 3, r: Math.random() * Math.PI, vr: (Math.random() - .5) * .4, c: cols[Math.floor(Math.random() * cols.length)], s: win ? 5 + Math.random() * 5 : 2}));
+  const t0 = performance.now();
+  (function step(t){ if (!document.body.contains(cv) || t - t0 > 4500) return; g.clearRect(0, 0, w, h);
+    for (const p of ps){ p.vy += win ? .35 : .05; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.r += p.vr; g.save(); g.translate(p.x, p.y); g.rotate(p.r); g.fillStyle = p.c;
+      if (win) g.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); else g.fillRect(-1, -6, 2, 12); g.restore(); }
+    requestAnimationFrame(step); })(t0);
+}
+
+/* ========================================================== live news */
+const EVENTS = [], NICK = {}, SETTLED = new Set();
+async function nickOf(id){ if (!id) return '누군가'; if (NICK[id]) return NICK[id]; const { data } = await sb.from('profiles').select('nickname').eq('id', id).maybeSingle(); return NICK[id] = data?.nickname || '누군가'; }
+function newsBanner(txt){ if (document.hidden) return; $$('.news').forEach(n => n.remove()); const d = document.createElement('div'); d.className = 'news'; d.innerHTML = `<b>속보</b>${esc(txt)}`; document.body.appendChild(d); setTimeout(() => d.remove(), 3800); }
+function pushEvent(txt, banner){ EVENTS.unshift({txt, at: now()}); EVENTS.length = Math.min(EVENTS.length, 10); renderTicker(true); if (banner) newsBanner(txt); }
+let tickerSig = '';
+function renderTicker(force){
+  const el = $('#ticker .track'); if (!el || !ASSETS.length) return;
+  const sig = EVENTS.map(e => e.at).join(',');
+  if (!force && sig === tickerSig && el.childElementCount) return; tickerSig = sig;
+  const items = [...EVENTS.slice(0, 6).map(e => `<span>📣 ${esc(e.txt)}</span>`),
+    ...ASSETS.map(a => `<span>${stateOf(a).split(' ')[0]} <b>${esc(a.short)}</b> <span data-c="${a.symbol}" class="${dir(mv(a))}">${fmtC(a)}</span></span>`)];
+  el.innerHTML = items.join('<i>|</i>');
+  el.style.animationDuration = Math.max(35, items.length * 4.5) + 's';
+}
+function subscribeEvents(){
+  const posted = async ({new: p}) => {
+    const n = await nickOf(p.author_id), a = A[p.symbol]?.name || '';
+    const txt = (p.category === 'forecast' || p.category === 'bet') ? `${n} — ${a} ${SIDE[p.side]}으로 ${p.category === 'bet' ? '내기 걸었어요 🎲' : '참전 ⚔️'}`
+      : p.category === 'wish' ? `🙏 ${n}님이 ${a} ${p.side === 'UP' ? '오르길' : p.side === 'DOWN' ? '내리길' : ''} 빌고 있어요` : p.category === 'vent' ? `😩 ${n}의 푸념: ${p.title}` : `${n}: ${p.title}`;
+    pushEvent(txt, !ME || p.author_id !== ME.id);
+  };
+  const scored = async ({new: p}) => {
+    if (!p.result || SETTLED.has(p.id) || T(p.settle_at) < now() - 300000 || !['forecast','bet','wish'].includes(p.category)) return; SETTLED.add(p.id);
+    const n = await nickOf(p.author_id), a = A[p.symbol]?.name || '';
+    pushEvent(p.category === 'wish' ? (p.result === 'WIN' ? `✨ ${n}의 ${a} 기원 성취!` : `🕯 ${n}의 ${a} 기원은 다음 기회에`) : (p.result === 'WIN' ? `🎖 ${n} ${a} ${SIDE[p.side]} 승전!` : `💀 ${n} ${a} ${SIDE[p.side]} 패전`), false);
+    if (ME && p.author_id === ME.id) watchResults();
+  };
+  sb.channel('events')
+    .on('postgres_changes', {event:'INSERT', schema:'public', table:'posts'}, posted)
+    .on('postgres_changes', {event:'UPDATE', schema:'public', table:'posts'}, scored)
+    .on('postgres_changes', {event:'INSERT', schema:'public', table:'post_joins'}, async ({new: j}) => { const n = await nickOf(j.user_id); pushEvent(`🔥 ${n}님이 내기에 ${SIDE[j.side]}으로 끼어들었어요`, !ME || j.user_id !== ME.id); })
+    .on('postgres_changes', {event:'INSERT', schema:'public', table:'battle_entries'}, async ({new: e}) => { const n = await nickOf(e.user_id); pushEvent(`📯 ${n}님이 결전 ${e.option} 진영에 참전`, false); })
+    .subscribe();
+}
+async function seedEvents(){
+  const { data } = await sb.from('posts').select('category,title,side,symbol,result,author:profiles!posts_author_id_fkey(nickname)').order('created_at', {ascending:false}).limit(5);
+  (data || []).reverse().forEach(p => { const n = p.author?.nickname || '누군가', a = A[p.symbol]?.name || '';
+    EVENTS.unshift({txt: p.result ? `${p.result === 'WIN' ? '🎖' : '💀'} ${n} ${a} ${p.category === 'wish' ? (p.result === 'WIN' ? '기원 성취' : '기원 불발') : SIDE[p.side] + (p.result === 'WIN' ? ' 승전' : ' 패전')}` : `${CAT[p.category]?.e || '📣'} ${n}: ${p.title}`, at: now() - 1}); });
+  renderTicker(true);
 }
 
 /* ========================================================== boot */
@@ -1086,6 +1271,7 @@ async function watchResults(){
   try { await Promise.all([loadAssets(), loadArts(), loadMe()]); }
   catch(e){ $('#app').innerHTML = topbar() + empty('서버에 연결하지 못했어요: ' + esc(errMsg(e)) + '<br><button class="btn sm" style="margin-top:12px" onclick="location.reload()">다시 시도</button>'); return; }
   sb.channel('assets').on('postgres_changes', {event:'UPDATE', schema:'public', table:'assets'}, p => onAssetRow(p.new)).subscribe();
+  subscribeEvents(); seedEvents().catch(() => renderTicker(true));
   connectBinance();
   setInterval(() => $$('[data-cd]').forEach(el => el.textContent = mmss(+el.dataset.cd - now())), 1000);
   setInterval(() => { softRender(); watchResults(); }, 30000);
