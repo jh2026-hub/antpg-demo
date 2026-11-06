@@ -9,6 +9,7 @@
 <meta name="theme-color" content="#14161b" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🫠</text></svg>">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri@2.40.3/dist/galmuri.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
 <style>
@@ -263,6 +264,30 @@ textarea.f{min-height:90px;resize:none}
 .hcols .hc{position:relative;flex:1}.hcols .hc i{position:absolute;left:1px;right:1px;border-radius:2px}
 .hcols .hc i.b{background:var(--up)}.hcols .hc i.s{background:var(--down)}
 .cfl{margin-top:4px;font-size:12px;font-weight:700;white-space:nowrap}.cfl b{font-size:11px;margin-left:1px}
+/* ---------- pixel plaza */
+.plaza.px{height:300px;border-radius:6px;background:#0b1430;box-shadow:0 0 0 2px #1d2028,0 4px 0 2px rgba(0,0,0,.25)}
+.px .pxbg,.px .pxfx{position:absolute;left:0;top:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges}
+.px .pxbg{z-index:0}.px .pxfx{z-index:850;pointer-events:none}
+.px .av{width:20px;height:34px;transform-origin:50% 100%}
+.px .av canvas{width:20px;height:34px}
+.px .av::after{left:2px;right:2px;bottom:-2px;height:4px;border-radius:0;background:rgba(0,0,0,.2)}
+.px .av.mine::before{left:-2px;right:-2px;bottom:-4px;height:6px;border-radius:0;border:2px solid #ffd84a}
+.px .av .umb{width:24px;height:12px;bottom:calc(100% - 4px);background:var(--umb) center/100% 100% no-repeat;image-rendering:pixelated}
+.px .av .mo{font-size:13px}
+.px .av .nm,.px .av .bub,.px .pzcap,.px .pzw,.px .pzhint span,.px .pxsay,.px .pzpop{font-family:Galmuri11,Pretendard,sans-serif;border-radius:0}
+.px .av .nm{font-size:10px;font-weight:400;background:#fff;border:1px solid #1d2028;padding:0 3px;margin-top:2px;max-width:90px}
+.px .av.mine .nm{background:#ffd84a;color:#1d2028}
+.px .av .bub{font-weight:400;font-size:11px;border:2px solid #1d2028;box-shadow:2px 2px 0 rgba(0,0,0,.35);padding:3px 6px;bottom:calc(100% + 16px)}
+.px .av .bub::after{border-top-color:#1d2028;margin-left:-4px}
+.px .pzcap,.px .pzw{font-weight:400;font-size:11px;background:rgba(255,255,255,.92);border:2px solid #1d2028;padding:1px 6px;top:auto;bottom:30px;box-shadow:2px 2px 0 rgba(0,0,0,.3)}
+.px .pzhint span{font-weight:400;background:rgba(255,255,255,.92);border:2px solid #1d2028;padding:1px 7px}
+.px .pxsay{position:absolute;left:50%;transform:translateX(-50%);z-index:860;font-size:11px;background:#fff;color:#1d2028;border:2px solid #1d2028;padding:2px 6px;white-space:nowrap;box-shadow:2px 2px 0 rgba(0,0,0,.3);pointer-events:none;animation:pxsay 2.4s steps(2) infinite}
+@keyframes pxsay{50%{translate:0 -2px}}
+.px .pzpop{border:2px solid #1d2028;box-shadow:4px 4px 0 rgba(0,0,0,.3)}
+.px .pzpop .btn{border-radius:0}
+.mini .mpx{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;object-fit:cover}
+.mini .mw,.mini .mbadge,.mini .mon,.mini .mem{z-index:1}
+.mini .mon,.mini .mbadge{border-radius:0;font-family:Galmuri11,Pretendard,sans-serif;font-weight:400;border:1px solid #1d2028}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -324,7 +349,7 @@ const pct = a => +(a.change_pct || 0);
 const fmtC = a => (pct(a) > 0 ? '+' : '') + pct(a).toFixed(2) + '%';
 const dir = v => v > 0 ? 'up' : v < 0 ? 'down' : 'flat';
 async function loadAssets(){
-  const { data } = await sb.from('assets').select('symbol,name,short,kind,region,change_pct,price,market_open,low_52w,high_52w,vol_ratio,flows').eq('active', true).order('sort');
+  const { data } = await sb.from('assets').select('symbol,name,short,kind,region,change_pct,price,market_open,low_52w,high_52w,vol_ratio,flows,spark').eq('active', true).order('sort');
   ASSETS = (data || []).map(r => Object.assign(A[r.symbol] = A[r.symbol] || {}, r));
 }
 const PLACES = {
@@ -482,7 +507,7 @@ function miniFx(sc){
 function roomCard(a, st){
   const sc = scene(a), on = ROOMN[a.symbol] || 0;
   return `<a class="room" href="#/r/${encodeURIComponent(a.symbol)}"><div class="mini ${sceneCls(sc)}">
-      ${miniFx(sc)}<span class="mw">${sc.night ? '🌙' : sc.e}</span>${sc.frozen ? '<span class="mbadge">🧊 52주 저점</span>' : sc.peak ? '<span class="mbadge">🏆 52주 고점</span>' : ''}<span class="mon" data-on="${esc(a.symbol)}">${on ? `<span class="dot"></span>${on}명` : ''}</span><span class="mem">${st.em.join('')}</span></div>
+      <canvas class="mpx" data-sym="${esc(a.symbol)}"></canvas><span class="mw">${sc.night ? '🌙' : sc.e}</span>${sc.frozen ? '<span class="mbadge">🧊 52주 저점</span>' : sc.peak ? '<span class="mbadge">🏆 52주 고점</span>' : ''}<span class="mon" data-on="${esc(a.symbol)}">${on ? `<span class="dot"></span>${on}명` : ''}</span><span class="mem">${st.em.join('')}</span></div>
     <div class="rinfo"><div class="row sb"><b>${esc(a.short)}</b><span class="num ${dir(pct(a))}" data-c="${esc(a.symbol)}">${fmtC(a)}</span></div>
       <div class="muted s">${sc.label}${sc.night ? ' · 마감' : ''} · 오늘 ${st.n}명</div>${forceMini(a)}${(ev => ev.length ? `<div class="cev">${ev.slice(0, 2).map(e => `<span class="${e.good ? 'g' : 'bd'}">${e.e} ${e.n}</span>`).join('')}</div>` : '')(events(a))}</div></a>`;
 }
@@ -506,7 +531,7 @@ async function vHome(){
 /* ---------------------------------------------------------------- room */
 async function opinionHTML(){
   const a = A[UI.room]; if (!a) return '';
-  const o = await rpc('opinion_today', {p_symbol: a.symbol}).catch(() => ({up:0, down:0, dunno:0}));
+  const o = await rpc('opinion_today', {p_symbol: a.symbol}).catch(() => ({up:0, down:0, dunno:0})); PX.votes(a.symbol, o);
   const t = o.up + o.down + o.dunno, w = k => t ? o[k] / t * 100 : 0;
   const q = pct(a) <= -3 ? `${a.short} ${fmtC(a)}… 내일은 어떨까요?` : pct(a) >= 3 ? `${a.short} ${fmtC(a)}! 더 갈까요?` : `${a.short}, 내일은 어떨까요?`;
   return `<div class="card" id="op"><h2 class="h2">💬 ${esc(q)}</h2><div class="muted s">맞히기 아님 · 생각만 나눠요</div>
@@ -656,6 +681,308 @@ async function vMe(){
 }
 
 /* ---------------------------------------------------------------- plaza: everyone in this room walks around as a pixel character */
+/* ---------------------------------------------------------------- pixel world: each room is drawn on a low-res canvas and scaled up 2x with hard edges */
+const PX = (() => {
+  const SKY = {fest:['#ff9f5a','#ffe3a3'], sunny:['#4fb0ff','#cdeeff'], clear:['#8cc6ff','#e2f2ff'], cloud:['#9eabbd','#dde3ea'], rain:['#6f7c90','#b3bdc9'], storm:['#363e4d','#687183'], quake:['#7d7264','#cbbca5'], nuke:['#2e140c','#d0602c']};
+  const GND = {park:['#8fcf5f','#76b649','#a9df78'], beach:['#f1d896','#dfbf74','#faecc0'], city:['#9da2ac','#878c96','#b6bac2'], square:['#d9cbb2','#c2b294','#e9dfcb']};
+  const hx = c => [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16));
+  const mix = (a, b, t) => { const A = hx(a), B = hx(b); return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join(''); };
+  const srnd = s => () => { s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const fr = (x, n) => ((x % n) + n) % n;
+
+  /* sprites: palette + rows ('.' = empty) */
+  const SPR = {
+    ufo:   [{a:'#a3acb7', b:'#6b7480', c:'#7fe0ff', d:'#e8fbff', e:'#ffd84a'}, ['......ccc......', '.....cdccc.....', '..aaaaaaaaaaa..', '.abbbbbbbbbbba.', 'aeaaeaaeaaeaaea', '..aaaaaaaaaaa..']],
+    alien: [{g:'#7ee06a', k:'#111', s:'#c9d1db'}, ['..ggg..', '.ggggg.', 'gkgggkg', '.ggggg.', '..ggg..', '.sssss.', 's.sss.s', '..s.s..', '..s.s..']],
+    cop:   [{n:'#25407a', y:'#ffd84a', f:'#ffd2a8', k:'#111'}, ['.nnnnn.', 'nnnynnn', '.fffff.', '.fkfkf.', '.fffff.', 'nnnynnn', 'fnnnnnf', '.nnnnn.', '.n...n.', '.k...k.']],
+    ant:   [{k:'#3a1e12', r:'#b5402a'}, ['.......k.k', '........kk', '.rrr..kkkk', 'rrrrrkkkkk', '.rrr..kk..', '.k.k.k.k..']],
+    whale: [{b:'#3a78c9', k:'#111', w:'#bfe0ff'}, ['................b.', '...bbbbbbbb....bb.', '.bbbbbbbbbbbb.bbb.', 'bbbkbbbbbbbbbbbb..', 'bbbbbbbbbbbbbbb...', 'wwwwwwwbbbbbbb....', '.wwwwwwwwbbb......', '..wwwww...........']],
+    shark: [{g:'#6b7a88', k:'#111', w:'#e9eef2'}, ['......g.......', '.....gg......g', '..ggggggggg.gg', '.gkggggggggggg', 'gggggggggggg..', '.wwwwwwwwg.gg.', '...wwww.......']],
+    fin:   [{g:'#5d6b78', w:'#e8f6ff'}, ['....g..', '...gg..', '..ggg..', '.gggg..', 'wwwwwww']],
+    rocket:[{r:'#f04452', w:'#f2f2f2', b:'#3182f6'}, ['..r..', '.rwr.', '.www.', '.wbw.', '.www.', '.www.', 'rwwwr', 'r.w.r']],
+    mammoth:[{h:'#7a5236', k:'#111', w:'#f5efe0', d:'#5b3c27'}, ['...hhhhhh.....', '..hhhhhhhhh...', '.hhhhhhhhhhhh.', 'hhhhhhhhhhhkhh', 'hhhhhhhhhhhhhh', 'hhhhhhhhhhhhhw', 'hhhhhhhhhhh.hw', '.dd.dd.dd..hw.', '.dd.dd.dd..h..', '.dd.dd.dd.....']],
+    hero:  [{r:'#f04452', b:'#3182f6', f:'#ffd2a8', y:'#ffd84a', k:'#222'}, ['rr.......kk.', 'rrrr....ffff', '.rrrbbbbbbff', '..rrbbbbbb.f', '....yybbb...', '....bb......']],
+    bus:   [{y:'#f2c94c', w:'#9fd3ff', o:'#ff8a3d', k:'#222', l:'#fff'}, ['.yyyyyyyyyyyyyyyyyy.', 'yywwywwywwywwywwywwy', 'yywwywwywwywwywwywwy', 'yyyyyyyyyyyyyyyyyyyy', 'yooooooooooooooooooy', 'yyyyyyyyyyyyyyyyyyyl', 'yykkyyyyyyyyyykkyyyy', '..kk..........kk....']],
+    pcar:  [{k:'#222', w:'#f4f6f8', g:'#9fd3ff', b:'#2f5fd0', y:'#ffd84a', d:'#111', R:'#ff3344', B:'#3a7bff'}, ['.......RB.........', '....kkkkkkkkk.....', '...kggkgggkggk....', '..kgggkgggkgggk...', 'kkkkkkkkkkkkkkkkk.', 'kwwwwwwwwwwwwwwwyk', 'kbbbbbbbbbbbbbbbbk', 'kkkddkkkkkkkddkkk.', '...dd.......dd....']],
+    barr:  [{o:'#ff8a3d', w:'#fff', k:'#333'}, ['ooowwwoo', 'wwooowww', '.k....k.', '.k....k.', 'kk....kk']],
+    barrf: [{o:'#ff8a3d', w:'#fff', k:'#333'}, ['..k....k', 'ooowwwoo', 'wwooowwk']],
+    run1:  [{f:'#ffd2a8', s:'#ff8a3d', p:'#2d3a5a', h:'#2b2b2b'}, ['.hh..', '.ff..', 'ssss.', '.ss.s', '.ss..', '.p.p.', 'p...p']],
+    run2:  [{f:'#ffd2a8', s:'#ff8a3d', p:'#2d3a5a', h:'#2b2b2b'}, ['.hh..', '.ff..', '.sss.', 's.ss.', '.ss..', '.pp..', '.p.p.']],
+    man:   [{f:'#ffd2a8', s:'#ff8a3d', p:'#2d3a5a', h:'#2b2b2b'}, ['.hhh.', '.fff.', '.fff.', 'sssss', '.sss.', '.p.p.', '.p.p.']],
+    coin:  [{y:'#ffd84a', o:'#c99a1a'}, ['.y.', 'yoy', '.y.']],
+    umb:   [{b:'#3182f6', w:'#cfe3ff', k:'#333'}, ['....bbbb....', '..bbbbbbbb..', '.bbwbbbbwbb.', 'bbbbbbbbbbbb', '.....k......', '.....k......']],
+  };
+  const sprC = {};
+  function spr(name, pal){
+    const key = name + (pal ? JSON.stringify(pal) : ''); if (sprC[key]) return sprC[key];
+    const [P0, rows] = SPR[name], P = {...P0, ...(pal || {})}, w = Math.max(...rows.map(r => r.length));
+    const c = document.createElement('canvas'); c.width = w; c.height = rows.length; const g = c.getContext('2d');
+    rows.forEach((r, y) => [...r].forEach((ch, x) => { if (P[ch]){ g.fillStyle = P[ch]; g.fillRect(x, y, 1, 1); } }));
+    return sprC[key] = c;
+  }
+  function put(g, name, x, y, flip, pal){
+    const c = spr(name, pal); x = Math.round(x); y = Math.round(y);
+    if (flip){ g.save(); g.translate(x + c.width, y); g.scale(-1, 1); g.drawImage(c, 0, 0); g.restore(); } else g.drawImage(c, x, y);
+    return c;
+  }
+  const R = (g, x, y, w, h, c) => { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
+  const disc = (g, cx, cy, r, c) => { g.fillStyle = c; cx = Math.round(cx); cy = Math.round(cy); for (let y = -r; y <= r; y++){ const w = Math.round(Math.sqrt(r * r - y * y)); g.fillRect(cx - w, cy + y, w * 2 + 1, 1); } };
+
+  /* 3x5 digit font for the billboard */
+  const DG = {'0':'111101101101111','1':'010110010010111','2':'111001111100111','3':'111001111001111','4':'101101111001001','5':'111100111001111','6':'111100111101111','7':'111001010010010','8':'111101111101111','9':'111101111001111','%':'101001010100101','+':'000010111010000','-':'000000111000000','$':'011110010011110','.':'00001',',':'00011'};
+  function txt(g, s, x, y, c, k){
+    k = k || 1; g.fillStyle = c;
+    for (const ch of String(s)){ const d = DG[ch]; if (!d){ x += 2 * k; continue; } const w = d.length / 5;
+      for (let i = 0; i < d.length; i++) if (d[i] === '1') g.fillRect(x + (i % w) * k, y + Math.floor(i / w) * k, k, k);
+      x += (w + 1) * k; }
+    return x;
+  }
+  const txtW = (s, k) => [...String(s)].reduce((w, ch) => w + ((DG[ch] ? DG[ch].length / 5 : 1) + 1) * (k || 1), 0) - (k || 1);
+  /* Korean labels: Galmuri pixel font at its native size */
+  let dirty = true;
+  try { document.fonts.load('10px Galmuri9').then(() => { dirty = true; }); } catch(e){}
+  function ktxt(g, s, x, y, c, align, outline){
+    g.font = '10px Galmuri9, monospace'; g.textBaseline = 'top'; g.textAlign = align || 'left'; x = Math.round(x); y = Math.round(y);
+    if (outline){ g.fillStyle = outline; for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) g.fillText(s, x + dx, y + dy); }
+    g.fillStyle = c; g.fillText(s, x, y);
+  }
+
+  /* ---------- static layers (redrawn only when the scene changes) */
+  const skyOf = sc => sc.night ? (sc.k === 'nuke' ? ['#160805', '#7a2a14'] : sc.w === 'fest' ? ['#2a1350', '#5a2f74'] : ['#0b1430', '#26365c'])
+    : sc.frozen && ['cloud', 'clear', 'sunny'].includes(sc.w) ? ['#bcd9ee', '#eef8ff'] : SKY[sc.w] || SKY.cloud;
+  function tree(g, x, y, sc){
+    if (sc.frozen){ R(g, x - 1, y - 4, 3, 5, '#6b4a2e'); for (let i = 0; i < 4; i++) R(g, x - 2 - i * 2, y - 6 - (3 - i) * 4, 5 + i * 4, 4, i % 2 ? '#2f6b4a' : '#3d7d58'); for (let i = 0; i < 4; i++) R(g, x - 1 - i * 2, y - 6 - (3 - i) * 4, 3 + i * 4, 1, '#fff'); return; }
+    R(g, x - 1, y - 7, 3, 8, '#6b4a2e'); disc(g, x, y - 13, 7, '#4a9a3c'); disc(g, x - 2, y - 15, 4, '#5fb34d'); R(g, x - 3, y - 17, 2, 2, '#82cf6a');
+  }
+  function palm(g, x, y, sc){
+    if (sc.frozen){ disc(g, x, y - 4, 4, '#fff'); disc(g, x, y - 11, 3, '#fff'); R(g, x - 1, y - 12, 1, 1, '#222'); R(g, x + 1, y - 12, 1, 1, '#222'); R(g, x, y - 11, 2, 1, '#ff8a3d'); R(g, x - 2, y - 15, 5, 2, '#333'); return; }
+    for (let i = 0; i < 16; i++) R(g, x + Math.round(Math.sin(i / 6) * 2), y - i, 2, 1, i % 3 ? '#8a6238' : '#6e4c2a');
+    const tx = x + 2, ty = y - 16;
+    for (const [dx, dy] of [[-1, 0], [1, 0], [-.7, .5], [.7, .5], [-.4, -.4], [.4, -.4]]) for (let i = 1; i <= 7; i++) R(g, tx + dx * i, ty + dy * i + (Math.abs(dx) > .6 ? i * i / 14 : 0), 2, 1, '#3f9a45');
+    R(g, tx - 1, ty, 3, 2, '#2f7a35');
+  }
+  function building(W, H, rnd, lit, ruin){
+    const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
+    const base = ['#6f7787', '#808898', '#5f6676', '#8a8f9c'][rnd() * 4 | 0];
+    R(g, 0, 0, W, H, base); R(g, 0, 0, W, 1, mix(base, '#ffffff', .25)); R(g, W - 1, 0, 1, H, mix(base, '#000000', .25));
+    for (let y = 3; y < H - 3; y += 4) for (let x = 2; x < W - 2; x += 3) R(g, x, y, 1, 2, lit && rnd() < .55 ? '#ffd86b' : mix(base, '#1a2030', .55));
+    if (ruin){ g.clearRect(0, 0, W, 2 + (rnd() * 6 | 0)); for (let x = 0; x < W; x++) g.clearRect(x, 0, 1, (rnd() * 7 | 0)); }
+    return c;
+  }
+  function backLayer(W, H, HZ, sc, room){
+    const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d'), rnd = srnd(W * 31 + HZ);
+    const [s1, s2] = skyOf(sc), B = 6;
+    for (let y = 0; y < HZ; y++){ const t = y / HZ * (B - 1), b = Math.floor(t), f = t - b, c1 = mix(s1, s2, b / (B - 1)), c2 = mix(s1, s2, Math.min(1, (b + 1) / (B - 1)));
+      R(g, 0, y, W, 1, c1); if (f > .5) for (let x = (y & 1); x < W; x += 2) R(g, x, y, 1, 1, c2); }
+    if (!sc.night && sc.w === 'sunny') [['#f04452'], ['#ff8a3d'], ['#f2c94c'], ['#2fbf71'], ['#3182f6'], ['#a46ad8']].forEach(([col], i) => {
+      const r = Math.round(W * .36) - i * 2; g.fillStyle = col; for (let a = Math.PI; a <= Math.PI * 2; a += .5 / r){ g.fillRect(Math.round(W / 2 + Math.cos(a) * r), Math.round(HZ + 4 + Math.sin(a) * r), 1, 2); } });
+    if (sc.night){ disc(g, W - 14, 10, 5, '#fff3c4'); disc(g, W - 12, 8, 4, skyOf(sc)[0]); }
+    else if (['clear', 'sunny', 'fest'].includes(sc.w)){ disc(g, 12, 11, 6, '#ffe066'); disc(g, 12, 11, 4, '#fff3a8'); }
+    if (sc.peak){ const mx = W * .5, top = HZ - 44; for (let y = top; y < HZ; y++){ const w = (y - top) * 1.3; R(g, mx - w, y, w * 2, 1, y < top + 8 ? '#ffffff' : mix('#8d7c64', '#6f6150', (y - top) / 44)); } }
+    // backdrop by place
+    if (sc.place === 'beach'){ R(g, 0, HZ - 10, W, 10, sc.frozen ? '#cfe9f7' : '#4ea7e0'); R(g, 0, HZ - 10, W, 1, sc.frozen ? '#eaf6fc' : '#8fd0f0'); R(g, 0, HZ - 1, W, 1, sc.frozen ? '#eaf6fc' : '#bfe6fb'); }
+    else if (sc.place === 'city' || sc.k === 'nuke'){
+      for (let x = -4; x < W; ){ const w = 10 + (rnd() * 12 | 0), h = 10 + (rnd() * 26 | 0); g.drawImage(building(w, h, rnd, sc.night, sc.k === 'nuke'), x, HZ - h); x += w + (rnd() * 3 | 0); } }
+    else if (sc.place === 'park'){ for (let x = -6; x < W + 6; x += 9){ const r = 5 + (rnd() * 4 | 0); disc(g, x, HZ - r + 2, r, sc.frozen ? '#dfeef7' : '#5a9e48'); if (!sc.frozen) disc(g, x - 2, HZ - r, r - 3, '#6cb556'); else R(g, x - 2, HZ - r * 2 + 3, 4, 1, '#fff'); } }
+    else if (sc.place === 'square'){ R(g, 0, HZ - 14, W, 14, '#cbbfa8'); for (let x = 3; x < W; x += 9){ R(g, x, HZ - 13, 3, 12, '#efe6d4'); R(g, x + 3, HZ - 13, 1, 12, '#b3a68c'); } R(g, 0, HZ - 16, W, 3, '#b3a68c'); R(g, 0, HZ - 17, W, 1, '#e3d8c2'); }
+    return c;
+  }
+  const fortW = W => Math.max(20, Math.min(34, ((W - 84) >> 1) - 5));
+  function frontLayer(W, H, HZ, sc, room){
+    const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d'), rnd = srnd(W * 17 + H);
+    let [b, d, l] = sc.k === 'nuke' ? ['#5e4e40', '#45392f', '#7a6858'] : sc.frozen ? ['#eef6fb', '#cfe2ee', '#ffffff'] : sc.peak ? ['#f3e3a0', '#d9bf62', '#fff3c8'] : GND[sc.place];
+    if (sc.night){ b = mix(b, '#0b1430', .35); d = mix(d, '#0b1430', .35); l = mix(l, '#0b1430', .35); }
+    R(g, 0, HZ, W, H - HZ, b); R(g, 0, HZ, W, 1, d);
+    if (sc.place === 'square' && sc.k !== 'nuke') for (let y = HZ + 4; y < H; y += 7) for (let x = ((y / 7 | 0) % 2) * 6; x < W; x += 12){ R(g, x, y, 11, 1, d); R(g, x, y, 1, 6, d); }
+    if (sc.place === 'city' && sc.k !== 'nuke'){ R(g, 0, HZ + 1, W, 3, mix(b, '#ffffff', .2)); for (let y = HZ + 10; y < H; y += 10) R(g, 0, y, W, 1, d); for (let x = W / 2 - 22; x < W / 2 + 22; x += 6) R(g, x, H - 34, 4, 12, mix(b, '#ffffff', .55)); }
+    for (let i = 0; i < W * (H - HZ) / 30; i++){ const x = rnd() * W | 0, y = HZ + 2 + (rnd() * (H - HZ - 2) | 0); if (sc.place === 'park' && !sc.frozen && sc.k !== 'nuke'){ R(g, x, y, 1, 1, d); R(g, x + 2, y, 1, 1, d); R(g, x + 1, y + 1, 1, 1, d); } else R(g, x, y, 1, 1, rnd() < .5 ? d : l); }
+    if (sc.place === 'park' && !sc.frozen && sc.k !== 'nuke') for (let i = 0; i < 10; i++){ const x = rnd() * W | 0, y = HZ + 20 + (rnd() * (H - HZ - 24) | 0); R(g, x, y, 1, 1, ['#ff6fa8', '#ffd84a', '#ffffff'][i % 3]); }
+    if (sc.quake || sc.k === 'nuke'){ g.fillStyle = '#3b2f25'; for (let k = 0; k < 4; k++){ let x = rnd() * W, y = HZ + 6 + rnd() * 20; for (let i = 0; i < 26; i++){ x += (rnd() - .5) * 4; y += 1.6; if (y >= H) break; g.fillRect(Math.round(x), Math.round(y), 2, 2); } } }
+    // props
+    const P = (x, y) => [Math.round(x), Math.round(y)];
+    if (sc.k === 'nuke'){ for (const [x, y] of [P(W * .12, H - 22), P(W * .86, H - 12), P(W * .55, HZ + 22)]){ for (let i = 0; i < 6; i++) R(g, x - 6 + rnd() * 10, y - rnd() * 5, 3 + rnd() * 3, 2 + rnd() * 2, ['#6e5c4b', '#3b2f25', '#8a7a68'][i % 3]); } }
+    else if (sc.place === 'park'){ tree(g, ...P(10, H - 14), sc); tree(g, ...P(W - 12, H - 30), sc); R(g, W * .3, HZ + 30, 16, 2, '#8a5a2b'); R(g, W * .3, HZ + 26, 16, 2, '#a06a35'); R(g, W * .3 + 1, HZ + 32, 1, 3, '#5b3c27'); R(g, W * .3 + 14, HZ + 32, 1, 3, '#5b3c27'); }
+    else if (sc.place === 'beach'){ palm(g, ...P(8, H - 10), sc); palm(g, ...P(W - 12, H - 26), sc);
+      if (!sc.frozen){ const x = Math.round(W * .74), y = H - 18; R(g, x, y - 12, 1, 14, '#6e4c2a'); for (let i = 0; i < 8; i++) R(g, x - 8 + i, y - 12 - Math.round(Math.sqrt(64 - (i - 8) ** 2) / 2), 1, 1, '#fff'); for (let r = 0; r < 4; r++) for (let i = -8; i <= 8; i++) R(g, x + i, y - 13 + r - Math.round((8 - Math.abs(i)) / 2.5), 1, 1, ((i + 8) >> 2) % 2 ? '#ff6b6b' : '#ffffff');
+        R(g, W * .22, H - 9, 4, 2, '#e8553b'); R(g, W * .22 - 1, H - 10, 1, 1, '#e8553b'); R(g, W * .22 + 4, H - 10, 1, 1, '#e8553b'); } }
+    else if (sc.place === 'city'){ for (const x of [6, W - 8]){ R(g, x, HZ + 4, 2, 22, '#3b3f48'); R(g, x - 2, HZ + 3, 6, 2, '#3b3f48'); R(g, x - 1, HZ + 5, 4, 2, sc.night ? '#fff3a8' : '#d8dde5'); } R(g, W - 26, H - 16, 4, 6, '#d33'); R(g, W - 27, H - 14, 6, 1, '#d33'); }
+    else if (sc.place === 'square'){ const x = Math.round(W / 2), y = Math.round(HZ + (H - HZ) * .55); for (let i = -14; i <= 14; i++){ const h = Math.round(Math.sqrt(1 - (i / 14) ** 2) * 4); R(g, x + i, y - h, 1, h * 2 + 1, '#b9ab90'); } for (let i = -12; i <= 12; i++){ const h = Math.round(Math.sqrt(1 - (i / 12) ** 2) * 3); R(g, x + i, y - h, 1, h * 2, sc.frozen ? '#dff2fb' : '#6fc3ef'); } R(g, x - 1, y - 10, 3, 9, '#b9ab90'); }
+    // forts: buyers on the left, sellers on the right
+    if (room){ const fw = fortW(W); for (const side of [0, 1]){ const x0 = side ? W - 3 - fw : 3, top = HZ - 26, stone = sc.k === 'nuke' ? '#6e655a' : '#a9a193', dk = mix(stone, '#000000', .25), lt = mix(stone, '#ffffff', .25);
+      R(g, x0, top, fw, HZ + 5 - top, stone); for (let y = top + 3; y < HZ + 5; y += 4){ R(g, x0, y, fw, 1, dk); for (let x = x0 + ((y >> 2) % 2) * 3; x < x0 + fw; x += 6) R(g, x, y - 3, 1, 3, dk); }
+      for (let x = x0; x < x0 + fw; x += 6) R(g, x, top - 4, 4, 4, stone), R(g, x, top - 4, 4, 1, sc.frozen ? '#fff' : lt);
+      R(g, x0, top, fw, 1, lt); R(g, x0 + fw - 1, top - 4, 1, HZ + 9 - top, dk);
+      const gx = x0 + (fw >> 1) - 5; R(g, gx, HZ - 7, 10, 12, '#3b3127'); R(g, gx + 1, HZ - 8, 8, 1, '#3b3127'); R(g, gx + 2, HZ - 9, 6, 1, '#3b3127');
+      if (sc.frozen) for (let x = x0; x < x0 + fw; x += 2) R(g, x, top, 1, 1 + (x % 3), '#ffffff'); } }
+    return c;
+  }
+
+  /* ---------- live parts */
+  function clouds(g, W, t, sc, n){
+    if (!['clear', 'cloud', 'rain', 'storm', 'quake'].includes(sc.w)) return;
+    const col = sc.w === 'storm' ? ['#4a5262', '#5c6576'] : sc.w === 'rain' || sc.w === 'quake' ? ['#9aa4b2', '#b7c0cc'] : ['#f4f7fb', '#ffffff'];
+    for (let i = 0; i < n; i++){ const sp = 2 + i * 1.3, x = fr(t / 1000 * sp + i * 71, W + 50) - 25, y = 6 + i * 9 % 30;
+      disc(g, x, y + 3, 4, col[0]); disc(g, x + 6, y + 1, 6, col[0]); disc(g, x + 13, y + 3, 4, col[0]); R(g, x - 3, y + 4, 21, 4, col[0]); disc(g, x + 5, y, 3, col[1]); }
+  }
+  function stars(g, W, HZ, t){ const r = srnd(5); for (let i = 0; i < 26; i++){ const x = r() * W | 0, y = r() * (HZ - 20) | 0, on = fr(t / 600 + r() * 9, 3) > .6; R(g, x, y, 1, 1, on ? '#ffffff' : '#7f8cb3'); } }
+  function fireworks(g, W, HZ, t){
+    for (let i = 0; i < 3; i++){ const T = 2600, p = fr(t + i * 900, T) / T, r = srnd((Math.floor((t + i * 900) / T) * 7 + i) | 0), cx = 20 + r() * (W - 40), cy = 8 + r() * (HZ * .45), col = ['#ff5a63', '#ffd84a', '#7ee06a', '#6fc3ff', '#ff6fa8'][(r() * 5) | 0];
+      if (p < .25){ R(g, cx, HZ - (HZ - cy) * (p / .25), 1, 2, '#fff3a8'); continue; }
+      const q = (p - .25) / .75, rad = 2 + q * 14; for (let k = 0; k < 12; k++){ const a = k / 12 * Math.PI * 2; R(g, cx + Math.cos(a) * rad, cy + Math.sin(a) * rad + q * q * 6, 1, 1, q > .8 && k % 2 ? '#fff' : col); } }
+  }
+  function mushroom(g, x, HZ, t, k){
+    k = k || 1; const p = fr(t, 9000) / 9000, gr = Math.min(1, p / .35) * k, top = HZ - 8 * k - gr * 34;
+    for (let y = Math.round(top); y < HZ; y++) R(g, x - 3 - (HZ - y < 6 ? (6 - (HZ - y)) : 0), y, 7 + (HZ - y < 6 ? (6 - (HZ - y)) * 2 : 0), 1, y % 3 ? '#8a5a3c' : '#a8704a');
+    const cr = Math.round(3 + gr * 12), fl = fr(t / 120, 2) | 0;
+    disc(g, x, top, cr, '#6d5244'); disc(g, x - cr * .5, top + 2, cr * .6 | 0, '#8a5a3c'); disc(g, x + cr * .5, top + 2, cr * .6 | 0, '#8a5a3c');
+    disc(g, x, top + 3, cr * .55 | 0, fl ? '#ff8a3d' : '#ffb347'); R(g, x - cr, top + cr * .6, cr * 2, 2, '#4a372d');
+  }
+  function quakeBlds(g, W, HZ, t){
+    const xs = [[W * .2, HZ + 24], [W * .72, HZ + 40], [W * .42, HZ + 62]];
+    xs.forEach(([bx, by], i) => { const HZ = by; const T = 7000, p = fr(t + i * 2300, T) / T, w = 12, h = 26;
+      const c = sprC['bld' + i] || (sprC['bld' + i] = building(w, h, srnd(90 + i), false, false));
+      const ang = p < .55 ? Math.sin(t / 40 + i) * .03 : p < .8 ? ((p - .55) / .25) ** 2 * (i % 2 ? 1.5 : -1.5) : (i % 2 ? 1.5 : -1.5);
+      g.save(); g.translate(Math.round(bx + (ang > 0 ? w : 0)), HZ); g.rotate(ang); g.drawImage(c, ang > 0 ? -w : 0, -h); g.restore();
+      if (p > .74 && p < .98){ const q = (p - .74) / .24; for (let k = 0; k < 5; k++) disc(g, bx + (ang > 0 ? 14 : -4) + (k - 2) * 5 * (.5 + q), HZ - 2 - q * 6 + (k % 2) * 2, Math.round(2 + q * 3), q < .6 ? '#c9b89c' : '#ddd0bb'); } });
+  }
+  function board(g, W, HZ, t, a, sc){
+    const bw = 84, bh = 46, x = (W - bw) >> 1, y = 5;
+    if (sc.night){ g.globalAlpha = .18; R(g, x - 4, y - 4, bw + 8, bh + 8, '#6fc3ff'); g.globalAlpha = 1; }
+    R(g, x + 10, y + bh, 3, HZ - y - bh + 3, '#4a4f5a'); R(g, x + bw - 13, y + bh, 3, HZ - y - bh + 3, '#4a4f5a');
+    R(g, x - 2, y - 2, bw + 4, bh + 4, '#1d2028'); R(g, x - 1, y - 1, bw + 2, bh + 2, '#3a3f4b'); R(g, x + 1, y + 1, bw - 2, bh - 2, '#0a0f1c');
+    for (let i = 0; i < bw; i += 6) R(g, x + i + 2, y - 4, 2, 2, ((i / 6 + (t / 350 | 0)) & 1) ? '#ffd84a' : '#8a6a1a');
+    const v = pct(a), col = v > 0 ? '#ff5a63' : v < 0 ? '#4f9dff' : '#cfd6e0';
+    ktxt(g, a.short || a.symbol, x + 4, y + 3, '#ffffff');
+    const ps = fmtC(a); txt(g, ps, x + bw - 4 - txtW(ps), y + 5, col);
+    const p = +a.price; let s = p >= 1000 ? p.toLocaleString('en-US', {maximumFractionDigits: a.kind === 'INDEX' || a.kind === 'CRYPTO' ? 2 : 0}) : p.toLocaleString('en-US', {maximumFractionDigits: p >= 10 ? 2 : 4});
+        const k = txtW(s, 2) <= bw - 8 ? 2 : 1; txt(g, s, x + 4, y + 15, col, k);
+    // today's line, with yesterday's close dotted
+    const sx = x + 3, sw = bw - 6, sy = y + 28, sh = 14, prev = p / (1 + v / 100);
+    let pts = (Array.isArray(a.spark) ? a.spark : []).map(Number).filter(n => n > 0); if (pts.length > 1) pts = [...pts.slice(0, -1), p];
+    const lo = Math.min(prev, ...pts), hi = Math.max(prev, ...pts), Y = q => Math.round(sy + sh - 1 - (hi > lo ? (q - lo) / (hi - lo) : .5) * (sh - 1));
+    for (let i = 0; i < sw; i += 3) R(g, sx + i, Y(prev), 1, 1, '#4a5263');
+    if (pts.length > 1){ let py = Y(pts[0]);
+      for (let i = 1; i < sw; i++){ const q = pts[Math.round(i / (sw - 1) * (pts.length - 1))], yy = Y(q);
+        R(g, sx + i, Math.min(yy, py), 1, Math.abs(yy - py) + 1, col); g.globalAlpha = .22; R(g, sx + i, yy + 1, 1, sy + sh - yy - 1, col); g.globalAlpha = 1; py = yy; }
+      if ((t / 400 | 0) % 2) R(g, sx + sw - 2, Y(p) - 1, 3, 3, '#ffffff');
+    } else ktxt(g, '차트 준비 중', x + bw / 2, sy + 2, '#5b6478', 'center');
+  }
+  function forces(a, votes){
+    const fl = a.flows, f = fl && fl.now;
+    if (f && fl.kind === 'investor'){
+      const ks = ['foreign', 'inst', 'retail'], S = {foreign:'alien', inst:'cop', retail:'ant'}, mx = Math.max(1, ...ks.map(k => Math.abs(+f[k] || 0)));
+      const buy = ks.filter(k => +f[k] > mx * .1), sell = ks.filter(k => +f[k] < -mx * .1), sum = xs => xs.reduce((s, k) => s + Math.abs(+f[k]), 0);
+      return {tag: ['매수', '매도'], L: {who: buy.map(k => S[k]), lab: buy.length ? amtEok(sum(buy)).replace('+', '') : '-'}, R: {who: sell.map(k => S[k]), lab: sell.length ? amtEok(sum(sell)).replace('+', '') : '-'}, share: sum(buy) / (sum(buy) + sum(sell) || 1)};
+    }
+    if (fl && fl.kind === 'taker'){ const hs = (fl.hours || []).slice(-3), b = hs.reduce((x, h) => x + h.buy, 0), s = hs.reduce((x, h) => x + h.sell, 0), sh = b + s ? b / (b + s) : .5;
+      return {tag: ['매수', '매도'], L: {who: ['whale'], lab: Math.round(sh * 100) + '%'}, R: {who: ['shark'], lab: Math.round((1 - sh) * 100) + '%'}, share: sh}; }
+    const up = votes ? votes.up : 0, dn = votes ? votes.down : 0, ppl = n => Array.from({length: Math.min(3, n)}, () => 'man');
+    return {tag: ['오른다', '내린다'], L: {who: ppl(up), lab: up + '명'}, R: {who: ppl(dn), lab: dn + '명'}, share: up + dn ? up / (up + dn) : .5, vote: true};
+  }
+  const SHIRTS = ['#ff8a3d', '#3182f6', '#f04452', '#2fbf71', '#a46ad8'];
+  function forts(g, W, HZ, t, F, sc){
+    const fw = fortW(W), top = HZ - 26;
+    [[F.L, 0, '#e8414f', F.tag[0], F.share], [F.R, 1, '#2f6fe0', F.tag[1], 1 - F.share]].forEach(([S, side, col, tag, sh]) => {
+      const x0 = side ? W - 3 - fw : 3;
+      // flag rises with that side's share
+      const px = side ? x0 + fw - 3 : x0 + 1, fy = Math.round(top - 22 + (1 - sh) * 14), wv = (t / 300 | 0) % 2;
+      R(g, px, top - 24, 1, 20, '#5b4636'); R(g, px, top - 25, 1, 1, '#ffd84a');
+      const fx = side ? px - 9 : px + 1; for (let i = 0; i < 9; i++) R(g, fx + i, fy + ((i + wv) % 4 === 0 ? 1 : 0), 1, 5, col);
+      // banner
+      const bw = Math.min(fw - 6, tag.length * 10 + 4), bx = x0 + ((fw - bw) >> 1); R(g, bx, top + 3, bw, 12, col); R(g, bx, top + 15, bw, 1, mix(col, '#000000', .3));
+      ktxt(g, tag, bx + bw / 2, top + 4, '#ffffff', 'center');
+      ktxt(g, S.lab, x0 + fw / 2, top + 17, '#ffffff', 'center', '#2a2620');
+      // who stands on top
+      const ws = S.who.map((w, i) => spr(w, w === 'man' ? {s: SHIRTS[(i + side * 2) % 5]} : null)), tw = ws.reduce((s, c) => s + c.width + 1, -1);
+      let x = x0 + ((fw - tw) >> 1);
+      const FACE = {ant: 1, whale: -1, shark: -1}, want = side ? -1 : 1;
+      ws.forEach((c, i) => { const w = S.who[i], hop = sh > .55 ? -Math.round(Math.abs(Math.sin(t / 180 + i)) * 2) : 0;
+        put(g, w, x, top - 4 - c.height + hop, !!FACE[w] && FACE[w] !== want, w === 'man' ? {s: SHIRTS[(i + side * 2) % 5]} : null); x += c.width + 1; });
+    });
+  }
+  const ufoPos = (W, HZ, t) => ({x: W / 2 + Math.sin(t / 3200) * (W / 2 - 16), y: HZ - 37 + Math.sin(t / 700) * 2});
+  function evDraw(g, W, H, HZ, t, E, sc, mini){
+    for (const e of E){ const k = e.k;
+      if (k === 'ufo_buy' || k === 'ufo_sell'){ const u = ufoPos(W, HZ, t), sell = k === 'ufo_sell', by = u.y + 6, bl = (mini ? H : HZ + 34) - by;
+        g.globalAlpha = .3; for (let y = 0; y < bl; y++){ if ((y + (t / 70 | 0)) % 3 === 0) continue; const w = Math.round(3 + y * .22); R(g, Math.round(u.x) - w, by + y, w * 2 + 1, 1, sell ? '#ff4d5a' : '#fff07a'); } g.globalAlpha = 1;
+        if (!sell) for (let i = 0; i < 4; i++) put(g, 'coin', u.x - 2 + Math.sin(i * 2 + t / 300) * 4, by + fr(t / 12 + i * bl / 4, bl));
+        put(g, 'ufo', u.x - 7, u.y, false, (t / 250 | 0) % 2 ? {e: '#ff8a3d'} : null); }
+      if (k === 'cop_buy'){ const cx = W / 2;
+        put(g, 'pcar', cx - 44, HZ + 6, false, (t / 220 | 0) % 2 ? {R: '#3a7bff', B: '#ff3344'} : null);
+        if ((t / 220 | 0) % 2){ g.globalAlpha = .25; disc(g, cx - 36, HZ + 6, 4, '#ff3344'); g.globalAlpha = 1; } else { g.globalAlpha = .25; disc(g, cx - 35, HZ + 6, 4, '#3a7bff'); g.globalAlpha = 1; }
+        for (let i = 0; i < 3; i++) put(g, 'cop', cx - 14 + i * 10, HZ + 8 + ((t / 400 + i) % 2 < 1 ? 0 : -1));
+        for (let i = 0; i < 4; i++) put(g, 'barr', cx - 20 + i * 10, HZ + 18); }
+      if (k === 'cop_sell'){ put(g, 'pcar', fr(t / 25, W + 60) - 30, HZ + 6, false, (t / 220 | 0) % 2 ? {R: '#3a7bff', B: '#ff3344'} : null); for (let i = 0; i < 3; i++) put(g, 'barrf', W / 2 - 16 + i * 12, HZ + 21 + (i % 2) * 2); }
+      if (k === 'ants_buy') for (let i = 0; i < 9; i++) put(g, 'ant', W - fr(t / 45 + i * 14, W + 20), HZ + 5 + (i % 2) * 3, true);
+      if (k === 'ants_sell') for (let i = 0; i < 5; i++) put(g, (t / 120 + i | 0) % 2 ? 'run1' : 'run2', fr(t / 16 + i * 41, W + 20) - 10, HZ + 6 + (i % 3) * 5);
+      if (k === 'whale'){ const x = W * .6 + Math.sin(t / 2200) * 12; put(g, 'whale', x, HZ - 9, true); const p = fr(t, 3000) / 3000; if (p < .45) for (let i = 0; i < 5; i++) R(g, x + 3 + (i - 2) * p * 6, HZ - 11 - Math.sin(p / .45 * Math.PI) * 9 + Math.abs(i - 2), 1, 2, '#e8f6ff'); }
+      if (k === 'shark'){ if (sc.place === 'beach') put(g, 'fin', fr(t / 30, W + 20) - 10, HZ - 7); else put(g, 'shark', fr(t / 30, W + 30) - 15, HZ + 4); }
+      if (k === 'rocket'){ const p = fr(t, 4200) / 4200, x = W - fortW(W) - 14, y = HZ - 6 - p * p * (HZ + 10);
+        put(g, 'rocket', x, y); for (let i = 0; i < 4; i++) R(g, x + 1 + (i % 3), y + 8 + i * 2 + ((t / 60 | 0) % 2), 2, 2, i < 2 ? '#ffd84a' : '#ff8a3d'); }
+      if (k === 'mammoth') put(g, 'mammoth', fr(t / 70, W + 30) - 15, HZ + 4 + Math.round(Math.abs(Math.sin(t / 250))), false);
+      if (k === 'hero') put(g, 'hero', fr(t / 14, W + 30) - 15, 14 + Math.sin(t / 500) * 4);
+      if (k === 'bus') put(g, 'bus', W + 20 - fr(t / 22, W + 50), HZ + 2, true);
+    }
+  }
+  function particles(g, W, H, t, sc, E){
+    const r = srnd(11);
+    if (!sc.frozen && (sc.w === 'rain' || sc.w === 'storm')){ const n = sc.w === 'storm' ? 70 : 40, sl = sc.w === 'storm' ? 3 : 1;
+      g.fillStyle = 'rgba(220,235,255,.75)'; for (let i = 0; i < n; i++){ const sp = .16 + r() * .08, y = fr(r() * H + t * sp, H + 10) - 5, x = fr(r() * W - y / 3 * sl, W); g.fillRect(Math.round(x), Math.round(y), 1, 3); g.fillRect(Math.round(x) - (sl > 1 ? 1 : 0), Math.round(y) + 3, 1, 1); } }
+    if (sc.frozen){ const n = sc.w === 'storm' ? 60 : sc.w === 'rain' ? 40 : 22; for (let i = 0; i < n; i++){ const sp = .012 + r() * .014, y = fr(r() * H + t * sp, H + 4), x = fr(r() * W + Math.sin(t / 900 + i) * 4, W); R(g, x, y, (i % 4) ? 1 : 2, (i % 4) ? 1 : 2, '#ffffff'); } }
+    if (sc.k === 'nuke'){ for (let i = 0; i < 34; i++){ const y = fr(r() * H + t * (.01 + r() * .015), H), x = fr(r() * W + Math.sin(t / 700 + i) * 5, W); R(g, x, y, 1, 1, i % 3 ? '#9a8f86' : '#ff8a3d'); } }
+    if (sc.w === 'fest' || E.some(e => e.k === 'party')){ for (let i = 0; i < 30; i++){ const y = fr(r() * H + t * (.03 + r() * .02), H), x = fr(r() * W + Math.sin(t / 400 + i) * 3, W); R(g, x, y, (t / 200 + i | 0) % 2 + 1, 2, SHIRTS[i % 5]); } }
+    if (sc.w === 'storm'){ const T = 5500, p = fr(t, T) / T; if (p > .89 && p < .93 || p > .94 && p < .965){ const rr = srnd(Math.floor(t / T) | 0); let x = 20 + rr() * (W - 40);
+        g.globalAlpha = .45; R(g, 0, 0, W, H, '#ffffff'); g.globalAlpha = 1; for (let y = 0; y < H * .45; y += 3){ x += (rr() - .5) * 6; R(g, x, y, 2, 3, '#fff9c4'); } } }
+    if (sc.k === 'nuke'){ const p = fr(t, 9000) / 9000; if (p < .06){ g.globalAlpha = (1 - p / .06) * .85; R(g, 0, 0, W, H, '#fff4d6'); g.globalAlpha = 1; } }
+  }
+
+  /* ---------- room canvas */
+  let S = null, bg = null, fx = null, layers = null, votes = {}, zaps = [];
+  function setup(el){ bg = el.querySelector('.pxbg'); fx = el.querySelector('.pxfx'); layers = null; dirty = true; }
+  function frame(t, el){
+    if (!S || !bg || !bg.isConnected) return;
+    const W = Math.max(120, Math.round(el.clientWidth / 2)), H = Math.round(el.clientHeight / 2), HZ = 64;
+    if (bg.width !== W || bg.height !== H){ bg.width = fx.width = W; bg.height = fx.height = H; dirty = true; }
+    if (dirty || !layers){ layers = {back: backLayer(W, H, HZ, S.sc, true), front: frontLayer(W, H, HZ, S.sc, true)}; dirty = false; }
+    const g = bg.getContext('2d'), sc = S.sc, a = S.a;
+    g.save(); if (sc.quake) g.translate(Math.round((Math.random() - .5) * 2), 0);
+    g.drawImage(layers.back, 0, 0);
+    if (sc.night) stars(g, W, HZ, t);
+    if (sc.k === 'nuke') mushroom(g, Math.round(W * .76), HZ, t);
+    if (sc.w === 'fest') fireworks(g, W, HZ, t);
+    clouds(g, W, t, sc, sc.w === 'clear' ? 1 : 3);
+    if (sc.place === 'beach' && !sc.frozen) for (let i = 0; i < W; i += 14) R(g, fr(i + t / 120, W), HZ - 6 + (i / 14 % 2) * 3, 4, 1, '#bfe6fb');
+    if (sc.k === 'nuke') for (const [x, y] of [[W * .2, HZ - 2], [W * .64, HZ - 4], [W * .9, HZ - 1]]) for (let i = 0; i < 3; i++) R(g, x + i * 2, y - 2 - ((t / 90 + i) % 3 | 0), 2, 3, i === 1 ? '#ffd84a' : '#ff6a2a');
+    g.drawImage(layers.front, 0, 0);
+    if (sc.quake && sc.k !== 'nuke') quakeBlds(g, W, HZ, t);
+    if (sc.place === 'square' && sc.k !== 'nuke' && !sc.frozen){ const x = W / 2, y = HZ + (H - HZ) * .55 - 10; for (let i = 0; i < 6; i++){ const p = fr(t / 600 + i / 6, 1); R(g, x + (i - 2.5) * p * 5, y - Math.sin(p * Math.PI) * 6, 1, 1, '#bfe6fb'); } }
+    board(g, W, HZ, t, a, sc);
+    forts(g, W, HZ, t, forces(a, votes[a.symbol]), sc);
+    evDraw(g, W, H, HZ, t, S.E, sc, false);
+    g.restore();
+    const f = fx.getContext('2d'); f.clearRect(0, 0, W, H); particles(f, W, H, t, sc, S.E);
+    zaps = zaps.filter(z => t - z.t0 < 450); for (const z of zaps){ if ((t - z.t0) % 150 > 90) continue; let x = z.x; const rr = srnd(z.seed); for (let y = 0; y < z.y; y += 3){ x += (rr() - .5) * 5; R(f, x, y, 2, 3, '#fff27a'); R(f, x + 2, y, 1, 3, '#ffffff'); } }
+  }
+  return {
+    set(a, sc, E){ S = {a, sc, E}; dirty = true; },
+    setup, frame,
+    votes(sym, o){ votes[sym] = o; },
+    ufo(el){ if (!S || !S.E.some(e => e.k === 'ufo_buy' || e.k === 'ufo_sell')) return null; const W = Math.max(120, Math.round(el.clientWidth / 2)), u = ufoPos(W, 64, performance.now()); return {x: u.x * 2, y: u.y * 2, sell: S.E.some(e => e.k === 'ufo_sell')}; },
+    zap(x, y){ zaps.push({x: x / 2, y: y / 2, t0: performance.now(), seed: Math.random() * 1e9 | 0}); },
+    umbrella(){ return spr('umb').toDataURL(); },
+    mini(cv, a){
+      const W = cv.width = 88, H = cv.height = 43, HZ = 22, sc = scene(a), E = events(a), g = cv.getContext('2d'), t = 1700 + (hashS(a.symbol) % 5000);
+      g.drawImage(backLayer(W, H, HZ, sc, false), 0, 0);
+      if (sc.night) stars(g, W, HZ, t); if (sc.k === 'nuke') mushroom(g, Math.round(W * .74), HZ, 3000, .45); if (sc.w === 'fest') fireworks(g, W, HZ, t);
+      clouds(g, W, t, sc, sc.w === 'clear' ? 1 : 2);
+      g.drawImage(frontLayer(W, H, HZ, sc, false), 0, 0);
+      if (sc.quake && sc.k !== 'nuke') quakeBlds(g, W, HZ, 4900);
+      evDraw(g, W, H, HZ, t, E.slice(0, 1), sc, true); particles(g, W, H, t, sc, E);
+    },
+  };
+})();
+const hashS = s => { let h = 2166136261; for (const c of String(s)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
+
 const PZ = (() => {
   const SKIN = ['#ffd9b8','#f5c49c','#e0a878','#c68a5c'], HAIR = ['#2b2b2b','#5a3825','#8b5a2b','#d9a441','#c44b4b','#4b6cc4','#7a4bc4','#e8e8e8'];
   const SHIRT = ['#ff8a3d','#3182f6','#f04452','#2fbf71','#a46ad8','#f2c94c','#20c4c4','#ff6fa8','#6b7280'], PANTS = ['#2d3a5a','#3b3b3b','#5b4636','#1f4d3a'];
@@ -670,7 +997,7 @@ const PZ = (() => {
   const actors = new Map(); let EVS = [], ENT = {}, COMM = null; let el, raf = 0, last = 0, lobby = null, ROOM = null, SC = WX.cloud, PRES = {}, RESID = [], BOTS = null, TODAYN = 0, lastSend = 0, popFor = null, gen = 0;
   const myId = () => ME ? ME.id : 'g:' + PKEY;
   const W = () => (el && el.clientWidth) || 360, H = () => (el && el.clientHeight) || 270;
-  const gy0 = () => H() * .47, gy1 = () => H() - 30;
+  const gy0 = () => 150, gy1 = () => H() - 26;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const cut = (s, n) => (s = String(s || '').replace(/\s+/g, ' ').trim()).length > n ? s.slice(0, n) + '…' : s;
 
@@ -705,10 +1032,10 @@ const PZ = (() => {
   }
   function mk(a){
     const d = document.createElement('div'); d.className = 'av drop'; d.dataset.id = a.id;
-    d.innerHTML = '<div class="bub"></div><div class="umb">☂️</div><div class="mo"></div><canvas width="10" height="17"></canvas><div class="nm"></div>';
+    d.innerHTML = '<div class="bub"></div><div class="umb"></div><div class="mo"></div><canvas width="10" height="17"></canvas><div class="nm"></div>';
     a.el = d; a.cv = d.querySelector('canvas'); a.L = look(a.id); a.drawn = ''; el.appendChild(d); setTimeout(() => d.classList.remove('drop'), 600);
   }
-  function say(a, text, ms){ if (!a || !text || !a.el.isConnected) return; const b = a.el.querySelector('.bub'); b.textContent = text; b.classList.add('show'); clearTimeout(a.bt); a.bt = setTimeout(() => b.classList.remove('show'), ms || 4000); }
+  function say(a, text, ms){ if (!a || !text || !a.el.isConnected) return; const b = a.el.querySelector('.bub'); b.textContent = text; b.style.marginLeft = (a.x < 80 ? 80 - a.x : a.x > W() - 80 ? W() - 80 - a.x : 0) + 'px'; b.classList.add('show'); clearTimeout(a.bt); a.bt = setTimeout(() => b.classList.remove('show'), ms || 4000); }
   function emote(a, e, n){ if (!a) return; for (let i = 0; i < (n || 1); i++) setTimeout(() => { if (!a.el.isConnected) return; const s = document.createElement('span'); s.className = 'emo'; s.textContent = e; s.style.marginLeft = ((Math.random() - .5) * 20) + 'px'; a.el.appendChild(s); setTimeout(() => s.remove(), 1400); }, i * 180); }
   function pickTarget(a){ a.tx = clamp(a.x + (Math.random() - .5) * W() * .55, 16, W() - 16); a.ty = clamp(a.y + (Math.random() - .5) * H() * .3, gy0(), gy1()); a.idle = false; }
 
@@ -731,13 +1058,14 @@ const PZ = (() => {
       if (SC.quake && !a.me && !(a.fall > n0) && Math.random() < dt * .06){ a.fall = n0 + 1600; a.fdir = Math.random() < .5 ? -1 : 1; if (Math.random() < .6) say(a, pick(['꽈당!', '으악!', '아이고 허리야']), 1500); }
       const down = a.fall > n0; if (down){ a.tx = a.x; a.ty = a.y; }
       if (a.lift > n0){ const q = (n0 - a.liftAt) / 2600; bob -= Math.sin(Math.PI * q) * 70; sh += Math.sin(n0 / 60) * 2; a.tx = a.x; a.ty = a.y; }
-      const s = .82 + .3 * (a.y - gy0()) / Math.max(1, gy1() - gy0());
-      a.el.style.transform = `translate3d(${(a.x - 15 + sh).toFixed(1)}px,${(a.y - 51 + bob).toFixed(1)}px,0) scale(${s.toFixed(3)})${down ? ` rotate(${a.fdir * 84}deg)` : ''}`;
+      const px2 = v => Math.round(v / 2) * 2;
+      a.el.style.transform = `translate3d(${px2(a.x - 10 + sh)}px,${px2(a.y - 34 + bob)}px,0)`;
       a.el.style.zIndex = 10 + (a.y | 0);
-      if (a.lastFace !== a.face){ a.cv.style.transform = a.face < 0 ? 'scaleX(-1)' : ''; a.lastFace = a.face; }
+      const cvT = (a.face < 0 ? 'scaleX(-1)' : '') + (down ? ` translateY(10px) rotate(${a.fdir * a.face * 90}deg)` : '');
+      if (a.lastFace !== cvT){ a.cv.style.transform = cvT; a.lastFace = cvT; }
       draw(a);
     }
-    evStep(dt, n0);
+    evStep(dt, n0); PX.frame(t, el);
     raf = requestAnimationFrame(step);
   }
 
@@ -788,50 +1116,28 @@ const PZ = (() => {
     $('#evbar').innerHTML = E.map(e => `<div class="ev ${e.good ? 'g' : ''}" title="${esc(e.t)}"><span class="ee">${e.e}</span><b>${e.n}</b><span class="why">${esc(e.why)}</span></div>`).join('');
   }
   function evStep(dt, n0){
-    const u = ENT.ufo;
-    if (u){ u.x += u.vx * dt; if (u.x < 40 || u.x > W() - 40){ u.vx *= -1; u.x = clamp(u.x, 40, W() - 40); } u.el.style.left = u.x + 'px';
-      if (n0 > u.next){
-        if (!u.sell){ u.next = n0 + 500; const c = document.createElement('span'); c.className = 'coin'; c.textContent = pick(['💰', '💵', '🪙']); c.style.left = (u.x + rnd(-20, 20)) + 'px'; c.style.top = (H() * .09 + 50) + 'px'; c.style.setProperty('--dy', rnd(gy0() - H() * .09 - 40, gy1() - H() * .09 - 60) + 'px'); el.appendChild(c); setTimeout(() => c.remove(), 1300); }
-        else { u.next = n0 + 4500; const v = [...actors.values()].filter(a => !a.me && !(a.lift > n0)).sort((p, q) => Math.abs(p.x - u.x) - Math.abs(q.x - u.x))[0];
-          if (v && Math.abs(v.x - u.x) < 90){ v.lift = n0 + 2600; v.liftAt = n0; say(v, pick(['살려줘!!', '내 계좌!!', '으아아 끌려간다']), 2200); } }
-      } }
+    const u = ENT.ufo && PX.ufo(el);
+    if (u && n0 > ENT.ufo.next){ ENT.ufo.next = n0 + (u.sell ? 4500 : 6000);
+      const v = [...actors.values()].filter(a => !a.me && !(a.lift > n0)).sort((p, q) => Math.abs(p.x - u.x) - Math.abs(q.x - u.x))[0];
+      if (v && Math.abs(v.x - u.x) < 90){ if (u.sell){ v.lift = n0 + 2600; v.liftAt = n0; say(v, pick(['살려줘!!', '내 계좌!!', '으아아 끌려간다']), 2200); } else { emote(v, '💰'); say(v, pick(['돈이 떨어진다!', '외계인 형님 감사!', '줍줍']), 1800); } } }
     const cp = ENT.cop;
     if (cp && n0 > cp.next){ cp.next = n0 + 5000 + Math.random() * 3000; const v = pick([...actors.values()].filter(a => !a.me)); if (v){
       if (cp.sell){ emote(v, '😱'); say(v, pick(['경찰도 도망갔어!', '이제 누가 막아줘…', '각자도생이다']), 2000); }
       else { emote(v, '🙏'); say(v, pick(['경찰 아저씨 고마워요', '든든하다', '바닥은 막아 주겠지?']), 2000); } } }
     const bo = ENT.bolt;
     if (bo && n0 > bo.next){ bo.next = n0 + 3500 + Math.random() * 2000; const v = pick([...actors.values()].filter(a => !a.me)); if (v){
-      const z = document.createElement('div'); z.className = 'bolt'; z.style.left = v.x + 'px'; z.style.height = (v.y - 40) + 'px'; el.appendChild(z); setTimeout(() => z.remove(), 500);
+      PX.zap(v.x, v.y - 30);
       v.el.classList.add('burnt'); setTimeout(() => v.el.classList.remove('burnt'), 2500); say(v, pick(['찌릿!!', '왜 나만…', '머리가 탔어']), 1800); } }
   }
   function build(a){
-    const sc = scene(a); SC = sc; const R = (n, f) => Array.from({length: n}, f).join('');
-    el.className = `plaza ${sceneCls(sc)}${sc.umb ? ' umb' : ''}`; el.dataset.key = keyOf(a);
-    let fx = '';
-    if (sc.night) fx += `<div class="stars">${R(22, () => `<i style="left:${rnd(0, 100)}%;top:${rnd(1, 36)}%;animation-delay:${-rnd(0, 2)}s"></i>`)}</div><div class="shade"></div>`;
-    const orb = sc.night ? '🌙' : ['clear', 'sunny', 'fest'].includes(sc.w) ? '☀️' : '';
-    if (orb) fx += `<div class="orb">${orb}</div>`;
-    if (sc.w === 'sunny') fx += '<div class="rainbow"></div>';
-    if (['clear', 'cloud', 'rain', 'storm'].includes(sc.w)) fx += R(sc.w === 'clear' ? 1 : 3, (_, i) => `<div class="cloud" style="top:${5 + i * 8}%;animation-duration:${26 + i * 11}s;animation-delay:${-(i * 9 + rnd(0, 8))}s">☁️</div>`);
-    if (!sc.frozen && (sc.w === 'rain' || sc.w === 'storm')) fx += `<div class="drops ${sc.w}">${R(sc.w === 'storm' ? 46 : 24, () => `<i style="left:${rnd(-5, 125)}%;animation-delay:${-rnd(0, 1)}s;animation-duration:${rnd(.45, .85)}s"></i>`)}</div>`;
-    if (sc.w === 'storm') fx += '<div class="flash"></div>';
-    if (sc.frozen) fx += `<div class="flakes">${R(sc.w === 'storm' ? 50 : sc.w === 'rain' ? 34 : 18, () => `<i style="left:${rnd(0, 100)}%;animation-delay:${-rnd(0, 7)}s;animation-duration:${rnd(4, 8)}s">❄</i>`)}</div>`;
-    if (sc.w === 'fest') fx += `<div class="fws">${R(6, (_, i) => `<i style="left:${rnd(8, 88)}%;top:${rnd(2, 26)}%;animation-delay:${(i * .45).toFixed(2)}s">${pick(['🎆', '🎇', '✨', '🎉'])}</i>`)}</div><div class="confetti">${R(26, () => `<i style="left:${rnd(0, 100)}%;background:${pick(SHIRT)};animation-delay:${-rnd(0, 4)}s;animation-duration:${rnd(2.5, 4.5)}s"></i>`)}</div>`;
-    if (sc.quake){
-      const B = sc.place === 'city' ? ['🏢','🏬','🏦','🏢','🏨'] : sc.place === 'beach' ? ['🏨','🏩','🏨'] : sc.place === 'square' ? ['🏛️','🏢','🏛️','🏬'] : ['🏠','🏢','🏡','🏬'];
-      fx += `<div class="blds">${B.map((e, i) => `<i style="left:${8 + i * (84 / B.length)}%;animation-delay:${(-i * 1.7).toFixed(1)}s">${e}</i><b style="left:${10 + i * (84 / B.length)}%;animation-delay:${(-i * 1.7).toFixed(1)}s">💨</b>`).join('')}</div>`
-        + `<svg class="cracks" viewBox="0 0 100 60" preserveAspectRatio="none"><path d="M5 8 L14 16 L11 24 L22 33 L19 44 L30 56"/><path d="M62 4 L58 14 L68 22 L63 31 L74 40" style="animation-delay:-1.1s"/><path d="M88 12 L80 22 L90 30 L84 46" style="animation-delay:-2s"/></svg>`;
-    }
-    if (sc.k === 'nuke') fx += '<div class="mush"><i></i></div><div class="shock"></div><div class="nflash"></div>'
-      + `<div class="ash">${R(26, () => `<i style="left:${rnd(0, 100)}%;animation-delay:${-rnd(0, 7)}s;animation-duration:${rnd(4, 8)}s"></i>`)}</div>`;
-    if (sc.peak && !sc.night) fx += '<div class="deco" style="left:30%;top:30%;z-index:3;font-size:34px">🏔️</div>';
-    const P = sc.k === 'nuke' ? {deco:[['🏚️',8,47],['🔥',91,46],['🏚️',80,92],['🔥',20,93],['☢️',62,51]]} : PLACES[sc.place];
-    const place = (sc.place === 'beach' ? '<div class="sea"></div>' : '') + (sc.place === 'city' ? '<div class="skyline">🏢🏬🏙️🏢🏦🏬🏢</div>' : '')
-      + P.deco.map(([e, x, y]) => `<div class="deco" style="left:${x}%;top:${y}%;z-index:${10 + Math.round(y * 2.7)}">${sc.frozen && e === '🌳' ? '🌲' : sc.frozen && e === '🌴' ? '⛄' : e}</div>`).join('');
-    EVS = events(a); ENT = {}; fx += evLayers(EVS);
-    el.innerHTML = place + fx + `<div class="pzcap"></div><div class="pzw">${sc.night ? '🌙 ' + sc.n : sc.label.replace(' · ', ' ')}${sc.night ? ' · 마감' : ''}${sc.night && (sc.frozen || sc.peak) ? (sc.frozen ? ' 🧊' : ' 🏆') : ''}</div><div class="pzhint"><span>${EVS[0] ? EVS[0].e + ' ' + EVS[0].t : sc.hint}</span></div>`;
+    const sc = scene(a); SC = sc;
+    el.className = `plaza px ${sceneCls(sc)}${sc.umb ? ' umb' : ''}`; el.dataset.key = keyOf(a);
+    EVS = events(a); ENT = {};
+    const cop = EVS.some(e => e.k === 'cop_buy') ? '<div class="pxsay" style="top:104px">👮 여기서 더는 못 내려갑니다!</div>' : EVS.some(e => e.k === 'cop_sell') ? '<div class="pxsay" style="top:104px">🚓 경찰 철수 중… 각자도생!</div>' : '';
+    el.innerHTML = `<canvas class="pxbg"></canvas><canvas class="pxfx"></canvas>${cop}<div class="pzcap"></div><div class="pzw">${sc.night ? '🌙 ' + sc.n : sc.label.replace(' · ', ' ')}${sc.night ? ' · 마감' : ''}${sc.night && (sc.frozen || sc.peak) ? (sc.frozen ? ' 🧊' : ' 🏆') : ''}</div><div class="pzhint"><span>${EVS[0] ? EVS[0].e + ' ' + EVS[0].t : sc.hint}</span></div>`;
     for (const x of actors.values()) el.appendChild(x.el);
-    const u = el.querySelector('.ufo'); if (u) ENT.ufo = {el: u, x: W() * .3, vx: 38, sell: u.classList.contains('sell'), next: 0};
+    PX.set(a, sc, EVS); PX.setup(el);
+    if (EVS.some(e => e.k === 'ufo_buy' || e.k === 'ufo_sell')) ENT.ufo = {next: now() + 2500};
     if (EVS.some(e => e.k === 'cop_buy' || e.k === 'cop_sell')) ENT.cop = {sell: EVS.some(e => e.k === 'cop_sell'), next: now() + 2000};
     if (EVS.some(e => e.k === 'bolt')) ENT.bolt = {next: now() + 1500};
     renderEv();
@@ -886,7 +1192,7 @@ const PZ = (() => {
 
   return {
     boot(){
-      el = $('#plaza'); el.addEventListener('click', tapGround);
+      el = $('#plaza'); el.addEventListener('click', tapGround); try { el.style.setProperty('--umb', `url(${PX.umbrella()})`); } catch(e){}
       $('#emobar').innerHTML = `<span class="muted s" style="flex:none">내 캐릭터로</span>${Object.keys(SAY).map(e => `<button data-act="emo" data-v="${e}">${e}</button>`).join('')}`;
       lobby = sb.channel('lobby', { config: { presence: { key: PKEY }, broadcast: { self: false } } });
       lobby.on('presence', { event: 'sync' }, () => {
@@ -949,7 +1255,7 @@ async function render(keep){
   $('#hdr').innerHTML = hdrHTML();
   let html; try { html = await fn(); } catch(e){ console.error(e); html = `<div class="empty">불러오지 못했어요 · ${esc(errMsg(e))}</div>`; }
   if (id !== RID) return;
-  $('#app').innerHTML = html; subscribeComments(); if (route === 'play') bagDraw(); if (route === 'me') PZ.paintMe($('#mycv'));
+  $('#app').innerHTML = html; $$('canvas.mpx').forEach(c => A[c.dataset.sym] && PX.mini(c, A[c.dataset.sym])); subscribeComments(); if (route === 'play') bagDraw(); if (route === 'me') PZ.paintMe($('#mycv'));
   window.scrollTo(0, keep ? y : 0);
 }
 window.addEventListener('hashchange', () => render());
@@ -1010,7 +1316,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id
   try { await Promise.all([loadAssets(), loadMe()]); } catch(e){ $('#app').innerHTML = `<div class="empty">연결하지 못했어요. 새로고침해 주세요</div>`; return; }
   PZ.boot(); render();
   sb.channel('assets').on('postgres_changes', {event:'UPDATE', schema:'public', table:'assets'}, ({ new: r }) => {
-    const a = A[r.symbol]; if (!a) return; Object.assign(a, {change_pct: r.change_pct, price: r.price, market_open: r.market_open, flows: r.flows ?? a.flows, vol_ratio: r.vol_ratio ?? a.vol_ratio}); if (UI.route === 'room' && UI.room === r.symbol){ const fc = $('#force'); if (fc) fc.outerHTML = forceHTML(a); }
+    const a = A[r.symbol]; if (!a) return; Object.assign(a, {change_pct: r.change_pct, price: r.price, market_open: r.market_open, flows: r.flows ?? a.flows, vol_ratio: r.vol_ratio ?? a.vol_ratio, spark: r.spark ?? a.spark}); if (UI.route === 'room' && UI.room === r.symbol){ const fc = $('#force'); if (fc) fc.outerHTML = forceHTML(a); }
     $$(`[data-c="${CSS.escape(r.symbol)}"]`).forEach(el => { el.textContent = fmtC(a); el.className = 'num ' + dir(pct(a)); });
     if (UI.route === 'room' && UI.room === r.symbol) PZ.enter(r.symbol);
   }).subscribe();

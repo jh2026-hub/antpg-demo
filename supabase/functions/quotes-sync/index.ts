@@ -5,7 +5,10 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; market-war-demo/1.0)' };
 const T = (ms = 8000) => AbortSignal.timeout(ms);
 const num = (x: unknown) => +String(x ?? '').replace(/[,+]/g, '');
-type Q = { symbol: string; price: number; change: number; change_pct: number; market_open: boolean | null; delayed: boolean; source: string; flows?: unknown; vol_ratio?: number };
+type Q = { symbol: string; price: number; change: number; change_pct: number; market_open: boolean | null; delayed: boolean; source: string; flows?: unknown; vol_ratio?: number; spark?: number[] };
+// at most n evenly spaced points, last point kept
+const thin = (xs: number[], n = 48) => xs.length <= n ? xs : Array.from({ length: n }, (_, i) => xs[Math.round(i * (xs.length - 1) / (n - 1))]);
+const sig = (x: number) => +x.toPrecision(6);
 type Asset = { symbol: string; src: string; flows_src: string | null; kind: string; frontier: boolean };
 
 async function binanceQuotes(list: Asset[]): Promise<Q[]> {
@@ -32,7 +35,7 @@ async function yahooQuotes(list: Asset[]): Promise<Q[]> {
       if (!last) continue;
       const p = last * c.mul, pv = prev * c.mul;
       const ageMin = ts.length ? (Date.now() / 1000 - ts[ts.length - 1]) / 60 : 999;
-      out.push({ symbol: c.a.symbol, price: p, change: p - pv, change_pct: pv ? (p / pv - 1) * 100 : 0, market_open: ageMin < 40, delayed: true, source: 'yahoo' });
+      out.push({ symbol: c.a.symbol, price: p, change: p - pv, change_pct: pv ? (p / pv - 1) * 100 : 0, market_open: ageMin < 40, delayed: true, source: 'yahoo', spark: thin(closes).map((x: number) => sig(x * c.mul)) });
     }
   }
   return out;
@@ -121,7 +124,15 @@ Deno.serve(async (req) => {
   const side = await Promise.allSettled([...flowJobs, ...volJobs]);
   const sideErr = side.filter(s => s.status === 'rejected').length;
 
-  const { data, error } = await sb.rpc('apply_quotes', { q: Object.values(qs) });
+  // today's line for the billboard: crypto = last 24h of 15-minute closes
+  const sparkJobs = every5 ? (assets as Asset[]).filter(a => a.src.startsWith('binance:') && qs[a.symbol]).map(async a => {
+    const k = await (await fetch(`https://data-api.binance.vision/api/v3/klines?symbol=${a.src.split(':')[1]}&interval=15m&limit=96`, { signal: T() })).json();
+    qs[a.symbol].spark = thin(k.map((c: any) => +c[4])).map(sig);
+  }) : [];
+  await Promise.allSettled(sparkJobs);
+  const sparks = every5 ? Object.values(qs).filter(q => q.spark && q.spark.length > 2) : [];
+  const { data, error } = await sb.rpc('apply_quotes', { q: Object.values(qs).map(({ spark, ...q }) => q) });
+  await Promise.allSettled(sparks.map(q => sb.from('assets').update({ spark: q.spark }).eq('symbol', q.symbol)));
 
   // refresh the 52-week range for a few stale assets per run
   const { data: stale } = await sb.from('assets').select('symbol,src,range_at').eq('active', true).or(`range_at.is.null,range_at.lt.${new Date(Date.now() - 6 * 3600e3).toISOString()}`).limit(6);
