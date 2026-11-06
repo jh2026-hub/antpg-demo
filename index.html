@@ -265,7 +265,7 @@ textarea.f{min-height:90px;resize:none}
 .pb:active{transform:translate(2px,2px);box-shadow:none}
 .emobar{font-family:Galmuri11,Pretendard,sans-serif}.emobar button{border-radius:0;border:2px solid #1d2028;box-shadow:2px 2px 0 rgba(0,0,0,.25);height:38px}
 .ev{border-radius:0;border:2px solid #1d2028;border-left-width:6px;box-shadow:2px 2px 0 rgba(0,0,0,.2);font-family:Galmuri11,Pretendard,sans-serif}.ev b{font-weight:400}.pb.on{background:#ffd84a;color:#1d2028}
-.plaza.px{height:300px;border-radius:6px;background:#0b1430;box-shadow:0 0 0 2px #1d2028,0 4px 0 2px rgba(0,0,0,.25)}
+.plaza.px{height:clamp(320px,calc(100svh - 150px),640px);margin:0 -16px;border-radius:0;background:#0b1430;box-shadow:0 2px 0 #1d2028,0 -2px 0 #1d2028}
 .px .pxbg,.px .pxfx{position:absolute;left:0;top:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges}
 .px .pxbg{z-index:0}.px .pxfx{z-index:850;pointer-events:none}
 .px .av{width:20px;height:34px;transform-origin:50% 100%}
@@ -456,7 +456,7 @@ async function autoJoin(then){
 const UI = {room:null, limit:30, excuse:null, cm:null, route:'home'};
 const BOT = '<span class="botb">봇</span>';
 let VIEWERS = 1, ROOMN = {};
-const meChip = () => ME ? `<span class="me">${esc(ME.nickname)}</span>` : '';
+const meChip = () => '';
 function hdrHTML(){
   if (UI.route === 'room' && A[UI.room]){ const a = A[UI.room], sc = scene(a);
     return `<a class="back" href="#/">‹</a><div style="flex:1;min-width:0"><div class="logo">${ICON[a.symbol] || '📈'} ${esc(a.name)}</div><div class="s muted"><b class="num ${dir(pct(a))}" data-c="${esc(a.symbol)}">${fmtC(a)}</b> · ${PLACES[sc.place].n}${sc.night ? ' · 장 마감' : ''}</div></div>${meChip()}`; }
