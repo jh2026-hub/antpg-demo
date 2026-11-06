@@ -290,6 +290,7 @@ const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const now = () => Date.now();
+const pick = a => a[Math.floor(Math.random() * a.length)];
 const T = s => new Date(s).getTime();
 function ago(t){ const s = (now() - T(t)) / 1000; if (s < 60) return '방금'; if (s < 3600) return Math.floor(s/60) + '분 전'; if (s < 86400) return Math.floor(s/3600) + '시간 전'; return Math.floor(s/86400) + '일 전'; }
 function mmss(ms){ if (ms <= 0) return '판정 중'; const s = Math.ceil(ms/1000), m = Math.floor(s/60); if (m >= 60) return Math.floor(m/60) + '시간 ' + (m%60) + '분'; return m + ':' + String(s%60).padStart(2,'0'); }
@@ -713,9 +714,9 @@ function bfStart(sym){
 
 /* ========================================================== quick play */
 function quickPanel(a, inSheet){
-  const w = UI.qwin || 60, bond = a.kind === 'BOND', sym = esc(a.symbol);
+  const w = UI.qwin || 10, bond = a.kind === 'BOND', sym = esc(a.symbol);
   return `<div class="qq">${bond ? '이 채권, 앞으로 어떻게 될까요?' : '앞으로 어떻게 될까요?'}</div>
-    <div class="seg" style="margin-top:8px">${[10,60,1440].map(m => `<button data-act="qwin" data-v="${m}" class="${w === m ? 'on' : ''}">${WIN_LBL[m]} 뒤</button>`).join('')}</div>
+    <div class="seg" style="margin-top:8px">${[3,10,60,1440].map(m => `<button data-act="qwin" data-v="${m}" class="${w === m ? 'on' : ''}">${WIN_LBL[m]} 뒤</button>`).join('')}</div>
     <div class="qbtns"><button class="qb up" data-act="qcall" data-sym="${sym}" data-v="UP"><span>🔴</span><b>${bond ? '채권 강세' : '오른다'}</b><small>${bond ? '금리가 내린다' : '상승군 합류'}</small></button>
       <button class="qb down" data-act="qcall" data-sym="${sym}" data-v="DOWN"><span>🔵</span><b>${bond ? '채권 약세' : '내린다'}</b><small>${bond ? '금리가 오른다' : '하락군 합류'}</small></button></div>
     <div class="muted s" style="text-align:center">한 번 누르면 참전 끝 · ${WIN_LBL[w]} 뒤 실제 시세로 승패가 나요</div>
@@ -777,12 +778,12 @@ function forceBar(up, down){
    <div class="row sb s num"><span class="up b">상승군 ${up}명</span><span class="muted">${t ? '최근 24시간 참전' : '아직 참전자 없음'}</span><span class="down b">하락군 ${down}명</span></div>`;
 }
 const SIDE = {UP:'상승군', DOWN:'하락군'};
-const WIN_LBL = {10:'10분', 60:'1시간', 1440:'24시간'};
+const WIN_LBL = {3:'3분', 10:'10분', 60:'1시간', 1440:'24시간'};
 function resBadge(p){
   if (!p.side) return '';
   const wish = p.category === 'wish';
-  if (p.result === 'WIN') return `<span class="res WIN">${wish ? '✨ 기원 성취' : '🎖 승전'}</span>`;
-  if (p.result === 'LOSE') return `<span class="res LOSE">${wish ? '🕯 다음 기회에' : '💀 패전'}</span>`;
+  if (p.result === 'WIN') return `<span class="res WIN">${wish ? '✨ 기원 성취' : '🏆 승리'}</span>`;
+  if (p.result === 'LOSE') return `<span class="res LOSE">${wish ? '🕯 다음 기회에' : ((p.id || '').charCodeAt(0) % 2 ? '🗡 척살당함' : '⛓ 포로로 잡힘')}</span>`;
   return `<span class="res">${wish ? '응답까지' : '판정까지'} <b class="num" data-cd="${T(p.settle_at)}">${mmss(T(p.settle_at) - now())}</b></span>`;
 }
 const BOTB = '<span class="botb" title="운영 봇이 자동으로 쓴 글이에요">🤖 봇</span>';
@@ -1289,7 +1290,7 @@ const ACT = {
   qwin(el){ UI.qwin = +el.dataset.v; if ($('.modal .qs')) quickSheet(UI.qsym); else render(true); },
   async qcall(el){
     if (!need()) return;
-    const sym = el.dataset.sym, a = A[sym], side = el.dataset.v, w = UI.qwin || 60, bond = a.kind === 'BOND';
+    const sym = el.dataset.sym, a = A[sym], side = el.dataset.v, w = UI.qwin || 10, bond = a.kind === 'BOND';
     const lbl = bond ? (side === 'UP' ? '채권 강세' : '채권 약세') : (side === 'UP' ? '오른다' : '내린다');
     $$('[data-act=qcall]').forEach(b => b.disabled = true);
     try { await rpc('create_post', {p_symbol:sym, p_category:'forecast', p_title:`${a.short} ${WIN_LBL[w]} 뒤 ${lbl}!`, p_body:'', p_side:side, p_window:w, p_poll:null, p_meme_url:null});
@@ -1506,9 +1507,9 @@ function reveal(p){
   const win = p.result === 'WIN', wish = p.category === 'wish';
   $$('.reveal').forEach(x => x.remove());
   const d = document.createElement('div'); d.className = 'reveal';
-  d.innerHTML = `<canvas></canvas><div class="hero" style="color:${win ? 'var(--gold)' : '#9aa3b5'}">${wish ? (win ? '✨ 기원 성취!' : '🕯 다음 기회에') : (win ? '🎖 승전!' : '💀 패전')}</div>
+  d.innerHTML = `<canvas></canvas><div class="hero" style="color:${win ? 'var(--gold)' : '#9aa3b5'}">${wish ? (win ? '✨ 기원 성취!' : '🕯 다음 기회에') : (win ? '🏆 승리!' : pick(['🗡 척살!', '⛓ 포로가 됐다']))}</div>
     <div style="position:relative;margin-top:14px;font-weight:700">${esc(A[p.symbol]?.name || '')} · ${esc(p.title)}</div>
-    <div style="position:relative;margin-top:6px" class="muted s">${win ? (wish ? '하늘이 응답했어요' : '전공을 세웠어요. 계급에 반영돼요') : (wish ? '촛불은 다음에 다시' : '다음 전투에서 설욕하세요')}</div>
+    <div style="position:relative;margin-top:6px" class="muted s">${win ? (wish ? '하늘이 응답했어요' : '적진을 함락했어요! 전공이 계급에 반영돼요') : (wish ? '촛불은 다음에 다시' : '적군에게 당했어요… 다음 전투에서 설욕하세요')}</div>
     <div style="position:relative;margin-top:18px" class="muted s">화면을 누르면 닫혀요</div>`;
   d.onclick = () => d.remove(); document.body.appendChild(d); confetti(d.querySelector('canvas'), win); setTimeout(() => d.remove(), 5000);
 }
