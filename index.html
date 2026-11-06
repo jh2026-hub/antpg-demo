@@ -21,7 +21,7 @@ a{color:inherit;text-decoration:none}
 button,input,textarea{font:inherit;color:inherit}
 button{cursor:pointer;border:0;background:none}
 [hidden]{display:none!important}
-.wrap{max-width:560px;margin:0 auto;padding:0 16px calc(84px + env(safe-area-inset-bottom))}
+.wrap{max-width:560px;margin:0 auto;padding:0 16px calc(24px + env(safe-area-inset-bottom))}
 .muted{color:var(--muted)}.s{font-size:12.5px}.b{font-weight:700}.num{font-variant-numeric:tabular-nums}
 .up{color:var(--up)}.down{color:var(--down)}.flat{color:var(--muted)}
 .row{display:flex;align-items:center;gap:8px}.sb{justify-content:space-between}
@@ -159,11 +159,7 @@ textarea.f{min-height:90px;resize:none}
 .modal{position:fixed;inset:0;z-index:1500;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center;animation:fade .15s}
 .sheet{background:var(--card);width:100%;max-width:560px;border-radius:24px 24px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto;animation:up .2s ease-out}
 @keyframes fade{from{opacity:0}}@keyframes up{from{transform:translateY(30px)}}
-.toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:1600;background:var(--text);color:var(--bg);padding:11px 16px;border-radius:14px;font-weight:600;font-size:14px;max-width:calc(100vw - 32px);box-shadow:0 8px 24px rgba(0,0,0,.2);animation:fade .2s}
-.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:1300;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
-.tabbar .in{display:flex;max-width:560px;margin:0 auto}
-.tabbar a{flex:1;min-height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11.5px;color:var(--muted);font-weight:600}
-.tabbar a span{font-size:21px;line-height:1.2}.tabbar a.on{color:var(--text)}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:1600;background:var(--text);color:var(--bg);padding:11px 16px;border-radius:14px;font-weight:600;font-size:14px;max-width:calc(100vw - 32px);box-shadow:0 8px 24px rgba(0,0,0,.2);animation:fade .2s}
 .empty{text-align:center;color:var(--muted);padding:28px 0;font-size:14px}
 .cm{padding:12px 0;border-top:1px solid var(--line)}
 .cm .who{font-size:12.5px;color:var(--muted)}.cm .who b{color:var(--text)}
@@ -301,10 +297,6 @@ textarea.f{min-height:90px;resize:none}
   <div id="roomtop" hidden><section id="plaza" class="plaza scene"></section><div id="evbar" class="evs"></div><div id="emobar" class="emobar"></div></div>
   <main id="app"><div class="empty">불러오는 중…</div></main>
 </div>
-<nav class="tabbar"><div class="in">
-  <a href="#/" data-tab="home"><span>🏘️</span>방</a>
-  <a href="#/me" data-tab="me"><span>🙂</span>나</a>
-</div></nav>
 <script>
 'use strict';
 /* ---------------------------------------------------------------- setup */
@@ -464,7 +456,7 @@ async function autoJoin(then){
 const UI = {room:null, limit:30, excuse:null, cm:null, route:'home'};
 const BOT = '<span class="botb">봇</span>';
 let VIEWERS = 1, ROOMN = {};
-const meChip = () => ME ? `<a class="me" href="#/me">${esc(ME.nickname)}</a>` : '';
+const meChip = () => ME ? `<span class="me">${esc(ME.nickname)}</span>` : '';
 function hdrHTML(){
   if (UI.route === 'room' && A[UI.room]){ const a = A[UI.room], sc = scene(a);
     return `<a class="back" href="#/">‹</a><div style="flex:1;min-width:0"><div class="logo">${ICON[a.symbol] || '📈'} ${esc(a.name)}</div><div class="s muted"><b class="num ${dir(pct(a))}" data-c="${esc(a.symbol)}">${fmtC(a)}</b> · ${PLACES[sc.place].n}${sc.night ? ' · 장 마감' : ''}</div></div>${meChip()}`; }
@@ -624,15 +616,6 @@ function subscribeComments(){
     $('#nocmt')?.remove(); $('#cmts')?.insertAdjacentHTML('beforeend', cmtHTML({...c, author: au}, true));
     const cc = $('#ccount'); if (cc) cc.textContent = +cc.textContent + 1;
   }).subscribe(); cmtChan._id = id;
-}
-
-/* ---------------------------------------------------------------- me */
-async function vMe(){
-  if (!ME) return `<div class="card" style="text-align:center"><div style="font-size:40px">🙂</div><div class="b" style="margin-top:6px">아직 참여 전이에요</div><div class="muted s" style="margin-top:4px">방에 들어가서 기분을 하나 누르면 이름과 캐릭터가 자동으로 생겨요</div><a class="btn pri" style="margin-top:14px" href="#/">방 고르러 가기</a></div>` + foot();
-  const { data } = await sb.from('moods').select(MOODSEL).eq('author_id', ME.id).order('created_at', {ascending:false}).limit(50);
-  const xs = data || [], hugs = xs.reduce((s, m) => s + m.hug + m.metoo + m.cheer, 0);
-  return `<div class="card"><div class="row sb"><div class="row"><canvas id="mycv" width="10" height="17" style="width:30px;height:51px;image-rendering:pixelated"></canvas><div><div class="h2">${esc(ME.nickname)}</div><div class="muted s">남긴 기분 ${xs.length}개 · 받은 토닥 ${hugs}개</div></div></div><button class="btn sm" data-act="rename">이름 바꾸기</button></div></div>
-    <div class="sec"><h3>내가 남긴 기분</h3></div>${xs.map(m => moodCard(m, null)).join('') || '<div class="empty">아직 없어요</div>'}` + foot();
 }
 
 /* ---------------------------------------------------------------- plaza: everyone in this room walks around as a pixel character */
@@ -1202,15 +1185,13 @@ async function render(keep){
   let fn = vHome, tab = 'home', route = 'home';
   if (a === 'r' && b){ UI.room = decodeURIComponent(b); fn = () => vRoom(UI.room); route = 'room'; if (!keep) UI.limit = 30; }
   else if (a === 'm' && b){ fn = () => vMood(b); route = 'mood'; }
-  else if (a === 'me'){ fn = vMe; tab = 'me'; route = 'me'; }
   UI.route = route; if (route !== 'mood') CUR = null;
-  $$('.tabbar a').forEach(x => x.classList.toggle('on', x.dataset.tab === tab));
   const inRoom = route === 'room' && !!A[UI.room];
   $('#roomtop').hidden = !inRoom; if (inRoom) PZ.enter(UI.room); else PZ.leave();
   $('#hdr').innerHTML = hdrHTML();
   let html; try { html = await fn(); } catch(e){ console.error(e); html = `<div class="empty">불러오지 못했어요 · ${esc(errMsg(e))}</div>`; }
   if (id !== RID) return;
-  $('#app').innerHTML = html; $$('canvas.mpx').forEach(c => A[c.dataset.sym] && PX.mini(c, A[c.dataset.sym])); subscribeComments(); if (route === 'me') PZ.paintMe($('#mycv'));
+  $('#app').innerHTML = html; $$('canvas.mpx').forEach(c => A[c.dataset.sym] && PX.mini(c, A[c.dataset.sym])); subscribeComments();
   window.scrollTo(0, keep ? y : 0);
 }
 window.addEventListener('hashchange', () => render());
