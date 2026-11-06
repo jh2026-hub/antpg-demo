@@ -175,6 +175,7 @@ table.t .r{text-align:right}
 .score{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;text-align:center}
 .score b{font-family:'Galmuri11',monospace;font-size:32px;display:block;line-height:1.1}
 .lb td{vertical-align:middle}
+.botb{font-size:10.5px;padding:0 5px;border-radius:5px;background:#1d2a3f;color:#9cc2ff;border:1px solid #2c4366;white-space:nowrap}
 /* control map, quick play, heat */
 .power{margin:12px -16px 0;padding:10px 16px 8px;background:#0e131c;border-top:1px solid var(--line)}
 .power .bar{height:16px;margin:6px 0}
@@ -784,6 +785,7 @@ function resBadge(p){
   if (p.result === 'LOSE') return `<span class="res LOSE">${wish ? '🕯 다음 기회에' : '💀 패전'}</span>`;
   return `<span class="res">${wish ? '응답까지' : '판정까지'} <b class="num" data-cd="${T(p.settle_at)}">${mmss(T(p.settle_at) - now())}</b></span>`;
 }
+const BOTB = '<span class="botb" title="운영 봇이 자동으로 쓴 글이에요">🤖 봇</span>';
 const sideLbl = p => p.category === 'wish' ? (p.side === 'UP' ? '오르길' : '내리길') : SIDE[p.side];
 function postCard(p, showFront){
   const a = A[p.symbol] || {}, au = p.author || {}, c = CAT[p.category] || CAT.chat;
@@ -791,7 +793,7 @@ function postCard(p, showFront){
   const lead = p.category === 'wish' ? `<span>🕯 ${p.rx_pray}</span>` : p.category === 'bet' ? `<span>동조 ${same} · 맞불 ${opp}</span>`
     : p.category === 'vent' ? `<span>🫂 ${p.rx_hug + p.rx_metoo}</span>` : `<span>⚔️ ${p.rx_charge}</span>`;
   return `<a class="post" href="#/p/${p.id}">
-    <div class="meta"><span class="cat">${c.e} ${c.n}</span>${showFront ? `<span class="ftag">${esc(a.name)}</span>` : ''}${flagImg(au.flag_art)}<b style="color:var(--text)">${esc(au.nickname || '탈영병')}</b><span>· ${ago(p.created_at)}</span></div>
+    <div class="meta"><span class="cat">${c.e} ${c.n}</span>${showFront ? `<span class="ftag">${esc(a.name)}</span>` : ''}${flagImg(au.flag_art)}<b style="color:var(--text)">${esc(au.nickname || '탈영병')}</b>${au.is_bot ? BOTB : ''}<span>· ${ago(p.created_at)}</span></div>
     <div class="t">${p.side ? `<span class="side ${p.side}">${sideLbl(p)}</span>` : ''}${esc(p.title)}${p.meme_url ? ' 🖼' : ''}${p.poll ? ' 📊' : ''}</div>
     <div class="foot">${lead}<span>반응 ${rxSum(p)}</span><span>💬 ${p.comment_count}</span>${resBadge(p)}</div>${inlineAct(p)}</a>`;
 }
@@ -801,7 +803,7 @@ function renderBody(s){
   return h.replace(/https?:\/\/[^\s<]+/g, u => { let host = ''; try { host = new URL(u.replace(/&amp;/g,'&')).hostname; } catch(e){}
     return ALLOWED_LINKS.some(d => host === d || host.endsWith('.' + d)) ? `<a href="${u}" target="_blank" rel="noopener nofollow ugc">${u}</a>` : `<span class="muted" title="허용되지 않은 링크라 누를 수 없어요">${u}</span>`; });
 }
-const POSTSEL = 'id,author_id,symbol,category,title,side,window_min,settle_at,result,created_at,rx_charge,rx_shield,rx_flag,rx_medal,rx_pray,rx_hug,rx_metoo,rx_lol,join_up,join_down,comment_count,poll,meme_url,author:profiles!posts_author_id_fkey(nickname,flag_art)';
+const POSTSEL = 'id,author_id,symbol,category,title,side,window_min,settle_at,result,created_at,rx_charge,rx_shield,rx_flag,rx_medal,rx_pray,rx_hug,rx_metoo,rx_lol,join_up,join_down,comment_count,poll,meme_url,author:profiles!posts_author_id_fkey(nickname,flag_art,is_bot)';
 function battleCard(b){
   const a = A[b.symbol] || {}, e = b.entries || [];
   const na = e.filter(x => x.option === 'A').length, nb = e.length - na, t = e.length;
@@ -960,11 +962,11 @@ async function vSquare(){
 }
 let CURPOST = null;
 async function vPost(id){
-  const { data:p } = await sb.from('posts').select('*,author:profiles!posts_author_id_fkey(id,nickname,flag_art)').eq('id', id).maybeSingle();
+  const { data:p } = await sb.from('posts').select('*,author:profiles!posts_author_id_fkey(id,nickname,flag_art,is_bot)').eq('id', id).maybeSingle();
   if (!p) return v404();
   const a = A[p.symbol];
   const [{ data:cms }, mine, vote, st, joinsR] = await Promise.all([
-    sb.from('comments').select('*,author:profiles!comments_author_id_fkey(nickname,flag_art)').eq('post_id', id).order('created_at').limit(300),
+    sb.from('comments').select('*,author:profiles!comments_author_id_fkey(nickname,flag_art,is_bot)').eq('post_id', id).order('created_at').limit(300),
     ME ? sb.from('reactions').select('kind').eq('post_id', id).eq('user_id', ME.id) : {data:[]},
     ME && p.poll ? sb.from('poll_votes').select('option_index').eq('post_id', id).eq('user_id', ME.id).maybeSingle() : {data:null},
     rpc('soldier_stats', {p_user:p.author_id}).catch(() => ({wins:0,total:0})),
@@ -977,7 +979,7 @@ async function vPost(id){
   const tv = p.poll ? p.poll_counts.reduce((s,x) => s + x, 0) : 0;
   CURPOST = id;
   return topbar(a.name, '#/f/' + encodeURIComponent(p.symbol)) + `
-  <div class="row s" style="margin-top:14px">${flagImg(p.author?.flag_art)}<a class="b" href="#/u/${encodeURIComponent(p.author?.nickname || '')}">${esc(p.author?.nickname || '탈영병')}</a><span class="rank">${rankOf(st)}</span><span class="muted">${ago(p.created_at)}</span></div>
+  <div class="row s" style="margin-top:14px">${flagImg(p.author?.flag_art)}<a class="b" href="#/u/${encodeURIComponent(p.author?.nickname || '')}">${esc(p.author?.nickname || '탈영병')}</a>${p.author?.is_bot ? BOTB : `<span class="rank">${rankOf(st)}</span>`}<span class="muted">${ago(p.created_at)}</span></div>
   <div class="row s" style="margin-top:10px"><span class="cat">${c.e} ${c.n}</span><a class="ftag" href="#/f/${encodeURIComponent(p.symbol)}">${esc(a.name)}</a></div>
   <h1 style="font-size:20px;margin:8px 0 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap">${p.side ? `<span class="side ${p.side}" style="font-size:13px">${sideLbl(p)}</span>` : ''}${esc(p.title)}</h1>
   ${p.side ? `<div class="card s"><div class="row sb wrapf"><span>${p.category === 'wish' ? '빌던 때' : '참전'} 시세 <b class="num">${fmtP(a, +p.entry_price)}</b> · ${WIN_LBL[p.window_min]} 뒤 ${p.category === 'wish' ? '응답' : '판정'}</span>${resBadge(p)}</div>
@@ -1009,7 +1011,7 @@ function betBox(p, joins, isAuthor){
     <div class="pool"><div class="${p.side === 'UP' ? 'pa' : 'pb'}" style="width:${t ? Math.max((same.length + 1) / (t + 1) * 100, 25) : 50}%">글쓴이+동조 ${same.length + 1}</div><div class="${p.side === 'UP' ? 'pb' : 'pa'}" style="width:${t ? Math.max(opp.length / (t + 1) * 100, 25) : 50}%">맞불 ${opp.length}</div></div>
     ${act}${t ? `<table class="t" style="margin-top:8px">${joins.map(row).join('')}</table>` : ''}</section>`;
 }
-function cmtHTML(c, fresh){ const au = c.author || {}; return `<div class="cm${fresh ? ' new' : ''}" data-cid="${c.id}"><div class="row s">${flagImg(au.flag_art)}<a class="b" href="#/u/${encodeURIComponent(au.nickname || '')}">${esc(au.nickname || '탈영병')}</a><span class="muted">${ago(c.created_at)}</span></div><div style="margin:4px 0 0 32px">${renderBody(c.body)}</div></div>`; }
+function cmtHTML(c, fresh){ const au = c.author || {}; return `<div class="cm${fresh ? ' new' : ''}" data-cid="${c.id}"><div class="row s">${flagImg(au.flag_art)}<a class="b" href="#/u/${encodeURIComponent(au.nickname || '')}">${esc(au.nickname || '탈영병')}</a>${au.is_bot ? BOTB : ''}<span class="muted">${ago(c.created_at)}</span></div><div style="margin:4px 0 0 32px">${renderBody(c.body)}</div></div>`; }
 function armyCard(s){
   const u = s.up_win, d = s.down_win;
   return `<section class="card"><div class="row sb"><h2 class="h pix">⚔️ 오늘의 진영전</h2><span class="muted s">판정 끝난 전망·내기</span></div>
@@ -1165,7 +1167,7 @@ async function vProfile(nick){
   const [st, { data:posts }] = await Promise.all([rpc('soldier_stats', {p_user:p.id}), sb.from('posts').select(POSTSEL).eq('author_id', p.id).order('created_at', {ascending:false}).limit(30)]);
   const rate = st.total ? Math.round(st.wins / st.total * 100) + '%' : '-';
   return topbar(isMe ? '내 정보' : p.nickname, '#/') + `
-  <div class="row" style="margin-top:16px;gap:14px">${flagImg(p.flag_art, 'lg')}<div style="min-width:0"><div class="pix" style="font-size:18px">${esc(p.nickname)}</div><span class="rank">${rankOf(st)}</span>
+  <div class="row" style="margin-top:16px;gap:14px">${flagImg(p.flag_art, 'lg')}<div style="min-width:0"><div class="pix" style="font-size:18px">${esc(p.nickname)}</div>${p.is_bot ? BOTB + '<div class="muted s" style="margin-top:4px">사령부가 운영하는 자동 봇이에요. 승패·랭킹에 들어가지 않아요.</div>' : `<span class="rank">${rankOf(st)}</span>`}
     <div class="s muted" style="margin-top:4px">입대 ${new Date(p.created_at).toLocaleDateString('ko-KR')}</div></div></div>
   <div class="summary"><div><b>${st.wins}/${st.total}</b><span class="s">전망·내기</span></div><div><b>${rate}</b><span class="s">승률</span></div><div><b>${(st.j_wins || 0) + st.b_wins}/${(st.j_total || 0) + st.b_total}</b><span class="s">끼어들기·결전</span></div></div>
   <div class="row s muted" style="margin-top:8px;justify-content:center;gap:14px"><span>✨ 기원 성취 ${st.wishes || 0}</span><span>🫂 받은 공감 ${st.hugs || 0}</span></div>
@@ -1265,7 +1267,7 @@ function subscribeComments(){
   const pid = CURPOST;
   cmtChan = sb.channel('cm-' + pid).on('postgres_changes', {event:'INSERT', schema:'public', table:'comments', filter:`post_id=eq.${pid}`}, async payload => {
     if (CURPOST !== pid || $(`[data-cid="${payload.new.id}"]`)) return;
-    const { data:au } = await sb.from('profiles').select('nickname,flag_art').eq('id', payload.new.author_id).maybeSingle();
+    const { data:au } = await sb.from('profiles').select('nickname,flag_art,is_bot').eq('id', payload.new.author_id).maybeSingle();
     const box = $('#cmts'); if (!box || $(`[data-cid="${payload.new.id}"]`)) return; box.querySelector('.empty')?.remove();
     box.insertAdjacentHTML('beforeend', cmtHTML({...payload.new, author:au}, true));
     const cc = $('#ccount'); if (cc) cc.textContent = +cc.textContent + 1;
