@@ -447,9 +447,19 @@ async function autoJoin(then){
     for (let i = 0; i < 4 && !ME; i++){ try { ME = await rpc('set_nickname', {nick: randName()}); } catch(e){ if (!/이미 있는/.test(errMsg(e))) throw e; } }
     if (!ME) throw new Error('잠시 후 다시 눌러 주세요');
     PZ.meChanged(); $('#hdr').innerHTML = hdrHTML();
-    toast(`'${ME.nickname}'(으)로 참여해요 · 이름은 '나' 탭에서 바꿀 수 있어요`);
+    toast(`'${ME.nickname}'(으)로 참여해요`);
     if (then) await then();
   } catch(e){ toast(errMsg(e)); } finally { BUSY = false; }
+}
+
+async function castVote(pick){
+  const sym = UI.room; LAST = () => castVote(pick); if (!sym || !need()) return;
+  try {
+    await rpc('give_opinion', {p_symbol: sym, p_pick: pick});
+    const o = await rpc('opinion_today', {p_symbol: sym}); PX.votes(sym, o);
+    PZ.sayMe(pick === 'up' ? '오른다에 한 표!' : '내린다에 한 표!');
+    toast(`${pick === 'up' ? '📈 오른다' : '📉 내린다'}에 투표했어요 · 오른다 ${o.up || 0} : 내린다 ${o.down || 0}`);
+  } catch(e){ toast(errMsg(e)); }
 }
 
 /* ---------------------------------------------------------------- shared bits */
@@ -513,7 +523,7 @@ async function vHome(){
   const ST = {}; for (const a of ASSETS) ST[a.symbol] = {n: 0, em: [], who: new Set()};
   for (const m of recent || []){ const s = ST[m.symbol]; if (!s || s.who.has(m.author_id)) continue; s.who.add(m.author_id); s.n++; if (s.em.length < 7) s.em.push(MOOD[m.mood].e); }
   const rooms = ASSETS.slice().sort((x, y) => (ROOMN[y.symbol] || 0) - (ROOMN[x.symbol] || 0) || ST[y.symbol].n - ST[x.symbol].n || Math.abs(pct(y)) - Math.abs(pct(x)));
-  return `<div class="card" style="margin-top:4px"><h2 class="h2">어느 방으로 갈까요?</h2><div class="muted s" style="margin-top:2px">종목마다 방이 있고, 방 날씨는 그 종목 주가가 정해요</div>
+  return `<div class="card" style="margin-top:4px"><h2 class="h2">어느 방으로 갈까요?</h2>
       <div class="rooms">${rooms.map(a => roomCard(a, ST[a.symbol])).join('')}</div></div>`
     + foot();
 }
@@ -819,6 +829,7 @@ const PX = (() => {
   }
   const SHIRTS = ['#ff8a3d', '#3182f6', '#f04452', '#2fbf71', '#a46ad8'];
   function forts(g, W, HZ, t, F, sc){
+    F.mine = F.mine || null;
     const fw = fortW(W), top = HZ - 26;
     [[F.L, 0, '#e8414f', F.tag[0], F.share], [F.R, 1, '#2f6fe0', F.tag[1], 1 - F.share]].forEach(([S, side, col, tag, sh]) => {
       const x0 = side ? W - 3 - fw : 3;
@@ -830,6 +841,9 @@ const PX = (() => {
       const bw = Math.min(fw - 6, tag.length * 10 + 4), bx = x0 + ((fw - bw) >> 1); R(g, bx, top + 3, bw, 12, col); R(g, bx, top + 15, bw, 1, mix(col, '#000000', .3));
       ktxt(g, tag, bx + bw / 2, top + 4, '#ffffff', 'center');
       ktxt(g, S.lab, x0 + fw / 2, top + 17, '#ffffff', 'center', '#2a2620');
+      const mine = F.mine === (side ? 'down' : 'up');
+      if (mine) ktxt(g, '내 표', x0 + fw / 2, HZ + 7, '#ffd84a', 'center', '#2a2620');
+      else if (!F.mine && (t / 600 | 0) % 2) ktxt(g, '투표', x0 + fw / 2, HZ + 7, '#ffffff', 'center', '#2a2620');
       // who stands on top
       const ws = S.who.map((w, i) => spr(w, w === 'man' ? {s: SHIRTS[(i + side * 2) % 5]} : null)), tw = ws.reduce((s, c) => s + c.width + 1, -1);
       let x = x0 + ((fw - tw) >> 1);
@@ -895,7 +909,7 @@ const PX = (() => {
     if (sc.quake && sc.k !== 'nuke') quakeBlds(g, W, HZ, t);
     if (sc.place === 'square' && sc.k !== 'nuke' && !sc.frozen){ const x = W / 2, y = HZ + (H - HZ) * .55 - 10; for (let i = 0; i < 6; i++){ const p = fr(t / 600 + i / 6, 1); R(g, x + (i - 2.5) * p * 5, y - Math.sin(p * Math.PI) * 6, 1, 1, '#bfe6fb'); } }
     board(g, W, HZ, t, a, sc);
-    forts(g, W, HZ, t, forces(a, votes[a.symbol]), sc);
+    forts(g, W, HZ, t, Object.assign(forces(a, votes[a.symbol]), {mine: votes[a.symbol] && votes[a.symbol].mine}), sc);
     evDraw(g, W, H, HZ, t, S.E, sc, false);
     g.restore();
     const f = fx.getContext('2d'); f.clearRect(0, 0, W, H); particles(f, W, H, t, sc, S.E);
@@ -905,6 +919,9 @@ const PX = (() => {
     set(a, sc, E){ S = {a, sc, E}; dirty = true; },
     setup, frame,
     votes(sym, o){ votes[sym] = o; },
+    // which castle (0 = left/up, 1 = right/down) is under a tap at css (x, y), or null
+    fortAt(el, x, y){ const W = Math.max(120, Math.round(el.clientWidth / 2)), fw = fortW(W), ix = x / 2, iy = y / 2, top = 64 - 26;
+      if (iy < top - 26 || iy > 64 + 12) return null; if (ix >= 1 && ix <= 3 + fw + 2) return 0; if (ix >= W - 5 - fw && ix <= W - 1) return 1; return null; },
     ufo(el){ if (!S || !S.E.some(e => e.k === 'ufo_buy' || e.k === 'ufo_sell')) return null; const W = Math.max(120, Math.round(el.clientWidth / 2)), u = ufoPos(W, 64, performance.now()); return {x: u.x * 2, y: u.y * 2, sell: S.E.some(e => e.k === 'ufo_sell')}; },
     zap(x, y){ zaps.push({x: x / 2, y: y / 2, t0: performance.now(), seed: Math.random() * 1e9 | 0}); },
     umbrella(){ return spr('umb').toDataURL(); },
@@ -1115,6 +1132,8 @@ const PZ = (() => {
   }
   function tapGround(e){
     if (e.target.closest('.pzpop')) return;
+    { const r = el.getBoundingClientRect(), side = PX.fortAt(el, e.clientX - r.left, e.clientY - r.top);
+      if (side != null && !e.target.closest('.av')){ closePop(); castVote(side ? 'down' : 'up'); return; } }
     const av = e.target.closest('.av'); if (av){ const a = actors.get(av.dataset.id); if (popFor === a?.id) closePop(); else openPop(a); return; }
     if (popFor){ closePop(); return; }
     const r = el.getBoundingClientRect(), me = actors.get(myId()); if (!me) return;
@@ -1170,6 +1189,7 @@ const PZ = (() => {
       if (a){ a.drawn = ''; emote(a, MOOD[m.mood].e, 2); setTimeout(() => say(a, m.body ? cut(m.body, 28) : MOOD[m.mood].n + '!', 5000), 300); }
       if (m.author_id === myId()) track();
     },
+    sayMe(text){ say(actors.get(myId()), text, 2500); emote(actors.get(myId()), '🗳️'); },
     hug(to){ emote(actors.get(to), '🫂', 3); send('emo', {id: myId(), to, e: '🫂'}); },
     wave(to){ const me = actors.get(myId()); emote(actors.get(to), '👋', 2); say(me, '안녕하세요 👋', 2500); send('emo', {id: myId(), to, e: '👋', s: '안녕하세요 👋'}); },
     emo(e){ if (now() - lastSend < 600) return; lastSend = now(); const me = actors.get(myId()); emote(me, e, 2); say(me, SAY[e], 2500); send('emo', {id: myId(), e, s: SAY[e]}); },
