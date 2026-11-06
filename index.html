@@ -170,11 +170,7 @@ textarea.f{min-height:90px;resize:none}
 .cm.new{animation:flash2 1.4s}@keyframes flash2{from{background:var(--accent-soft)}}
 .care{background:var(--accent-soft);border-radius:14px;padding:14px;margin-top:12px;font-size:14px}
 .foot{margin:28px 0 8px;text-align:center;font-size:12px;color:var(--muted)}
-.bagstage{position:relative;height:200px;display:flex;justify-content:center;align-items:flex-start;margin-top:10px;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation}
-.bag{position:relative;transform-origin:50% 0}.bag canvas{display:block;width:96px;height:152px;image-rendering:pixelated}
-.bag.hl{animation:sl .5s cubic-bezier(.2,1.6,.4,1)}.bag.hr{animation:sr .5s cubic-bezier(.2,1.6,.4,1)}
 @keyframes sl{30%{transform:rotate(-16deg)}100%{transform:none}}@keyframes sr{30%{transform:rotate(16deg)}100%{transform:none}}
-.baglbl{position:absolute;left:0;right:0;top:62px;text-align:center;color:#fff;font-weight:800;font-size:13px;text-shadow:0 1px 2px #000;pointer-events:none}
 .pow{position:absolute;transform:translate(-50%,-50%);font-weight:900;font-size:22px;color:var(--accent);pointer-events:none;animation:pw .7s ease-out forwards}
 @keyframes pw{0%{transform:translate(-50%,-50%) scale(.5);opacity:1}100%{transform:translate(-50%,-150%) scale(1.1);opacity:0}}
 .big{font-size:26px;font-weight:900}
@@ -307,7 +303,6 @@ textarea.f{min-height:90px;resize:none}
 </div>
 <nav class="tabbar"><div class="in">
   <a href="#/" data-tab="home"><span>🏘️</span>방</a>
-  <a href="#/play" data-tab="play"><span>🥊</span>기분 풀기</a>
   <a href="#/me" data-tab="me"><span>🙂</span>나</a>
 </div></nav>
 <script>
@@ -630,40 +625,6 @@ function subscribeComments(){
     const cc = $('#ccount'); if (cc) cc.textContent = +cc.textContent + 1;
   }).subscribe(); cmtChan._id = id;
 }
-
-/* ---------------------------------------------------------------- play: sandbag + excuse */
-const BAG = {sym:null, server:0, pending:0, combo:0, at:0, t:null};
-function bagTarget(){ const xs = ASSETS.slice().sort((a, b) => pct(a) - pct(b)); if (!xs.length) return null; const w = xs[0], b = xs[xs.length - 1]; return pct(w) < 0 ? {a:w, why:'오늘 제일 많이 빠진 놈'} : {a:b, why:'혼자 너무 올라서 배 아픈 놈'}; }
-async function vPlay(){
-  const t = bagTarget(); BAG.sym = t?.a.symbol;
-  if (BAG.sym){ const { data } = await sb.from('punches').select('count').eq('symbol', BAG.sym).eq('day', kstDay()).eq('kind', 'punch').maybeSingle(); BAG.server = Math.max(BAG.server, data ? +data.count : 0); }
-  return (t ? `<div class="card"><div class="row sb"><h2 class="h2">🥊 오늘의 샌드백</h2><span class="muted s">주가엔 영향 없음 (공식)</span></div>
-      <div class="muted s" style="margin-top:2px">${t.why}: <b class="${dir(pct(t.a))}">${esc(t.a.name)} ${fmtC(t.a)}</b></div>
-      <div class="bagstage" data-act="punch"><div class="bag" id="bag"><canvas id="bagc" width="96" height="152"></canvas><div class="baglbl">${ICON[t.a.symbol] || ''}<br>${esc(t.a.short)}</div></div><div id="bagfx"></div></div>
-      <div class="row sb"><div><div class="muted s">오늘 다 같이 때린 횟수</div><div class="big num" id="bagn">${BAG.server.toLocaleString('ko-KR')}대</div></div><div style="text-align:right"><div class="muted s">내 콤보</div><div class="big num" id="bagc2">x${BAG.combo}</div></div></div></div>` : '')
-    + `<div class="card"><div class="row sb"><h2 class="h2">🎲 변명 생성기</h2><span class="muted s">진 사람 전용</span></div>
-      <div class="exbox" id="exbox">${UI.excuse ? `<div class="muted s">정밀 분석 결과,</div><div class="exmain">"${esc(UI.excuse)}"</div>` : '<div class="muted s" style="text-align:center;padding:22px 0">버튼을 누르면 그럴듯한 핑계가 나와요</div>'}</div>
-      <div class="row" style="margin-top:12px"><button class="btn pri" style="flex:1" data-act="exroll">🎲 ${UI.excuse ? '다시 뽑기' : '핑계 뽑기'}</button>${UI.excuse ? '<button class="btn" data-act="exshare">공유</button>' : ''}</div></div>` + foot();
-}
-function bagDraw(){
-  const cv = $('#bagc'); if (!cv) return; const g = cv.getContext('2d'), P = 4, n = BAG.server + BAG.pending;
-  g.clearRect(0, 0, 96, 152); g.fillStyle = '#9aa0aa'; for (let y = 0; y < 6; y++) g.fillRect(44, y * P, 8, P);
-  for (let y = 6; y < 37; y++) for (let x = 2; x < 22; x++){ if ((y === 6 || y === 36) && (x < 5 || x > 18)) continue;
-    g.fillStyle = y < 9 ? '#3a3f47' : x < 5 ? '#c24a2c' : x > 18 ? '#a63c22' : (x + y) % 7 === 0 ? '#e0633f' : '#ee7048'; g.fillRect(x * P, y * P, P, P); }
-  const k = n >= 50000 ? 5 : n >= 10000 ? 4 : n >= 3000 ? 3 : n >= 1000 ? 2 : n >= 100 ? 1 : 0, sp = [[6,13],[15,20],[7,27],[14,31],[10,17]];
-  for (let i = 0; i < k; i++){ const [x, y] = sp[i]; for (let j = 0; j < 4; j++){ g.fillStyle = '#f6e3c2'; g.fillRect((x + j) * P, (y + j) * P, P, P); g.fillRect((x + 3 - j) * P, (y + j) * P, P, P); } }
-  const a = $('#bagn'); if (a) a.textContent = n.toLocaleString('ko-KR') + '대'; const c = $('#bagc2'); if (c) c.textContent = 'x' + BAG.combo;
-}
-function punchAt(ev){
-  const t = now(); BAG.combo = t - BAG.at < 1500 ? BAG.combo + 1 : 1; BAG.at = t; BAG.pending++;
-  const bag = $('#bag'); if (bag){ bag.classList.remove('hl', 'hr'); void bag.offsetWidth; bag.classList.add(Math.random() < .5 ? 'hl' : 'hr'); }
-  const st = $('.bagstage'), fx = $('#bagfx'); if (st && fx){ const r = st.getBoundingClientRect(); const s = document.createElement('span'); s.className = 'pow';
-    s.textContent = pick(['퍽!', '팍!', '쾅!', '빡!', '으악', '👊', '💥', '내 돈!']); s.style.left = ((ev.clientX || r.left + r.width / 2) - r.left) + 'px'; s.style.top = ((ev.clientY || r.top + 60) - r.top) + 'px'; fx.appendChild(s); setTimeout(() => s.remove(), 700); }
-  if (navigator.vibrate) try { navigator.vibrate(10); } catch(e){}
-  bagDraw(); clearTimeout(BAG.t); BAG.t = setTimeout(flushBag, 900); if (BAG.pending >= 30) flushBag();
-}
-async function flushBag(){ clearTimeout(BAG.t); const n = Math.min(40, BAG.pending); if (!n || !BAG.sym) return; BAG.pending -= n;
-  try { const v = await rpc('tap', {p_symbol: BAG.sym, p_kind: 'punch', p_n: n}); if (v) BAG.server = Math.max(BAG.server, +v); } catch(e){ BAG.pending += n; } bagDraw(); }
 
 /* ---------------------------------------------------------------- me */
 async function vMe(){
@@ -1241,7 +1202,7 @@ async function render(keep){
   let fn = vHome, tab = 'home', route = 'home';
   if (a === 'r' && b){ UI.room = decodeURIComponent(b); fn = () => vRoom(UI.room); route = 'room'; if (!keep) UI.limit = 30; }
   else if (a === 'm' && b){ fn = () => vMood(b); route = 'mood'; }
-  else if (a === 'play'){ fn = vPlay; tab = 'play'; route = 'play'; } else if (a === 'me'){ fn = vMe; tab = 'me'; route = 'me'; }
+  else if (a === 'me'){ fn = vMe; tab = 'me'; route = 'me'; }
   UI.route = route; if (route !== 'mood') CUR = null;
   $$('.tabbar a').forEach(x => x.classList.toggle('on', x.dataset.tab === tab));
   const inRoom = route === 'room' && !!A[UI.room];
@@ -1249,7 +1210,7 @@ async function render(keep){
   $('#hdr').innerHTML = hdrHTML();
   let html; try { html = await fn(); } catch(e){ console.error(e); html = `<div class="empty">불러오지 못했어요 · ${esc(errMsg(e))}</div>`; }
   if (id !== RID) return;
-  $('#app').innerHTML = html; $$('canvas.mpx').forEach(c => A[c.dataset.sym] && PX.mini(c, A[c.dataset.sym])); subscribeComments(); if (route === 'play') bagDraw(); if (route === 'me') PZ.paintMe($('#mycv'));
+  $('#app').innerHTML = html; $$('canvas.mpx').forEach(c => A[c.dataset.sym] && PX.mini(c, A[c.dataset.sym])); subscribeComments(); if (route === 'me') PZ.paintMe($('#mycv'));
   window.scrollTo(0, keep ? y : 0);
 }
 window.addEventListener('hashchange', () => render());
@@ -1291,7 +1252,6 @@ const ACT = {
   async doreport(el){ if (!need()) return; try { const n = await rpc('report_mood', {p_type:'mood', p_id: el.dataset.id, p_reason: el.dataset.v}); closeModal(); toast(n >= 3 ? '신고가 쌓여 숨겨졌어요' : '신고했어요'); } catch(e){ closeModal(); toast(errMsg(e)); } },
   more(){ UI.limit += 30; render(true); },
   async op(el){ if (!need()) return; try { await rpc('give_opinion', {p_symbol: UI.room, p_pick: el.dataset.v}); const c = $('#op'); if (c) c.outerHTML = await opinionHTML(); } catch(e){ toast(errMsg(e)); } },
-  punch(el, ev){ punchAt(ev || {}); },
   exroll(){ UI.excuse = excuse(); render(true).then(() => { const b = $('#exbox'); if (b){ b.classList.remove('roll'); void b.offsetWidth; b.classList.add('roll'); } }); },
   async exshare(){ const text = `정밀 분석 결과, "${UI.excuse}"\n${location.origin}${location.pathname}`; try { if (navigator.share) await navigator.share({text}); else { await navigator.clipboard.writeText(text); toast('복사했어요'); } } catch(e){} },
   rename(){ modal(`<div class="h2">이름 바꾸기</div><div class="row" style="margin-top:12px"><input class="f" id="nk" maxlength="12" value="${esc(ME.nickname)}"><button class="btn" data-act="reroll">🎲</button></div><button class="btn pri full" style="margin-top:12px" data-act="dorename">바꾸기</button>`); },
@@ -1323,7 +1283,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id
     const feed = $('#feed'); if (!feed || $(`[data-mid="${m.id}"]`)) return;
     feed.querySelector('.empty')?.remove(); feed.insertAdjacentHTML('afterbegin', moodCard({...m, author: au}, null, here));
   }).subscribe();
-  setInterval(() => { if (!isTyping() && !$('.modal') && now() - BAG.at > 8000) loadAssets().then(() => {
+  setInterval(() => { if (!isTyping() && !$('.modal') && true) loadAssets().then(() => {
     if (UI.route === 'home') render(true); else if (UI.route === 'room'){ PZ.enter(UI.room); PZ.load(); $('#hdr').innerHTML = hdrHTML(); } }); }, 60000);
 })();
 </script>
