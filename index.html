@@ -214,11 +214,24 @@ textarea.f{min-height:90px;resize:none}
 .ufo span{display:block;font-size:44px;line-height:1;animation:hover 1.1s ease-in-out infinite alternate}@keyframes hover{to{translate:0 -6px}}
 .ufo .beam{position:absolute;left:50%;top:38px;width:96px;margin-left:-48px;height:170px;background:linear-gradient(rgba(170,255,160,.6),rgba(170,255,160,.04));clip-path:polygon(42% 0,58% 0,100% 100%,0 100%);animation:beam 1.4s ease-in-out infinite alternate}
 @keyframes beam{from{opacity:.45}to{opacity:.95}}
+.cops{position:absolute;left:0;right:0;top:58%;height:0;z-index:240;pointer-events:none}
+.cops .car{position:absolute;left:6%;bottom:0;font-size:40px;line-height:1}
+.siren{position:absolute;left:38%;top:-6px;width:12px;height:8px;border-radius:4px;animation:siren .5s steps(1) infinite}
+@keyframes siren{0%{background:#ff3b3b;box-shadow:0 0 14px 6px rgba(255,59,59,.7)}50%{background:#3b7bff;box-shadow:0 0 14px 6px rgba(59,123,255,.7)}}
+.cops .cop{position:absolute;bottom:0;font-size:30px;line-height:1;animation:salute 1.2s ease-in-out infinite alternate}
+.cops .cop:nth-of-type(2){left:34%}.cops .cop:nth-of-type(3){left:50%}.cops .cop:nth-of-type(4){left:66%}
+@keyframes salute{to{translate:0 -3px}}
+.cops .barr{position:absolute;left:30%;right:14%;bottom:-24px;display:flex;justify-content:space-between;font-size:24px}
+.cops .cbub{position:absolute;left:40%;bottom:40px;background:#fff;color:#1f2126;font-size:11.5px;font-weight:800;padding:4px 8px;border-radius:10px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.15);animation:cbub 6s infinite}
+@keyframes cbub{0%,8%{opacity:0}12%,55%{opacity:1}60%,100%{opacity:0}}
+.copsoff{position:absolute;top:58%;left:0;right:0;height:0;z-index:240;pointer-events:none}
+.copsoff .car{position:absolute;bottom:0;font-size:40px;line-height:1;animation:drive 6s ease-in infinite}
+@keyframes drive{0%{left:40%;opacity:1}15%{left:40%}85%{left:-25%;opacity:1}86%,100%{opacity:0;left:-25%}}
+.barr.fallen{position:absolute;left:30%;right:20%;top:72%;display:flex;justify-content:space-between;font-size:22px;z-index:230;pointer-events:none}
+.barr.fallen span{rotate:85deg;opacity:.85}.barr.fallen span:nth-child(2){rotate:-70deg}
+.ufo.sell .beam{background:linear-gradient(rgba(255,120,120,.65),rgba(255,120,120,.05))}
 .ufo .rise{position:absolute;left:50%;top:160px;font-size:16px;font-style:normal;animation:rise 2.2s linear infinite}@keyframes rise{from{translate:-50% 0;opacity:1}to{translate:-50% -120px;scale:.3;opacity:0}}
 .coin{position:absolute;font-size:16px;z-index:810;pointer-events:none;animation:coin 1.3s ease-in forwards}@keyframes coin{to{translate:0 var(--dy);rotate:200deg}}
-.dino{position:absolute;left:0;top:0;font-size:62px;line-height:1;pointer-events:none;transform-origin:50% 100%}
-.dino span{display:block;animation:stomp .5s ease-in-out infinite}@keyframes stomp{0%,100%{translate:0 0;rotate:-4deg}50%{translate:0 -7px;rotate:4deg}}
-.dino .bub{left:50%;bottom:100%;position:absolute}
 .ants{position:absolute;left:0;right:0;bottom:30px;height:20px;z-index:300;pointer-events:none}
 .ants i{position:absolute;font-style:normal;font-size:14px;animation:march 16s linear infinite}@keyframes march{from{left:-8%}to{left:108%}}
 .ants.out i{font-size:18px;animation:flee 6s linear infinite}@keyframes flee{from{left:108%}to{left:-8%}}
@@ -333,11 +346,12 @@ function scene(a){
 }
 /* ---------------------------------------------------------------- events: a specific cause shows up as a creature or a thing in the room */
 // catalog: what shows up, and the plain-language reason underneath
+// same cause, different creature for good and bad so it reads at a glance
 const EVCAT = {
   ufo_buy:   {e:'🛸', n:'UFO 착륙',     t:'외계인(외국인)이 돈을 뿌리고 가요', good:true},
   ufo_sell:  {e:'🛸', n:'UFO 납치',     t:'외계인(외국인)이 다 쓸어 가요. 사람도 끌려가요'},
-  dino_buy:  {e:'🦖', n:'공룡 등장',    t:'기관 공룡이 쿵쿵 받쳐 줘요', good:true},
-  dino_sell: {e:'🦖', n:'공룡 습격',    t:'기관 공룡이 짓밟고 지나가요. 도망쳐요!'},
+  cop_buy:   {e:'👮', n:'경찰 출동',    t:'기관 경찰이 바리케이드 치고 막아 줘요', good:true},
+  cop_sell:  {e:'🚓', n:'경찰 철수',    t:'기관 경찰도 손 떼고 떠나요. 이제 각자도생'},
   ants_buy:  {e:'🐜', n:'개미 군단',    t:'개미들이 줄지어 들어와요', good:true},
   ants_sell: {e:'🏃', n:'개미 대탈출',  t:'개미들이 짐 싸서 떠나요'},
   whale:     {e:'🐋', n:'고래 출현',    t:'큰손 고래가 물 뿜으며 사들여요', good:true},
@@ -350,7 +364,7 @@ const EVCAT = {
   chorus:    {e:'😭', n:'곡소리 합창',  t:'방금 다들 털렸대요. 다 같이 흑흑'},
   party:     {e:'🎉', n:'파티 타임',    t:'방금 다들 벌었대요. 배 아파요'},
 };
-const EVQ = new URLSearchParams(location.search).get('ev');   // preview: ?ev=ufo_sell,dino_buy
+const EVQ = new URLSearchParams(location.search).get('ev');   // preview: ?ev=ufo_sell,cop_buy
 const amtEok = v => { const x = Math.abs(v); return (v < 0 ? '−' : '+') + (x >= 1e4 ? (x / 1e4).toFixed(1) + '조' : Math.round(x).toLocaleString('ko-KR') + '억'); };
 const refOf = a => a.kind === 'CRYPTO' ? (a.symbol === 'BTCUSDT' ? null : A.BTCUSDT) : a.kind === 'INDEX' ? null : a.region === 'US' ? A.SPX : A.KOSPI;
 function events(a){
@@ -360,7 +374,7 @@ function events(a){
   if (f && fl.kind === 'investor'){
     const idx = a.kind === 'INDEX', T = idx ? {foreign:5000, inst:3000, retail:5000} : {foreign:1000, inst:1000, retail:2000};
     const when = !fl.live && fl.asof ? ` (${+fl.asof.slice(4, 6)}/${+fl.asof.slice(6)})` : '';
-    for (const [who, nm, kb, ks] of [['foreign','외국인','ufo_buy','ufo_sell'], ['inst','기관','dino_buy','dino_sell'], ['retail','개인','ants_buy','ants_sell']]){
+    for (const [who, nm, kb, ks] of [['foreign','외국인','ufo_buy','ufo_sell'], ['inst','기관','cop_buy','cop_sell'], ['retail','개인','ants_buy','ants_sell']]){
       const v = +f[who] || 0;
       if (Math.abs(v) >= T[who]) add(v > 0 ? kb : ks, `${nm} ${amtEok(v)} 순${v > 0 ? '매수' : '매도'}${when}`, Math.abs(v) / T[who]);
     }
@@ -688,7 +702,8 @@ const PZ = (() => {
     const R = (n, f) => Array.from({length: n}, f).join(''); let h = '';
     for (const e of E){
       if (e.k === 'ufo_buy' || e.k === 'ufo_sell') h += `<div class="ufo ${e.k === 'ufo_sell' ? 'sell' : ''}"><div class="beam"></div><span>🛸</span>${e.k === 'ufo_sell' ? R(3, (_, i) => `<i class="rise" style="animation-delay:${-i * .7}s">${['🏠', '💵', '🧍'][i]}</i>`) : ''}</div>`;
-      if (e.k === 'dino_buy' || e.k === 'dino_sell') h += `<div class="dino ${e.k === 'dino_sell' ? 'sell' : ''}"><span>🦖</span></div>`;
+      if (e.k === 'cop_buy') h += `<div class="cops"><span class="car">🚓<i class="siren"></i></span>${R(3, (_, i) => `<span class="cop" style="animation-delay:${-i * .3}s">👮</span>`)}<div class="barr">${R(4, () => '<span>🚧</span>')}</div><div class="cbub">여기서 더는 못 내려갑니다!</div></div>`;
+      if (e.k === 'cop_sell') h += `<div class="copsoff"><span class="car">🚓<i class="siren"></i></span></div><div class="barr fallen">${R(3, () => '<span>🚧</span>')}</div>`;
       if (e.k === 'ants_buy') h += `<div class="ants">${R(12, (_, i) => `<i style="animation-delay:${-i * .55}s">🐜</i>`)}</div>`;
       if (e.k === 'ants_sell') h += `<div class="ants out">${R(7, (_, i) => `<i style="animation-delay:${-i * .8}s">🏃</i>`)}</div>`;
       if (e.k === 'whale') h += '<div class="whale">🐋</div><div class="spout">💦</div>';
@@ -718,13 +733,10 @@ const PZ = (() => {
         else { u.next = n0 + 4500; const v = [...actors.values()].filter(a => !a.me && !(a.lift > n0)).sort((p, q) => Math.abs(p.x - u.x) - Math.abs(q.x - u.x))[0];
           if (v && Math.abs(v.x - u.x) < 90){ v.lift = n0 + 2600; v.liftAt = n0; say(v, pick(['살려줘!!', '내 계좌!!', '으아아 끌려간다']), 2200); } }
       } }
-    const d = ENT.dino;
-    if (d){ d.x -= 34 * dt; if (d.x < -80) d.x = W() + 60; const y = gy0() + (gy1() - gy0()) * .3;
-      d.el.style.transform = `translate3d(${d.x - 31}px,${y - 62}px,0)`; d.el.style.zIndex = 10 + (y | 0);
-      for (const a of actors.values()){ if (a.me || Math.abs(a.x - d.x) > 70 || Math.abs(a.y - y) > 60) continue;
-        if (d.sell && !(a.flee > n0)){ a.flee = n0 + 2500; Object.assign(a, {tx: clamp(a.x + (a.x < d.x ? -140 : 140), 16, W() - 16), ty: a.y, idle: false, rush: true}); if (Math.random() < .5) say(a, pick(['도망쳐!!', '공룡이다!!', '밟힌다!']), 1500); }
-        if (!d.sell && !(a.cheer > n0)){ a.cheer = n0 + 4000; emote(a, '🙌'); if (Math.random() < .5) say(a, pick(['기관 형님!', '받쳐 줘요!', '공룡 최고']), 1500); } }
-      if (n0 > d.next){ d.next = n0 + 6000; const b = document.createElement('div'); b.className = 'bub show'; b.style.cssText = 'position:absolute;left:50%;bottom:100%;transform:translateX(-50%);background:#fff;color:#1f2126;font-size:12px;font-weight:800;padding:4px 8px;border-radius:10px;white-space:nowrap'; b.textContent = d.sell ? '크아앙! 쿵! 쿵!' : '쿵! 받쳐 줄게'; d.el.appendChild(b); setTimeout(() => b.remove(), 2200); } }
+    const cp = ENT.cop;
+    if (cp && n0 > cp.next){ cp.next = n0 + 5000 + Math.random() * 3000; const v = pick([...actors.values()].filter(a => !a.me)); if (v){
+      if (cp.sell){ emote(v, '😱'); say(v, pick(['경찰도 도망갔어!', '이제 누가 막아줘…', '각자도생이다']), 2000); }
+      else { emote(v, '🙏'); say(v, pick(['경찰 아저씨 고마워요', '든든하다', '바닥은 막아 주겠지?']), 2000); } } }
     const bo = ENT.bolt;
     if (bo && n0 > bo.next){ bo.next = n0 + 3500 + Math.random() * 2000; const v = pick([...actors.values()].filter(a => !a.me)); if (v){
       const z = document.createElement('div'); z.className = 'bolt'; z.style.left = v.x + 'px'; z.style.height = (v.y - 40) + 'px'; el.appendChild(z); setTimeout(() => z.remove(), 500);
@@ -758,7 +770,7 @@ const PZ = (() => {
     el.innerHTML = place + fx + `<div class="pzcap"></div><div class="pzw">${sc.night ? '🌙 ' + sc.n : sc.label.replace(' · ', ' ')}${sc.night ? ' · 마감' : ''}${sc.night && (sc.frozen || sc.peak) ? (sc.frozen ? ' 🧊' : ' 🏆') : ''}</div><div class="pzhint"><span>${EVS[0] ? EVS[0].e + ' ' + EVS[0].t : sc.hint}</span></div>`;
     for (const x of actors.values()) el.appendChild(x.el);
     const u = el.querySelector('.ufo'); if (u) ENT.ufo = {el: u, x: W() * .3, vx: 38, sell: u.classList.contains('sell'), next: 0};
-    const d = el.querySelector('.dino'); if (d) ENT.dino = {el: d, x: W() + 40, sell: d.classList.contains('sell'), next: 0};
+    if (EVS.some(e => e.k === 'cop_buy' || e.k === 'cop_sell')) ENT.cop = {sell: EVS.some(e => e.k === 'cop_sell'), next: now() + 2000};
     if (EVS.some(e => e.k === 'bolt')) ENT.bolt = {next: now() + 1500};
     renderEv();
   }
