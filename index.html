@@ -263,6 +263,10 @@ textarea.f{min-height:90px;resize:none}
 .pb{display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 0 6px;background:var(--soft);border:2px solid #1d2028;box-shadow:2px 2px 0 rgba(0,0,0,.25);font-family:Galmuri11,Pretendard,sans-serif;font-size:10.5px;white-space:nowrap}
 .pb span{font-size:20px;line-height:1}.op3 .pb{flex-direction:row;justify-content:center;gap:5px;font-size:12px}.op3 .pb span{font-size:16px}
 .pb:active{transform:translate(2px,2px);box-shadow:none}
+.saybar{display:flex;gap:6px;margin:8px 0 0;font-family:Galmuri11,Pretendard,sans-serif}
+.saybar input{flex:1;min-width:0;height:40px;padding:0 10px;border:2px solid #1d2028;border-radius:0;background:var(--card);color:var(--text);font:inherit;font-size:16px}
+.saybar button{flex:none;height:40px;padding:0 14px;border:2px solid #1d2028;background:#ffd84a;color:#1d2028;font:inherit;font-size:13px;box-shadow:2px 2px 0 rgba(0,0,0,.25)}
+.saybar button:active{transform:translate(2px,2px);box-shadow:none}
 .emobar{font-family:Galmuri11,Pretendard,sans-serif}.emobar button{border-radius:0;border:2px solid #1d2028;box-shadow:2px 2px 0 rgba(0,0,0,.25);height:38px}
 .ev{border-radius:0;border:2px solid #1d2028;border-left-width:6px;box-shadow:2px 2px 0 rgba(0,0,0,.2);font-family:Galmuri11,Pretendard,sans-serif}.ev b{font-weight:400}.pb.on{background:#ffd84a;color:#1d2028}
 .plaza.px{height:clamp(320px,calc(100svh - 150px),640px);margin:0 -16px;border-radius:0;background:#0b1430;box-shadow:0 2px 0 #1d2028,0 -2px 0 #1d2028}
@@ -294,7 +298,7 @@ textarea.f{min-height:90px;resize:none}
 <body>
 <div class="wrap">
   <header id="hdr" class="top"></header>
-  <div id="roomtop" hidden><section id="plaza" class="plaza scene"></section><div id="evbar" class="evs"></div><div id="emobar" class="emobar"></div></div>
+  <div id="roomtop" hidden><section id="plaza" class="plaza scene"></section><div id="evbar" class="evs"></div><div id="emobar" class="emobar"></div><form id="saybar" class="saybar" autocomplete="off"><input id="sayin" maxlength="40" placeholder="💬 내 캐릭터로 한마디 (40자)" enterkeyhint="send"><button>말하기</button></form></div>
   <main id="app"><div class="empty">불러오는 중…</div></main>
 </div>
 <script>
@@ -961,7 +965,7 @@ const PX = (() => {
     if (bg.width !== W || bg.height !== H){ bg.width = fx.width = W; bg.height = fx.height = H; dirty = true; }
     if (dirty || !layers){ layers = {back: backLayer(W, H, HZ, S.sc, true), front: frontLayer(W, H, HZ, S.sc, true)}; dirty = false; }
     const g = bg.getContext('2d'), sc = S.sc, a = S.a;
-    g.save(); if (sc.quake) g.translate(Math.round((Math.random() - .5) * 2), 0);
+    g.save();
     g.drawImage(layers.back, 0, 0);
     if (sc.night) stars(g, W, HZ, t);
     if (sc.k === 'nuke') mushroom(g, Math.round(W * .76), HZ, t);
@@ -1013,7 +1017,7 @@ const PZ = (() => {
   const hash = s => { let h = 2166136261; for (const c of String(s)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
   const look = id => { const h = hash(id); return {skin:SKIN[h % 4], hair:HAIR[(h >>> 2) % 8], shirt:SHIRT[(h >>> 5) % 9], pants:PANTS[(h >>> 9) % 4], hat:(h >>> 12) % 5, hatc:SHIRT[(h >>> 16) % 9]}; };
   let PKEY; try { PKEY = localStorage.getItem('pz-key'); if (!PKEY){ PKEY = Math.random().toString(36).slice(2, 10); localStorage.setItem('pz-key', PKEY); } } catch(e){ PKEY = Math.random().toString(36).slice(2, 10); }
-  const actors = new Map(); let EVS = [], ENT = {}, COMM = null; let el, raf = 0, last = 0, lobby = null, ROOM = null, SC = WX.cloud, PRES = {}, RESID = [], BOTS = null, TODAYN = 0, lastSend = 0, popFor = null, gen = 0;
+  const actors = new Map(); let EVS = [], ENT = {}, COMM = null; let lastTalk = 0; let el, raf = 0, last = 0, lobby = null, ROOM = null, SC = WX.cloud, PRES = {}, RESID = [], BOTS = null, TODAYN = 0, lastSend = 0, popFor = null, gen = 0;
   const myId = () => ME ? ME.id : 'g:' + PKEY;
   const W = () => (el && el.clientWidth) || 360, H = () => (el && el.clientHeight) || 270;
   const gy0 = () => 150, gy1 = () => H() - 26;
@@ -1073,7 +1077,7 @@ const PZ = (() => {
       else a.f = 0;
       if (SC.hop || a.mood === 'won') bob = -Math.abs(Math.sin(t / (moving ? 90 : 140) + a.ph)) * (moving ? 3 : 6);
       else if (moving) bob = -Math.abs(Math.sin(t / 90)) * 1.5;
-      if ((SC.shiver || (a.mood === 'unfair' && !moving)) && Math.random() < .5) sh = (Math.random() - .5) * (SC.quake ? 5 : SC.shiver ? 2.4 : 2);
+      if (!SC.quake && (SC.shiver || (a.mood === 'unfair' && !moving)) && Math.random() < .5) sh = (Math.random() - .5) * (SC.shiver ? 2.4 : 2);
       if (SC.quake && !a.me && !(a.fall > n0) && Math.random() < dt * .06){ a.fall = n0 + 1600; a.fdir = Math.random() < .5 ? -1 : 1; if (Math.random() < .6) say(a, pick(['꽈당!', '으악!', '아이고 허리야']), 1500); }
       const down = a.fall > n0; if (down){ a.tx = a.x; a.ty = a.y; }
       if (a.lift > n0){ const q = (n0 - a.liftAt) / 2600; bob -= Math.sin(Math.PI * q) * 70; sh += Math.sin(n0 / 60) * 2; a.tx = a.x; a.ty = a.y; }
@@ -1226,7 +1230,8 @@ const PZ = (() => {
 
   return {
     boot(){
-      el = $('#plaza'); el.addEventListener('click', tapGround); try { el.style.setProperty('--umb', `url(${PX.umbrella()})`); } catch(e){}
+      el = $('#plaza'); el.addEventListener('click', tapGround);
+      $('#saybar').addEventListener('submit', ev => { ev.preventDefault(); const i = $('#sayin'); if (PZ.talk(i.value)) i.value = ''; }); try { el.style.setProperty('--umb', `url(${PX.umbrella()})`); } catch(e){}
       $('#emobar').innerHTML = `<span class="muted s" style="flex:none">내 캐릭터로</span>${Object.keys(SAY).map(e => `<button data-act="emo" data-v="${e}">${e}</button>`).join('')}`;
       lobby = sb.channel('lobby', { config: { presence: { key: PKEY }, broadcast: { self: false } } });
       lobby.on('presence', { event: 'sync' }, () => {
@@ -1234,6 +1239,7 @@ const PZ = (() => {
         const v = $('#viewers'); if (v) v.textContent = `${VIEWERS}명 접속 중`; roomCounts(); sync();
       })
       .on('broadcast', { event: 'mv' }, ({ payload: p }) => { if (p.room !== ROOM) return; const a = actors.get(p.id); if (a && !a.me) Object.assign(a, {tx: p.x * W(), ty: gy0() + p.y * (gy1() - gy0()), idle: false, rush: true, hold: now() + 20000}); })
+      .on('broadcast', { event: 'say' }, ({ payload: p }) => { if (p.room !== ROOM || !p.s) return; const a = actors.get(p.id); if (a) say(a, String(p.s).slice(0, 40), 3000 + String(p.s).length * 120); })
       .on('broadcast', { event: 'emo' }, ({ payload: p }) => { if (p.room !== ROOM) return; const from = actors.get(p.id), to = p.to && actors.get(p.to); emote(to || from, p.e, to ? 3 : 1); if (p.s) say(from, p.s, 2500); })
       .subscribe(st => { if (st === 'SUBSCRIBED') track(); });
       setInterval(() => {
@@ -1269,6 +1275,8 @@ const PZ = (() => {
     sayMe(text){ say(actors.get(myId()), text, 2500); emote(actors.get(myId()), '🗳️'); },
     hug(to){ emote(actors.get(to), '🫂', 3); send('emo', {id: myId(), to, e: '🫂'}); },
     wave(to){ const me = actors.get(myId()); emote(actors.get(to), '👋', 2); say(me, '안녕하세요 👋', 2500); send('emo', {id: myId(), to, e: '👋', s: '안녕하세요 👋'}); },
+    talk(text){ text = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 40); if (!text) return false; if (now() - lastTalk < 1500){ toast('조금 천천히요'); return false; }
+      lastTalk = now(); say(actors.get(myId()), text, 3000 + text.length * 120); send('say', {id: myId(), s: text}); return true; },
     emo(e){ if (now() - lastSend < 600) return; lastSend = now(); const me = actors.get(myId()); emote(me, e, 2); say(me, SAY[e], 2500); send('emo', {id: myId(), e, s: SAY[e]}); },
     paintMe(cv){ if (cv && ME) paint(cv, look(ME.id), 'held', 0); },
     closePop,
