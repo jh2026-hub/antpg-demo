@@ -183,6 +183,25 @@ table.t .r{text-align:right}
 .score{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;text-align:center}
 .score b{font-family:'Galmuri11',monospace;font-size:32px;display:block;line-height:1.1}
 .lb td{vertical-align:middle}
+.live{margin-top:12px;padding:12px 14px}
+.live .lv{display:flex;align-items:center;gap:6px;font-size:13px}
+.live .dot{width:8px;height:8px;border-radius:50%;background:#ff3b4f;box-shadow:0 0 0 0 rgba(255,59,79,.7);animation:livedot 1.4s infinite}
+@keyframes livedot{70%{box-shadow:0 0 0 7px rgba(255,59,79,0)}100%{box-shadow:0 0 0 0 rgba(255,59,79,0)}}
+.lf{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-size:13px}
+.lf span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lf span:last-child{white-space:nowrap;flex:none}
+.lf.new{animation:flash 1.6s}
+.iss{position:relative;margin:10px 0;padding:14px;border-radius:16px;border:1px solid var(--line);background:var(--card);overflow:hidden}
+.iss.iu{background:linear-gradient(150deg,#3a121a 0%,var(--card) 60%)}.iss.id{background:linear-gradient(150deg,#0f1f3f 0%,var(--card) 60%)}
+.iss.hot.iu{border-color:#ff5a6a;animation:hotu 1.1s ease-in-out infinite alternate}.iss.hot.id{border-color:#4b8dff;animation:hotd 1.1s ease-in-out infinite alternate}
+@keyframes hotu{to{box-shadow:0 0 0 2px rgba(255,90,106,.35),0 0 24px rgba(255,90,106,.35)}}
+@keyframes hotd{to{box-shadow:0 0 0 2px rgba(75,141,255,.35),0 0 24px rgba(75,141,255,.35)}}
+.iss .why{font-size:12px;font-weight:700;color:#ffcf9a}
+.iss .hl{font-size:19px;font-weight:900;line-height:1.3;margin:6px 0 2px;letter-spacing:-.3px}
+.iss .bignum{font-size:34px;font-weight:900;line-height:1;font-family:'Galmuri11',monospace}
+.iss .q{font-weight:800;margin:12px 0 0;text-align:center}
+.ibtn{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.ibtn .qb{min-height:52px;border-radius:12px}.ibtn .qb b{font-size:16px}
 .botb{font-size:10.5px;padding:0 5px;border-radius:5px;background:#1d2a3f;color:#9cc2ff;border:1px solid #2c4366;white-space:nowrap}
 /* control map, quick play, heat */
 .power{margin:12px -16px 0;padding:10px 16px 8px;background:#0e131c;border-top:1px solid var(--line)}
@@ -375,14 +394,14 @@ function onAssetRow(r){
   const prev = a.price;
   if (live){ a.price = a._p; a.change = a._c; a.change_pct = a._cp; } else { a.price = +r.price; a.change = +r.change; a.change_pct = +r.change_pct; }
   if (HIST[r.symbol]) HIST[r.symbol].push(+r.price);
-  if (!live && prev && a.price !== prev){ mapDelta(a, prev); }
+  if (!live && prev && a.price !== prev){ mapDelta(a, prev); quickMove(a, prev, a.price, '1분'); }
   scheduleLive(); MAPDIRTY = true;
 }
 let wsTry = 0;
 function connectBinance(){
   let ws; try { ws = new WebSocket('wss://stream.binance.com:9443/stream?streams=btcusdt@ticker/ethusdt@ticker'); } catch(e){ return retryWS(); }
   ws.onmessage = ev => { let d; try { d = JSON.parse(ev.data).data; } catch(e){ return; } const a = A[d.s]; if (!a) return;
-    if (a._dBase == null || now() - (a._dAt || 0) > 6000){ if (a._dBase != null && +d.c !== a._dBase) mapDelta(a, a._dBase, +d.c); a._dBase = +d.c; a._dAt = now(); }
+    if (a._dBase == null || now() - (a._dAt || 0) > 6000){ if (a._dBase != null && +d.c !== a._dBase){ mapDelta(a, a._dBase, +d.c); quickMove(a, a._dBase, +d.c, '몇 초'); } a._dBase = +d.c; a._dAt = now(); }
     a._p = a.price = +d.c; a._c = a.change = +d.p; a._cp = a.change_pct = +d.P; a.liveWS = true; a.liveAt = now(); wsTry = 0; scheduleLive(); };
   ws.onclose = () => retryWS();
 }
@@ -431,7 +450,19 @@ function rankOf(st){
   if (r >= .7) return '⭐ 백전노장'; if (r >= .6) return '대위'; if (r <= .3) return '🕵️ 적군 첩자 의심'; return '병장';
 }
 let LAST_ACT = null;
-function need(){ if (!ME){ UI.pending = LAST_ACT; nickModal(); return false; } return true; }
+function need(){ if (ME) return true; autoEnlist(LAST_ACT); return false; }
+let ENLISTING = false;
+async function autoEnlist(then){
+  if (ENLISTING) return; ENLISTING = true;
+  try {
+    const { data:{ session } } = await sb.auth.getSession();
+    if (!session){ const { error } = await sb.auth.signInAnonymously(); if (error) throw error; }
+    for (let i = 0; i < 4 && !ME; i++){ try { ME = await rpc('set_nickname', {nick: randName()}); } catch(e){ if (!/이미 있는/.test(errMsg(e))) throw e; } }
+    if (!ME) throw new Error('잠시 후 다시 눌러 주세요');
+    toast(`'${ME.nickname}'(으)로 참전해요 · 이름은 내 정보에서 바꿀 수 있어요`);
+    if (then) await then(); else render(true);
+  } catch(e){ toast(errMsg(e)); } finally { ENLISTING = false; }
+}
 const ADJ = ['용감한','졸린','배고픈','존버하는','물린','신난','침착한','성급한','눈치빠른','겁없는','떡상한','흔들리는','든든한','날쌘'];
 const NOUN = ['이병','척후병','포병','기마병','수병','나팔수','보급병','저격수','공병','통신병','돌격대','파수꾼'];
 const randName = () => ADJ[Math.random() * ADJ.length | 0] + NOUN[Math.random() * NOUN.length | 0] + (10 + Math.random() * 90 | 0);
@@ -732,6 +763,43 @@ function burst(side){
     for (const p of ps){ p.vy += .4; p.x += p.vx; p.y += p.vy; g.fillStyle = p.c; g.fillRect(p.x, p.y, p.s, p.s); } requestAnimationFrame(step); })(t0);
 }
 const ONB = 'mw-onboard-v1';
+function issueList(){
+  const picks = [], seen = new Set(), add = (a, why) => { if (a && !seen.has(a.symbol)){ seen.add(a.symbol); picks.push({a, why}); } };
+  const byMove = ASSETS.slice().sort((x, y) => Math.abs(mv(y) / y.threshold) - Math.abs(mv(x) / x.threshold));
+  add(byMove[0], mv(byMove[0] || {}) >= 0 ? '오늘 가장 크게 올랐어요' : '오늘 가장 크게 빠졌어요');
+  const vol = ASSETS.filter(a => (+a.vol_ratio || 0) >= 1.5).sort((x, y) => y.vol_ratio - x.vol_ratio)[0];
+  if (vol) add(vol, `거래량이 평소의 ${(+vol.vol_ratio).toFixed(1)}배`);
+  const crowd = ASSETS.slice().sort((x, y) => ((FORCES[y.symbol]?.up || 0) + (FORCES[y.symbol]?.down || 0)) - ((FORCES[x.symbol]?.up || 0) + (FORCES[x.symbol]?.down || 0)))[0];
+  const cn = crowd ? (FORCES[crowd.symbol]?.up || 0) + (FORCES[crowd.symbol]?.down || 0) : 0;
+  if (cn >= 2) add(crowd, `지금 ${cn}명이 붙어 싸우는 중`);
+  for (const a of byMove.slice(1)){ if (picks.length >= 3) break; add(a, mv(a) >= 0 ? '상승군이 밀어붙이는 중' : '하락군이 밀어붙이는 중'); }
+  return picks.slice(0, 3);
+}
+function headline(a){
+  const m = mv(a), r = Math.abs(m / a.threshold), up = m >= 0, n = a.name;
+  const big = up ? pick(['폭등', '불기둥', '수직 상승', '로켓 발사']) : pick(['폭락', '털썩', '추락', '와르르']);
+  const mid = up ? pick(['급등', '쭉쭉', '날아오른다']) : pick(['급락', '미끄러진다', '주르륵']);
+  const low = up ? pick(['꿈틀', '슬금슬금 상승']) : pick(['흔들', '슬금슬금 하락']);
+  const tag = r >= 1 ? (up ? '오늘 최고의 영토' : '오늘 최악의 영토') : r >= .5 ? (up ? '상승군 진격' : '하락군 진격') : '숨 고르는 중';
+  return `${r >= 1 ? '🚨 ' : ''}${n} ${fmtC(a)} ${r >= 1 ? big : r >= .4 ? mid : low}! ${tag}`;
+}
+function issueCard({a, why}){
+  const f = FORCES[a.symbol] || {}, u = f.up || 0, d = f.down || 0, t = u + d, p = t ? Math.round(u / t * 100) : 50, up = mv(a) >= 0, r = Math.abs(mv(a) / a.threshold);
+  const [qU, qD, q] = up ? ['🚀 더 간다', '🧊 식는다', '여기서 더 갈까?'] : ['📈 반등한다', '📉 더 빠진다', '여기서 반등할까?'];
+  return `<div class="iss ${up ? 'iu' : 'id'} ${r >= 1 ? 'hot' : ''}">
+    <div class="row sb"><span class="why">${heat(a) >= .5 ? '🔥 ' : ''}${esc(why)}</span><span class="tag" data-tag="${esc(a.symbol)}"></span></div>
+    <div class="hl">${esc(headline(a))}</div>
+    <div class="row sb" style="align-items:flex-end"><div class="bignum num ${dir(mv(a))}" data-c="${esc(a.symbol)}">${fmtC(a)}</div><div class="num muted s" data-p="${esc(a.symbol)}">${fmtP(a)}</div></div>
+    <div class="q">${q}</div>
+    <div class="ibtn"><button class="qb up" data-act="qcall" data-sym="${esc(a.symbol)}" data-v="UP"><b>${qU}</b></button><button class="qb down" data-act="qcall" data-sym="${esc(a.symbol)}" data-v="DOWN"><b>${qD}</b></button></div>
+    <div class="crowd"><div class="bar" style="height:8px;margin:6px 0 2px"><i class="bu" style="width:${p}%"></i><i class="bd" style="width:${100 - p}%"></i></div>
+      <div class="row sb s"><span class="up">${qU.split(' ').slice(1).join(' ')} ${t ? p + '%' : ''}</span><span class="muted">${t ? `${t}명 참전` : '첫 참전자가 되어 보세요'}</span><span class="down">${t ? 100 - p + '%' : ''} ${qD.split(' ').slice(1).join(' ')}</span></div></div>
+  </div>`;
+}
+function issuesHTML(){
+  const xs = issueList(); if (!xs.length) return '';
+  return `<h3 class="sec" style="margin-top:14px">🔥 지금 이슈 <span class="muted s">누르면 바로 참전 · 가입 없음 · ${WIN_LBL[UI.qwin || 10]} 뒤 결과</span></h3>${xs.map(issueCard).join('')}`;
+}
 function onboardCard(){
   let done = false; try { done = localStorage.getItem(ONB) === '1'; } catch(e){}
   if (done) return '';
@@ -859,7 +927,7 @@ async function vHome(){
   const tu = Object.values(FORCES).reduce((s,x) => s + x.up, 0), td = Object.values(FORCES).reduce((s,x) => s + x.down, 0);
   const hotFronts = ASSETS.slice().sort((a,b) => heat(b) - heat(a)).slice(0, 3);
   const defeat = fd && fd.length >= 5 ? Math.round(fd.filter(x => x.defeated).length / fd.length * 100) : null;
-  return topbar() + mapHTML() + `
+  return topbar() + liveHTML() + issuesHTML() + mapHTML() + `
   ${onboardCard()}${myCallsCard(calls)}
   <section class="card"><div class="row sb"><h2 class="h pix">오늘의 전황</h2><span class="muted s">영토 ${ASSETS.length}곳</span></div>
     <div class="summary"><div><b class="up" data-count="${up}">${up}</b><span class="s">상승군 우세</span></div><div><b class="muted" data-count="${ASSETS.length - up - down}">${ASSETS.length - up - down}</b><span class="s">교착</span></div><div><b class="down" data-count="${down}">${down}</b><span class="s">하락군 우세</span></div></div></section>
@@ -1521,8 +1589,24 @@ function confetti(cv, win){
 const EVENTS = [], NICK = {}, SETTLED = new Set();
 async function nickOf(id){ if (!id) return '누군가'; if (NICK[id]) return NICK[id]; const { data } = await sb.from('profiles').select('nickname').eq('id', id).maybeSingle(); return NICK[id] = data?.nickname || '누군가'; }
 function newsBanner(txt){ if (document.hidden) return; $$('.news').forEach(n => n.remove()); const d = document.createElement('div'); d.className = 'news'; d.innerHTML = `<b>속보</b>${esc(txt)}`; document.body.appendChild(d); setTimeout(() => d.remove(), 3800); }
-function pushEvent(txt, banner){ EVENTS.unshift({txt, at: now()}); EVENTS.length = Math.min(EVENTS.length, 10); renderTicker(true); if (banner) newsBanner(txt); }
+function pushEvent(txt, banner){ EVENTS.unshift({txt, at: now()}); EVENTS.length = Math.min(EVENTS.length, 10); renderTicker(true); renderLive(true); if (banner) newsBanner(txt); }
 let tickerSig = '';
+// a sharp move inside a short window is news on its own
+function quickMove(a, prev, cur, span){
+  const pct = (cur / prev - 1) * 100, lim = a.kind === 'CRYPTO' ? .15 : .3;
+  if (Math.abs(pct) < lim || now() - (a._qmAt || 0) < 60000) return; a._qmAt = now();
+  pushEvent(`⚡ ${a.name} ${span} 새 ${pct > 0 ? '▲' : '▼'}${Math.abs(pct).toFixed(2)}%`, false);
+}
+let VIEWERS = 1;
+function liveHTML(){
+  return `<section class="card live"><div class="row sb"><b class="lv"><span class="dot"></span>LIVE · 지금 일어나는 일</b><span class="muted s" id="viewers">👀 ${VIEWERS}명 보는 중</span></div><div id="livefeed">${liveItems()}</div></section>`;
+}
+function liveItems(){
+  const xs = EVENTS.slice(0, 4);
+  return xs.length ? xs.map((e, i) => `<div class="lf ${i === 0 && now() - e.at < 4000 ? 'new' : ''}"><span>${esc(e.txt)}</span><span class="muted s num">${agoShort(e.at)}</span></div>`).join('') : '<div class="muted s">조용하네요… 첫 참전으로 판을 흔들어 보세요</div>';
+}
+const agoShort = t => { const x = (now() - t) / 1000; return x < 10 ? '방금' : x < 60 ? Math.floor(x) + '초 전' : x < 3600 ? Math.floor(x / 60) + '분 전' : Math.floor(x / 3600) + '시간 전'; };
+function renderLive(){ const el = $('#livefeed'); if (el) el.innerHTML = liveItems(); const v = $('#viewers'); if (v) v.textContent = `👀 ${VIEWERS}명 보는 중`; }
 function renderTicker(force){
   const el = $('#ticker .track'); if (!el || !ASSETS.length) return;
   const sig = EVENTS.map(e => e.at).join(',');
@@ -1553,10 +1637,11 @@ function subscribeEvents(){
     .subscribe();
 }
 async function seedEvents(){
-  const { data } = await sb.from('posts').select('category,title,side,symbol,result,author:profiles!posts_author_id_fkey(nickname)').order('created_at', {ascending:false}).limit(5);
+  const { data } = await sb.from('posts').select('category,title,side,symbol,result,created_at,author:profiles!posts_author_id_fkey(nickname,is_bot)').order('created_at', {ascending:false}).limit(6);
   (data || []).reverse().forEach(p => { const n = p.author?.nickname || '누군가', a = A[p.symbol]?.name || '';
-    EVENTS.unshift({txt: p.result ? `${p.result === 'WIN' ? '🎖' : '💀'} ${n} ${a} ${p.category === 'wish' ? (p.result === 'WIN' ? '기원 성취' : '기원 불발') : SIDE[p.side] + (p.result === 'WIN' ? ' 승전' : ' 패전')}` : `${CAT[p.category]?.e || '📣'} ${n}: ${p.title}`, at: now() - 1}); });
-  renderTicker(true);
+    const txt = p.author?.is_bot ? `📰 ${n}: ${p.title}` : p.side && (p.category === 'forecast' || p.category === 'bet') ? `${n} — ${a} ${SIDE[p.side]}으로 참전 ⚔️` : `${CAT[p.category]?.e || '📣'} ${n}: ${p.title}`;
+    EVENTS.unshift({txt, at: T(p.created_at)}); });
+  EVENTS.sort((x, y) => y.at - x.at); renderTicker(true); renderLive();
 }
 
 /* ========================================================== boot */
@@ -1566,6 +1651,10 @@ async function seedEvents(){
   catch(e){ $('#app').innerHTML = topbar() + empty('서버에 연결하지 못했어요: ' + esc(errMsg(e)) + '<br><button class="btn sm" style="margin-top:12px" onclick="location.reload()">다시 시도</button>'); return; }
   sb.channel('assets').on('postgres_changes', {event:'UPDATE', schema:'public', table:'assets'}, p => onAssetRow(p.new)).subscribe();
   subscribeEvents(); seedEvents().catch(() => renderTicker(true));
+  const lobby = sb.channel('lobby', { config: { presence: { key: Math.random().toString(36).slice(2) } } });
+  lobby.on('presence', { event: 'sync' }, () => { VIEWERS = Math.max(1, Object.keys(lobby.presenceState()).length); renderLive(); })
+       .subscribe(async st => { if (st === 'SUBSCRIBED') await lobby.track({ at: Date.now() }); });
+  setInterval(renderLive, 15000);
   connectBinance();
   setInterval(() => $$('[data-cd]').forEach(el => el.textContent = mmss(+el.dataset.cd - now())), 1000);
   setInterval(() => { softRender(); watchResults(); }, 30000);
