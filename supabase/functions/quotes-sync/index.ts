@@ -81,6 +81,19 @@ async function volumePace(tk: string) {
   return today / (avg * frac);
 }
 
+// 52-week low/high: Yahoo daily chart for a year, Binance daily candles for a year
+async function range52(src: string) {
+  const [kind, raw] = src.split(':'); const [id, mul] = raw.split('*'); const m = mul ? +mul : 1;
+  if (kind === 'binance') {
+    const k = await (await fetch(`https://data-api.binance.vision/api/v3/klines?symbol=${id}&interval=1d&limit=365`, { signal: T(10000) })).json();
+    return { low: Math.min(...k.map((c: any) => +c[3])), high: Math.max(...k.map((c: any) => +c[2])) };
+  }
+  const r = (await (await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(id)}?range=1y&interval=1d`, { headers: UA, signal: T(10000) })).json()).chart.result[0];
+  const q = r.indicators.quote[0], lows = (q.low || []).filter((x: number | null) => x != null && x > 0), highs = (q.high || []).filter((x: number | null) => x != null && x > 0);
+  const low = r.meta.fiftyTwoWeekLow || Math.min(...lows), high = r.meta.fiftyTwoWeekHigh || Math.max(...highs);
+  return { low: low * m, high: high * m };
+}
+
 Deno.serve(async (req) => {
   if (req.headers.get('x-cron-secret') !== Deno.env.get('CRON_SECRET')) return new Response('forbidden', { status: 403 });
   const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
@@ -109,5 +122,12 @@ Deno.serve(async (req) => {
   const sideErr = side.filter(s => s.status === 'rejected').length;
 
   const { data, error } = await sb.rpc('apply_quotes', { q: Object.values(qs) });
+
+  // refresh the 52-week range for a few stale assets per run
+  const { data: stale } = await sb.from('assets').select('symbol,src,range_at').eq('active', true).or(`range_at.is.null,range_at.lt.${new Date(Date.now() - 6 * 3600e3).toISOString()}`).limit(6);
+  await Promise.allSettled((stale || []).filter(a => /^(binance|yahoo):/.test(a.src)).map(async a => {
+    const r = await range52(a.src);
+    if (Number.isFinite(r.low) && Number.isFinite(r.high) && r.low > 0) await sb.from('assets').update({ low_52w: r.low, high_52w: r.high, range_at: new Date().toISOString() }).eq('symbol', a.symbol);
+  }));
   return new Response(JSON.stringify({ updated: data, error: error?.message, failed: errors, side_failed: sideErr }), { headers: { 'content-type': 'application/json' } });
 });

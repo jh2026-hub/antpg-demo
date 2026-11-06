@@ -39,9 +39,14 @@ button{cursor:pointer;border:0;background:none}
 .scene{--sky1:#a9d4ff;--sky2:#e3f1ff;--g1:#b9e08e;--g2:#8fc566;background:linear-gradient(180deg,var(--sky1) 0%,var(--sky2) 40%,var(--g1) 40%,var(--g2) 100%)}
 .p-park{--g1:#b9e08e;--g2:#8fc566}.p-beach{--g1:#f6e2ab;--g2:#e9c97c}.p-city{--g1:#c3c6cd;--g2:#9da1ab}.p-square{--g1:#e6dac6;--g2:#cdbda2}
 .w-fest{--sky1:#ff9f5a;--sky2:#ffe3a3}.w-sunny{--sky1:#5cb8ff;--sky2:#d2efff}.w-clear{--sky1:#a9d4ff;--sky2:#e6f3ff}.w-cloud{--sky1:#b4c0cf;--sky2:#e1e6ec}
-.w-rain{--sky1:#7f8c9f;--sky2:#bcc5d0}.w-storm{--sky1:#3e4656;--sky2:#6f7888}.w-ice{--sky1:#bcd9ee;--sky2:#eef8ff;--g1:#eef6fb;--g2:#cfe2ee}
+.w-rain{--sky1:#7f8c9f;--sky2:#bcc5d0}.w-storm{--sky1:#3e4656;--sky2:#6f7888}
+.w-quake{--sky1:#857a6c;--sky2:#cdbfa9}
+.w-nuke{--sky1:#3a1c12;--sky2:#d0602c;--g1:#6e5c4b;--g2:#463a30}
+.frozen{--g1:#eef6fb;--g2:#cfe2ee}.frozen.w-cloud,.frozen.w-clear{--sky1:#bcd9ee;--sky2:#eef8ff}
+.peak{--g1:#f3e3a0;--g2:#d9bf62}
 .night{--sky1:#0b1430!important;--sky2:#26365c!important}
 .w-fest.night{--sky1:#2a1350!important;--sky2:#5a2f74!important}
+.w-nuke.night{--sky1:#160805!important;--sky2:#7a2a14!important}
 @media (prefers-color-scheme: dark){.scene{filter:brightness(.88)}}
 
 /* ---------- home: rooms */
@@ -56,7 +61,8 @@ button{cursor:pointer;border:0;background:none}
 .rinfo{padding:9px 11px 11px}.rinfo b{font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .rinfo .num{flex:none;white-space:nowrap}
 .mini .md{position:absolute;font-size:18px;line-height:1;transform:translate(-50%,-100%);pointer-events:none}
-.mini .sea{position:absolute;left:0;right:0;top:33%;height:9%;background:linear-gradient(#5fb4e8,#8fd0f0)}.w-ice .mini .sea,.mini.w-ice .sea{background:#dcefff}
+.mini .sea{position:absolute;left:0;right:0;top:33%;height:9%;background:linear-gradient(#5fb4e8,#8fd0f0)}.mini.frozen .sea{background:#dcefff}
+.mini .mbadge{position:absolute;right:6px;bottom:6px;font-size:10.5px;font-weight:800;background:rgba(255,255,255,.88);color:#1f2126;padding:1px 6px;border-radius:999px;z-index:900}
 .mini .rainbow{left:6%;top:-6%;width:88%;height:90%}
 .mini .fwm{position:absolute;left:30%;top:6%;font-size:20px;animation:fw 2.7s ease-out infinite}
 .rinfo .num{font-weight:800;font-size:14px}
@@ -64,7 +70,7 @@ button{cursor:pointer;border:0;background:none}
 /* ---------- plaza */
 .plaza{position:relative;height:270px;margin:2px 0 0;border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);touch-action:manipulation;user-select:none;-webkit-user-select:none;cursor:pointer}
 .plaza .sea{position:absolute;left:0;right:0;top:33%;height:9%;background:linear-gradient(#5fb4e8,#8fd0f0);border-bottom:3px solid rgba(255,255,255,.7)}
-.w-ice .sea{background:linear-gradient(#cfe9f7,#eaf6fc)}
+.frozen .sea{background:linear-gradient(#cfe9f7,#eaf6fc)}
 .plaza .skyline{position:absolute;left:-4%;right:-4%;top:21%;font-size:44px;line-height:1;letter-spacing:-6px;white-space:nowrap;opacity:.8;text-align:center}
 .plaza .deco{position:absolute;font-size:26px;line-height:1;transform:translate(-50%,-100%);pointer-events:none}
 .plaza .orb{position:absolute;right:16px;top:40px;font-size:30px;z-index:2;pointer-events:none}
@@ -94,7 +100,7 @@ button{cursor:pointer;border:0;background:none}
 .pzhint span{background:rgba(255,255,255,.75);padding:2px 9px;border-radius:999px}
 .av{position:absolute;left:0;top:0;width:30px;height:51px;transform-origin:50% 100%;will-change:transform}
 .av canvas{display:block;width:30px;height:51px;image-rendering:pixelated}
-.w-ice .av canvas{filter:saturate(.75) brightness(1.08)}
+.frozen .av canvas{filter:saturate(.75) brightness(1.08)}
 .av::after{content:'';position:absolute;left:3px;right:3px;bottom:-3px;height:6px;border-radius:50%;background:rgba(0,0,0,.18);z-index:-1}
 .av.mine::before{content:'';position:absolute;left:-1px;right:-1px;bottom:-5px;height:9px;border-radius:50%;border:2px solid var(--accent);z-index:-1}
 .av.drop canvas{animation:avdrop .55s cubic-bezier(.3,1.6,.5,1)}@keyframes avdrop{from{translate:0 -70px;opacity:0}}
@@ -174,6 +180,30 @@ textarea.f{min-height:90px;resize:none}
 .exbox{margin-top:12px;padding:16px;border-radius:14px;background:var(--soft);min-height:100px}
 .exbox.roll{animation:roll .4s cubic-bezier(.2,1.5,.4,1)}@keyframes roll{from{transform:rotateX(70deg);opacity:0}}
 .exmain{font-size:18px;font-weight:900;margin:6px 0}
+@keyframes quake{0%,52%,100%{translate:0 0}4%{translate:-7px 2px}8%{translate:6px -3px}12%{translate:-5px 3px}16%{translate:7px 1px}20%{translate:-6px -2px}24%{translate:4px 3px}28%{translate:-5px -1px}32%{translate:5px 2px}36%{translate:-3px -2px}40%{translate:3px 1px}46%{translate:-1px 0}}
+.plaza.w-quake,.mini.w-quake{animation:quake 3.2s infinite}
+.w-quake .deco,.w-quake .md{animation:wob .25s infinite alternate}@keyframes wob{from{rotate:-6deg}to{rotate:6deg}}
+.cracks{position:absolute;left:0;right:0;top:40%;bottom:0;width:100%;height:60%;z-index:6;pointer-events:none}
+.cracks path{fill:none;stroke:#3b2a1a;stroke-width:1.4;stroke-linecap:round;stroke-dasharray:120;animation:crack 3.2s infinite;vector-effect:non-scaling-stroke}
+@keyframes crack{0%{stroke-dashoffset:120}30%,100%{stroke-dashoffset:0}}
+.blds{position:absolute;left:0;right:0;top:40%;height:0;z-index:5;pointer-events:none}
+.blds i{position:absolute;bottom:0;font-style:normal;font-size:40px;line-height:1;transform-origin:50% 100%;animation:topple 8s infinite}
+@keyframes topple{0%,28%{rotate:0deg;translate:0 0;opacity:1}33%{rotate:-5deg}38%{rotate:6deg}44%{rotate:-4deg}62%{rotate:88deg;translate:14px 6px;opacity:1}74%,92%{rotate:88deg;translate:14px 10px;opacity:0}100%{rotate:0deg;opacity:0}}
+.blds b{position:absolute;bottom:-6px;font-size:30px;opacity:0;animation:dust 8s infinite}
+@keyframes dust{0%,58%{opacity:0;scale:.4}64%{opacity:1;scale:1.2}84%,100%{opacity:0;scale:1.8}}
+.w-nuke .av canvas{filter:sepia(.55) brightness(.8)}
+.mush{position:absolute;left:50%;bottom:60%;width:130px;height:130px;margin-left:-65px;z-index:4;pointer-events:none;transform-origin:50% 100%;animation:mush 7s infinite}
+.mush::before{content:'';position:absolute;left:0;right:0;top:0;height:62px;border-radius:50%;background:radial-gradient(ellipse at 50% 60%,#fff6c4 0%,#ffb347 28%,#e0642c 52%,#7a4a3a 74%,rgba(90,70,60,.6) 86%,transparent 88%)}
+.mush::after{content:'';position:absolute;left:50%;bottom:0;width:26px;height:74px;margin-left:-13px;border-radius:12px 12px 4px 4px;background:linear-gradient(#ffcf7a,#c76a3a 60%,#7a4a3a)}
+.mush i{position:absolute;left:18%;right:18%;top:50px;height:16px;border-radius:50%;border:3px solid rgba(255,200,140,.75);z-index:1}
+@keyframes mush{0%{scale:0;opacity:0}3%{scale:.35;opacity:1}26%{scale:1;translate:0 0}80%{opacity:1}100%{scale:1.1;translate:0 -14px;opacity:0}}
+.nflash{position:absolute;inset:0;z-index:860;pointer-events:none;background:radial-gradient(circle at 50% 38%,#fff 0%,#ffe9a8 30%,#ff8a3d 70%);opacity:0;animation:nflash 7s infinite}
+@keyframes nflash{0%{opacity:0}1%{opacity:1}12%{opacity:.25}22%,100%{opacity:0}}
+.shock{position:absolute;left:50%;top:40%;width:40px;height:12px;margin:-6px 0 0 -20px;border:3px solid rgba(255,225,160,.9);border-radius:50%;z-index:7;pointer-events:none;opacity:0;animation:shock 7s infinite}
+@keyframes shock{0%,2%{scale:.2;opacity:0}4%{opacity:1}32%{scale:16;opacity:0}100%{opacity:0}}
+.ash i{position:absolute;top:-10px;width:3px;height:3px;border-radius:50%;background:#5a5048;z-index:800;pointer-events:none;animation:snow linear infinite}
+.mini .mush{bottom:42%;width:58px;height:50px;margin-left:-29px}.mini .mush::before{height:28px}.mini .mush::after{width:11px;height:28px;margin-left:-5.5px}.mini .mush i{top:20px;height:7px;border-width:2px}
+.peak .orb{filter:drop-shadow(0 0 8px gold)}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -226,7 +256,7 @@ async function rpc(fn, args){ const { data, error } = await sb.rpc(fn, args); if
 function modal(html){ closeModal(); const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<div class="sheet">${html}</div>`; m.addEventListener('click', e => { if (e.target === m) closeModal(); }); document.body.appendChild(m); }
 function closeModal(){ $$('.modal').forEach(m => m.remove()); }
 const isTyping = () => { const a = document.activeElement; return a && /INPUT|TEXTAREA/.test(a.tagName); };
-const WXQ = new URLSearchParams(location.search).get('wx');   // preview a weather: ?wx=fest|sunny|clear|cloud|rain|storm|ice|night
+const WXQ = new URLSearchParams(location.search).get('wx');   // preview: ?wx=fest|sunny|clear|cloud|rain|storm|quake|nuke|night, ?wx=ice (52w low) | peak (52w high)
 
 /* ---------------------------------------------------------------- market + scenes */
 const A = {}; let ASSETS = [];
@@ -235,7 +265,7 @@ const pct = a => +(a.change_pct || 0);
 const fmtC = a => (pct(a) > 0 ? '+' : '') + pct(a).toFixed(2) + '%';
 const dir = v => v > 0 ? 'up' : v < 0 ? 'down' : 'flat';
 async function loadAssets(){
-  const { data } = await sb.from('assets').select('symbol,name,short,kind,region,change_pct,price,market_open').eq('active', true).order('sort');
+  const { data } = await sb.from('assets').select('symbol,name,short,kind,region,change_pct,price,market_open,low_52w,high_52w').eq('active', true).order('sort');
   ASSETS = (data || []).map(r => Object.assign(A[r.symbol] = A[r.symbol] || {}, r));
 }
 const PLACES = {
@@ -251,17 +281,27 @@ const WX = {
   cloud: {k:'cloud', e:'⛅', n:'흐림',   t:'애매한 날씨. 다들 눈치 보는 중'},
   rain:  {k:'rain',  e:'🌧️', n:'비',     t:'비 와요. 우산 챙기세요', umb:true, mul:.85},
   storm: {k:'storm', e:'⛈️', n:'폭풍우', t:'천둥번개! 다들 우산 꽉 잡아요', umb:true, mul:.7},
-  ice:   {k:'ice',   e:'🥶', n:'빙하기', t:'계좌가 꽁꽁 얼었어요. 다들 덜덜', mul:.45, shiver:true},
+  quake: {k:'quake', e:'🫨', n:'대지진', t:'지진 났어요! 건물이 무너져요. 책상 밑으로!', mul:1.5, shiver:true, quake:true},
+  nuke:  {k:'nuke',  e:'☢️', n:'핵폭탄', t:'시장에 핵폭탄 떨어짐. 계좌 증발 중', mul:2.1, panic:true},
 };
 const placeOf = a => a.kind === 'CRYPTO' ? 'beach' : a.kind === 'INDEX' ? 'square' : a.region === 'US' ? 'city' : 'park';
 function scene(a){
   const z = pct(a) / (a.kind === 'INDEX' ? 1 : a.kind === 'CRYPTO' ? 2.5 : 2);
-  let w = z >= 2.5 ? 'fest' : z >= 1 ? 'sunny' : z >= .25 ? 'clear' : z > -.25 ? 'cloud' : z > -1 ? 'rain' : z > -2.5 ? 'storm' : 'ice';
+  let w = z >= 2.5 ? 'fest' : z >= 1 ? 'sunny' : z >= .25 ? 'clear' : z > -.25 ? 'cloud' : z > -1 ? 'rain' : z > -2.5 ? 'storm' : z > -4.5 ? 'quake' : 'nuke';
   let night = a.market_open === false && a.kind !== 'CRYPTO';
-  if (WXQ === 'night') night = true; else if (WXQ && WX[WXQ]){ w = WXQ; night = false; }
-  return {...WX[w], w, night, place: placeOf(a)};
+  const p = +a.price, lo = +a.low_52w, hi = +a.high_52w, pos = hi > lo && lo > 0 ? (p - lo) / (hi - lo) : .5;
+  let frozen = lo > 0 && p > 0 && (p <= lo * 1.05 || pos <= .08), peak = hi > 0 && p > 0 && (p >= hi * .97 || pos >= .95);
+  if (WXQ === 'night') night = true;
+  else if (WXQ === 'ice'){ frozen = true; peak = false; w = 'cloud'; night = false; }
+  else if (WXQ === 'peak'){ peak = true; frozen = false; night = false; }
+  else if (WXQ && WX[WXQ]){ w = WXQ; night = false; }
+  const sc = {...WX[w], w, night, frozen, peak, place: placeOf(a)};
+  if (frozen && !sc.panic && !sc.quake){ sc.mul = (sc.mul || 1) * .6; sc.shiver = true; }
+  sc.label = `${sc.e} ${sc.n}${frozen ? ' · 🧊 빙하기' : peak ? ' · 🏆 신고가' : ''}`;
+  sc.hint = frozen && ['cloud', 'clear', 'sunny', 'rain'].includes(w) ? '52주 저점 근처. 빠질 만큼 빠져서 꽁꽁 얼었어요' : peak && !['quake', 'nuke'].includes(w) ? '52주 신고가 근처! 꼭대기라 공기가 희박해요' : sc.t;
+  return sc;
 }
-const sceneCls = sc => `scene w-${sc.w} p-${sc.place}${sc.night ? ' night' : ''}`;
+const sceneCls = sc => `scene w-${sc.w} p-${sc.place}${sc.night ? ' night' : ''}${sc.frozen ? ' frozen' : ''}${sc.peak ? ' peak' : ''}`;
 
 /* ---------------------------------------------------------------- me (no signup: first action creates a random name) */
 let ME = null, LAST = null, BUSY = false;
@@ -320,9 +360,11 @@ function distHTML(){
 }
 function miniFx(sc){
   const R = (n, f) => Array.from({length: n}, f).join(''), P = PLACES[sc.place];
-  let h = (sc.place === 'beach' ? '<div class="sea"></div>' : '') + P.deco.slice(0, 3).map(([e, x, y]) => `<span class="md" style="left:${x}%;top:${Math.max(56, y)}%">${sc.w === 'ice' && e === '🌳' ? '🌲' : e}</span>`).join('');
-  if (sc.w === 'rain' || sc.w === 'storm') h += `<div class="drops ${sc.w}">${R(sc.w === 'storm' ? 16 : 9, () => `<i style="left:${rnd(0, 120)}%;animation-delay:${-rnd(0, 1)}s;animation-duration:${rnd(.45, .85)}s"></i>`)}</div>` + (sc.w === 'storm' ? '<div class="flash"></div>' : '');
-  if (sc.w === 'ice') h += `<div class="flakes">${R(9, () => `<i style="left:${rnd(0, 100)}%;animation-delay:${-rnd(0, 7)}s;animation-duration:${rnd(4, 8)}s">❄</i>`)}</div>`;
+  let h = (sc.place === 'beach' ? '<div class="sea"></div>' : '') + (sc.k === 'nuke' ? [['🏚️',14,62],['🔥',86,60]] : P.deco.slice(0, 3)).map(([e, x, y]) => `<span class="md" style="left:${x}%;top:${Math.max(56, y)}%">${sc.frozen && e === '🌳' ? '🌲' : sc.frozen && e === '🌴' ? '⛄' : e}</span>`).join('');
+  if (sc.k === 'quake') h += '<span class="md" style="left:52%;top:52%">🏚️</span>';
+  if (sc.k === 'nuke') h += '<div class="mush"><i></i></div><div class="nflash"></div>';
+  if (!sc.frozen && (sc.w === 'rain' || sc.w === 'storm')) h += `<div class="drops ${sc.w}">${R(sc.w === 'storm' ? 16 : 9, () => `<i style="left:${rnd(0, 120)}%;animation-delay:${-rnd(0, 1)}s;animation-duration:${rnd(.45, .85)}s"></i>`)}</div>` + (sc.w === 'storm' ? '<div class="flash"></div>' : '');
+  if (sc.frozen) h += `<div class="flakes">${R(9, () => `<i style="left:${rnd(0, 100)}%;animation-delay:${-rnd(0, 7)}s;animation-duration:${rnd(4, 8)}s">❄</i>`)}</div>`;
   if (sc.w === 'sunny') h += '<div class="rainbow"></div>';
   if (sc.w === 'fest') h += '<span class="fwm">🎆</span>';
   if (sc.night) h += '<div class="shade"></div>';
@@ -331,9 +373,9 @@ function miniFx(sc){
 function roomCard(a, st){
   const sc = scene(a), on = ROOMN[a.symbol] || 0;
   return `<a class="room" href="#/r/${encodeURIComponent(a.symbol)}"><div class="mini ${sceneCls(sc)}">
-      ${miniFx(sc)}<span class="mw">${sc.night ? '🌙' : sc.e}</span><span class="mon" data-on="${esc(a.symbol)}">${on ? `<span class="dot"></span>${on}명` : ''}</span><span class="mem">${st.em.join('')}</span></div>
+      ${miniFx(sc)}<span class="mw">${sc.night ? '🌙' : sc.e}</span>${sc.frozen ? '<span class="mbadge">🧊 52주 저점</span>' : sc.peak ? '<span class="mbadge">🏆 52주 고점</span>' : ''}<span class="mon" data-on="${esc(a.symbol)}">${on ? `<span class="dot"></span>${on}명` : ''}</span><span class="mem">${st.em.join('')}</span></div>
     <div class="rinfo"><div class="row sb"><b>${esc(a.short)}</b><span class="num ${dir(pct(a))}" data-c="${esc(a.symbol)}">${fmtC(a)}</span></div>
-      <div class="muted s">${sc.e} ${sc.n}${sc.night ? ' · 마감' : ''} · 오늘 ${st.n}명</div></div></a>`;
+      <div class="muted s">${sc.label}${sc.night ? ' · 마감' : ''} · 오늘 ${st.n}명</div></div></a>`;
 }
 async function vHome(){
   const since = new Date(now() - 24 * 3600e3).toISOString();
@@ -464,7 +506,8 @@ const PZ = (() => {
   const SHIRT = ['#ff8a3d','#3182f6','#f04452','#2fbf71','#a46ad8','#f2c94c','#20c4c4','#ff6fa8','#6b7280'], PANTS = ['#2d3a5a','#3b3b3b','#5b4636','#1f4d3a'];
   const SPD = {rekt:14, empty:10, unfair:34, meh:22, held:24, won:36};
   const IDLE = {fest:['이게 무슨 일이야!!', '🎉🎉🎉', '오늘 치킨 쏜다', '춤 안 출 수가 없네'], sunny:['날씨 좋다~', '오늘 기분 좋네', '산책 가자'], clear:['평화롭다', '커피 한 잔?', '오늘 무난하네'],
-    cloud:['애매하네…', '살까 말까', '눈치 게임 중'], rain:['우산 가져왔어?', '비 맞는 중…', '흑흑'], storm:['으아아 천둥!!', '우산 날아간다', '집에 갈래'], ice:['추워…', '계좌 얼었다', '🥶🥶', '난로 어디 있어'], night:['장 끝났다…', '내일 보자', '야식 먹을 사람', '잠이 안 와']};
+    cloud:['애매하네…', '살까 말까', '눈치 게임 중'], rain:['우산 가져왔어?', '비 맞는 중…', '흑흑'], storm:['으아아 천둥!!', '우산 날아간다', '집에 갈래'], ice:['추워…', '계좌 얼었다', '🥶🥶', '난로 어디 있어', '여기가 바닥이겠지…', '더 빠질 데도 없다'], peak:['공기가 희박해…', '여기서 사도 돼?', '꼭대기 뷰 좋다', '내려갈 일만 남았나'],
+    quake:['흔들려!!', '책상 밑으로!', '건물 무너진다!!', '이게 바닥이야?', '지하실도 있대…'], nuke:['☢️ 대피!!', '계좌가 증발했어', '이건 꿈이야…', '방사능 수치 실화?', '살려줘어어', '뉴스 보지 마'], night:['장 끝났다…', '내일 보자', '야식 먹을 사람', '잠이 안 와']};
   const SAY = {'👋':'안녕!', '🫂':'다들 토닥토닥', '😭':'흑흑…', '🤬':'아오!!', '🥳':'가즈아!', '🙏':'제발…'};
   const hash = s => { let h = 2166136261; for (const c of String(s)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
   const look = id => { const h = hash(id); return {skin:SKIN[h % 4], hair:HAIR[(h >>> 2) % 8], shirt:SHIRT[(h >>> 5) % 9], pants:PANTS[(h >>> 9) % 4], hat:(h >>> 12) % 5, hatc:SHIRT[(h >>> 16) % 9]}; };
@@ -521,7 +564,7 @@ const PZ = (() => {
       const dx = a.tx - a.x, dy = a.ty - a.y, d = Math.hypot(dx, dy);
       let moving = false, bob = 0, sh = 0;
       if (d > 1.5){ const k = Math.min(1, (SPD[a.mood] || 22) * (SC.mul || 1) * (a.rush ? 3 : 1) * dt / d); a.x += dx * k; a.y += dy * k; moving = true; if (Math.abs(dx) > .4) a.face = dx > 0 ? 1 : -1; }
-      else if (!a.idle){ a.idle = true; a.rush = false; a.wait = 1 + Math.random() * 4; }
+      else if (!a.idle){ a.idle = true; a.rush = false; a.wait = SC.panic ? .1 + Math.random() * .6 : 1 + Math.random() * 4; }
       else if ((a.wait -= dt) <= 0 && !(a.hold > n0)) pickTarget(a);
       a.ft += dt;
       if (moving){ if (a.ft > .18){ a.f ^= 1; a.ft = 0; } }
@@ -529,9 +572,11 @@ const PZ = (() => {
       else a.f = 0;
       if (SC.hop || a.mood === 'won') bob = -Math.abs(Math.sin(t / (moving ? 90 : 140) + a.ph)) * (moving ? 3 : 6);
       else if (moving) bob = -Math.abs(Math.sin(t / 90)) * 1.5;
-      if ((SC.shiver || (a.mood === 'unfair' && !moving)) && Math.random() < .5) sh = (Math.random() - .5) * (SC.shiver ? 2.4 : 2);
+      if ((SC.shiver || (a.mood === 'unfair' && !moving)) && Math.random() < .5) sh = (Math.random() - .5) * (SC.quake ? 5 : SC.shiver ? 2.4 : 2);
+      if (SC.quake && !a.me && !(a.fall > n0) && Math.random() < dt * .06){ a.fall = n0 + 1600; a.fdir = Math.random() < .5 ? -1 : 1; if (Math.random() < .6) say(a, pick(['꽈당!', '으악!', '아이고 허리야']), 1500); }
+      const down = a.fall > n0; if (down){ a.tx = a.x; a.ty = a.y; }
       const s = .82 + .3 * (a.y - gy0()) / Math.max(1, gy1() - gy0());
-      a.el.style.transform = `translate3d(${(a.x - 15 + sh).toFixed(1)}px,${(a.y - 51 + bob).toFixed(1)}px,0) scale(${s.toFixed(3)})`;
+      a.el.style.transform = `translate3d(${(a.x - 15 + sh).toFixed(1)}px,${(a.y - 51 + bob).toFixed(1)}px,0) scale(${s.toFixed(3)})${down ? ` rotate(${a.fdir * 84}deg)` : ''}`;
       a.el.style.zIndex = 10 + (a.y | 0);
       if (a.lastFace !== a.face){ a.cv.style.transform = a.face < 0 ? 'scaleX(-1)' : ''; a.lastFace = a.face; }
       draw(a);
@@ -566,14 +611,22 @@ const PZ = (() => {
     if (orb) fx += `<div class="orb">${orb}</div>`;
     if (sc.w === 'sunny') fx += '<div class="rainbow"></div>';
     if (['clear', 'cloud', 'rain', 'storm'].includes(sc.w)) fx += R(sc.w === 'clear' ? 1 : 3, (_, i) => `<div class="cloud" style="top:${5 + i * 8}%;animation-duration:${26 + i * 11}s;animation-delay:${-(i * 9 + rnd(0, 8))}s">☁️</div>`);
-    if (sc.w === 'rain' || sc.w === 'storm') fx += `<div class="drops ${sc.w}">${R(sc.w === 'storm' ? 46 : 24, () => `<i style="left:${rnd(-5, 125)}%;animation-delay:${-rnd(0, 1)}s;animation-duration:${rnd(.45, .85)}s"></i>`)}</div>`;
+    if (!sc.frozen && (sc.w === 'rain' || sc.w === 'storm')) fx += `<div class="drops ${sc.w}">${R(sc.w === 'storm' ? 46 : 24, () => `<i style="left:${rnd(-5, 125)}%;animation-delay:${-rnd(0, 1)}s;animation-duration:${rnd(.45, .85)}s"></i>`)}</div>`;
     if (sc.w === 'storm') fx += '<div class="flash"></div>';
-    if (sc.w === 'ice') fx += `<div class="flakes">${R(30, () => `<i style="left:${rnd(0, 100)}%;animation-delay:${-rnd(0, 7)}s;animation-duration:${rnd(4, 8)}s">❄</i>`)}</div>`;
+    if (sc.frozen) fx += `<div class="flakes">${R(sc.w === 'storm' ? 50 : sc.w === 'rain' ? 34 : 18, () => `<i style="left:${rnd(0, 100)}%;animation-delay:${-rnd(0, 7)}s;animation-duration:${rnd(4, 8)}s">❄</i>`)}</div>`;
     if (sc.w === 'fest') fx += `<div class="fws">${R(6, (_, i) => `<i style="left:${rnd(8, 88)}%;top:${rnd(2, 26)}%;animation-delay:${(i * .45).toFixed(2)}s">${pick(['🎆', '🎇', '✨', '🎉'])}</i>`)}</div><div class="confetti">${R(26, () => `<i style="left:${rnd(0, 100)}%;background:${pick(SHIRT)};animation-delay:${-rnd(0, 4)}s;animation-duration:${rnd(2.5, 4.5)}s"></i>`)}</div>`;
-    const P = PLACES[sc.place];
+    if (sc.quake){
+      const B = sc.place === 'city' ? ['🏢','🏬','🏦','🏢','🏨'] : sc.place === 'beach' ? ['🏨','🏩','🏨'] : sc.place === 'square' ? ['🏛️','🏢','🏛️','🏬'] : ['🏠','🏢','🏡','🏬'];
+      fx += `<div class="blds">${B.map((e, i) => `<i style="left:${8 + i * (84 / B.length)}%;animation-delay:${(-i * 1.7).toFixed(1)}s">${e}</i><b style="left:${10 + i * (84 / B.length)}%;animation-delay:${(-i * 1.7).toFixed(1)}s">💨</b>`).join('')}</div>`
+        + `<svg class="cracks" viewBox="0 0 100 60" preserveAspectRatio="none"><path d="M5 8 L14 16 L11 24 L22 33 L19 44 L30 56"/><path d="M62 4 L58 14 L68 22 L63 31 L74 40" style="animation-delay:-1.1s"/><path d="M88 12 L80 22 L90 30 L84 46" style="animation-delay:-2s"/></svg>`;
+    }
+    if (sc.k === 'nuke') fx += '<div class="mush"><i></i></div><div class="shock"></div><div class="nflash"></div>'
+      + `<div class="ash">${R(26, () => `<i style="left:${rnd(0, 100)}%;animation-delay:${-rnd(0, 7)}s;animation-duration:${rnd(4, 8)}s"></i>`)}</div>`;
+    if (sc.peak && !sc.night) fx += '<div class="deco" style="left:30%;top:30%;z-index:3;font-size:34px">🏔️</div>';
+    const P = sc.k === 'nuke' ? {deco:[['🏚️',8,47],['🔥',91,46],['🏚️',80,92],['🔥',20,93],['☢️',62,51]]} : PLACES[sc.place];
     const place = (sc.place === 'beach' ? '<div class="sea"></div>' : '') + (sc.place === 'city' ? '<div class="skyline">🏢🏬🏙️🏢🏦🏬🏢</div>' : '')
-      + P.deco.map(([e, x, y]) => `<div class="deco" style="left:${x}%;top:${y}%;z-index:${10 + Math.round(y * 2.7)}">${sc.w === 'ice' && e === '🌳' ? '🌲' : e}</div>`).join('');
-    el.innerHTML = place + fx + `<div class="pzcap"></div><div class="pzw">${sc.night ? '🌙' : sc.e} ${sc.n}${sc.night ? ' · 마감' : ''}</div><div class="pzhint"><span>${sc.t}</span></div>`;
+      + P.deco.map(([e, x, y]) => `<div class="deco" style="left:${x}%;top:${y}%;z-index:${10 + Math.round(y * 2.7)}">${sc.frozen && e === '🌳' ? '🌲' : sc.frozen && e === '🌴' ? '⛄' : e}</div>`).join('');
+    el.innerHTML = place + fx + `<div class="pzcap"></div><div class="pzw">${sc.night ? '🌙 ' + sc.n : sc.label.replace(' · ', ' ')}${sc.night ? ' · 마감' : ''}${sc.night && (sc.frozen || sc.peak) ? (sc.frozen ? ' 🧊' : ' 🏆') : ''}</div><div class="pzhint"><span>${sc.hint}</span></div>`;
     for (const x of actors.values()) el.appendChild(x.el);
   }
   async function load(){
@@ -640,7 +693,7 @@ const PZ = (() => {
         if (!ROOM || !actors.size || $('#roomtop').hidden) return;
         const xs = [...actors.values()].filter(a => !a.me && !a.el.querySelector('.bub.show')); if (!xs.length) return;
         const a = pick(xs);
-        say(a, a.body && Math.random() < .7 ? cut(a.body, 28) : pick(IDLE[SC.night ? 'night' : SC.k] || IDLE.cloud));
+        say(a, a.body && Math.random() < .7 ? cut(a.body, 28) : pick(IDLE[['quake', 'nuke'].includes(SC.k) ? SC.k : SC.frozen && Math.random() < .6 ? 'ice' : SC.peak && Math.random() < .6 ? 'peak' : SC.night ? 'night' : SC.k] || IDLE.cloud));
       }, 3000);
     },
     enter(sym){
